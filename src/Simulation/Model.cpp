@@ -280,7 +280,5 @@ void Model::build_initial_treatment_coverage() {
   set_treatment_coverage(std::move(tcm_ptr));
 }
 
-std::vector<std::unique_ptr<Reporter>>& Model::get_reporters() {
-  return reporters_;
-}
+std::vector<std::unique_ptr<Reporter>> &Model::get_reporters() { return reporters_; }
 
