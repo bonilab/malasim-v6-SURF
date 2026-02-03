@@ -42,3 +42,5 @@ default.profraw
 coverage-html/
 docs/Doxygen/
 vcpkg_installed
+
+monthly_data_*.db

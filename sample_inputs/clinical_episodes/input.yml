@@ -23,7 +23,7 @@ model_settings:
 
   # Enable symptomatic recrudescence after treatment
   # When enabled, parasites above threshold can cause symptomatic recurrence
-  enable_recrudescence: true
+  enable_recrudescence: false
 
 # ---------------------------------------------------------------
 # 2. Simulation Timeframe
@@ -88,34 +88,23 @@ spatial_settings:
     # Approximate national age distribution (to be updated with specific country data)
     age_distribution_by_location: [[0.0423, 0.0423, 0.0423, 0.0423, 0.0349, 0.0349, 0.0349, 0.0349, 0.0349, 0.0317, 0.0317, 0.0317, 0.0317, 0.0317, 0.1743, 0.1132, 0.0832, 0.0601, 0.0341, 0.0331, 0.0]]
     # Adjusted population raster to account for burn-in up to 2009 start
-    #    population_raster: "test_init_pop.asc"
-    population_raster: "test_init_pop.asc"
-
-    # Raster files defining the country districts
-    #    district_raster: "test_district.asc"
-    #    district_raster: "test_district.asc"
+    population_raster: "./clinical_episodes/dev_init_pop.asc"
 
     administrative_boundaries:
       - name: "district" # First admin level
-        #       raster: "test_district.asc"
-        raster: "test_district.asc"
+        raster: "./clinical_episodes/dev_district.asc"
 
-    # Raster files defining treatment probabilities (comment these out for beta calibration)
-    #    p_treatment_under_5_raster: "test_treatment.asc"
-    #    p_treatment_over_5_raster: "test_treatment.asc"
-    p_treatment_under_5_raster: "test_treatment.asc"
-    p_treatment_over_5_raster: "test_treatment.asc"
+    p_treatment_under_5_raster: "./clinical_episodes/dev_treatment.asc"
+    p_treatment_over_5_raster: "./clinical_episodes/dev_treatment.asc"
 
-    # Raster file containing the calibrated beta value
-    #    beta_raster: "test_beta_r1.asc"
-    beta_raster: "test_beta.asc"
+    beta_raster: "./clinical_episodes/dev_beta.asc"
 
     # Raster file containing the seasonal values,
     # use this only when using raster in seasonal equation
-    ecoclimatic_raster: "test_ecozone.asc"
+    ecoclimatic_raster: "./clinical_episodes/dev_ecozone.asc"
 
     #Travel (for Burkina Faso)
-    travel_raster: "test_travel.asc"
+    travel_raster: "./clinical_episodes/dev_travel.asc"
 
     # Cell size used by raster, in square kilometers
     cell_size: 5
@@ -151,10 +140,10 @@ seasonality_settings:
   mode: "pattern"
   pattern:
     admin_level: "district"
-    filename: "test_seasonality_pattern.csv"
+    filename: "./clinical_episodes/dev_seasonality_pattern.csv"
     period: 365
   rainfall:
-    filename: "test_seasonality.csv"
+    filename: "./clinical_episodes/dev_seasonality.csv"
     period: 365
   equation:
     # If raster is enabled, make sure to include
@@ -255,11 +244,11 @@ immune_system_parameters:
   sd_initial_condition: 0.1 # Initial immune function standard deviation at time zero
   immune_inflation_rate: 0.01 # Age-dependent faster acquisition of immunity from age 1 to age 10 (per year)
   min_clinical_probability: 0.01 # Minimum probability of experiencing symptoms from a new infection
-  max_clinical_probability: 0.99 # Maximum probability of experiencing symptoms from a new infection
-  immune_effect_on_progression_to_clinical: 5.4 # Slope of the sigmoidal probability vs. immunity function (z)
+  max_clinical_probability: 0.95 # Maximum probability of experiencing symptoms from a new infection
+  immune_effect_on_progression_to_clinical: 15 # Slope of the sigmoidal probability vs. immunity function
   age_mature_immunity: 10 # Age at which immune function is mature
-  factor_effect_age_mature_immunity: 0.3 # Adjusts the inflection point in the curve (kappa)
-  midpoint: 0.4 # Midpoint for the immunity curve
+  factor_effect_age_mature_immunity: 0.3 # Adjusts the inflection point in the curve
+  midpoint: 0.02 # Midpoint for the immunity curve
 
 # ---------------------------------------------------------------
 # 10. Mutation and Genotype Parameters
@@ -933,9 +922,10 @@ epidemiological_parameters:
 mosquito_parameters:
   mosquito_config:
     mode: "location_based" # or "grid_based"
+    # mode: "grid_based"
     grid_based:
-      interrupted_feeding_rate_raster: "test_mosquito_ifr.asc"
-      prmc_size_raster: "test_mosquito_size.asc"
+      interrupted_feeding_rate_raster: "./clinical_episodes/dev_mosquito_ifr.asc"
+      prmc_size_raster: "./clinical_episodes/dev_mosquito_size.asc"
     location_based:
       interrupted_feeding_rate: [0.19]
       prmc_size: [100]
