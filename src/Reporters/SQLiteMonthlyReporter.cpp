@@ -203,14 +203,14 @@ void SQLiteMonthlyReporter::monthly_report_site_data(int month_id) {
       vector_size = boundary->max_unit_id + 1;
     }
 
-    std::vector<int> ageClasses = Model::get_config()->age_structure();
+    std::vector<int> age_classes = Model::get_config()->age_structure();
     // Reset data structures for this admin level
-    reset_site_data_structures(level_id, vector_size, ageClasses.size());
+    reset_site_data_structures(level_id, vector_size, age_classes.size());
 
     // Collect data for this admin level
     for (auto location = 0; location < Model::get_config()->number_of_locations(); location++) {
-      auto locationPopulation = static_cast<int>(Model::get_population()->size(location));
-      if (locationPopulation == 0) continue;
+      auto location_population = static_cast<int>(Model::get_population()->size(location));
+      if (location_population == 0) continue;
 
       collect_site_data_for_location(location, level_id);
     }
@@ -227,13 +227,13 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
                      ? location_id
                      : Model::get_spatial_data()->get_admin_unit(level_id, location_id);
 
-  std::vector<int> ageClasses = Model::get_config()->age_structure();
+  std::vector<int> age_classes = Model::get_config()->age_structure();
 
   count_infections_for_location(level_id, location_id);
 
-  auto locationPopulation = static_cast<int>(Model::get_population()->size(location_id));
+  auto location_population = static_cast<int>(Model::get_population()->size(location_id));
   // Collect the simple data
-  monthly_site_data_by_level[level_id].population[unit_id] += static_cast<int>(locationPopulation);
+  monthly_site_data_by_level[level_id].population[unit_id] += location_population;
 
   monthly_site_data_by_level[level_id].clinical_episodes[unit_id] +=
       Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[location_id];
@@ -257,10 +257,10 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
   monthly_site_data_by_level[level_id].recrudescence_treatment[unit_id] +=
       Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[location_id];
 
-  for (auto ndx = 0; ndx < ageClasses.size(); ndx++) {
+  for (auto ndx = 0; ndx < age_classes.size(); ndx++) {
     // Collect the treatment by age class, following the 0-59 month convention
     // for under-5
-    if (ageClasses[ndx] < 5) {
+    if (age_classes[ndx] < 5) {
       monthly_site_data_by_level[level_id].treatments_under5[unit_id] +=
           Model::get_mdc()->monthly_number_of_treatment_by_location_age_class()[location_id][ndx];
     } else {
@@ -289,7 +289,7 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
         Model::get_mdc()->total_immune_by_location_age()[location_id][age];
   }
 
-  for (auto ndx = 0; ndx < ageClasses.size(); ndx++) {
+  for (auto ndx = 0; ndx < age_classes.size(); ndx++) {
     monthly_site_data_by_level[level_id].recrudescence_treatment_by_age_class[unit_id][ndx] +=
         Model::get_mdc()
             ->monthly_number_of_recrudescence_treatment_by_location_age_class()[location_id][ndx];
@@ -322,16 +322,16 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
     monthly_site_data_by_level[level_id].current_foi_by_location[unit_id] +=
         Model::get_population()->current_force_of_infection_by_location()[location_id];
 
-    auto eirLocation = Model::get_mdc()->eir_by_location_year()[location_id].empty()
-                           ? 0
-                           : Model::get_mdc()->eir_by_location_year()[location_id].back();
-    monthly_site_data_by_level[level_id].eir[unit_id] += (eirLocation * locationPopulation);
+    auto eir_location = Model::get_mdc()->eir_by_location_year()[location_id].empty()
+                            ? 0
+                            : Model::get_mdc()->eir_by_location_year()[location_id].back();
+    monthly_site_data_by_level[level_id].eir[unit_id] += (eir_location * location_population);
     monthly_site_data_by_level[level_id].pfpr_under5[unit_id] +=
-        (Model::get_mdc()->get_blood_slide_prevalence(location_id, 0, 5) * locationPopulation);
+        (Model::get_mdc()->get_blood_slide_prevalence(location_id, 0, 5) * location_population);
     monthly_site_data_by_level[level_id].pfpr2to10[unit_id] +=
-        (Model::get_mdc()->get_blood_slide_prevalence(location_id, 2, 10) * locationPopulation);
+        (Model::get_mdc()->get_blood_slide_prevalence(location_id, 2, 10) * location_population);
     monthly_site_data_by_level[level_id].pfpr_all[unit_id] +=
-        (Model::get_mdc()->blood_slide_prevalence_by_location()[location_id] * locationPopulation);
+        (Model::get_mdc()->blood_slide_prevalence_by_location()[location_id] * location_population);
   }
 
   const auto &mdc_age_index =
@@ -356,14 +356,14 @@ void SQLiteMonthlyReporter::collect_genome_data_for_location(size_t location_id,
                      ? location_id
                      : Model::get_spatial_data()->get_admin_unit(level_id, location_id);
   auto* index = Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>();
-  auto ageClasses = index->vPerson()[0][0].size();
+  auto age_classes = index->vPerson()[0][0].size();
 
   for (auto hs = 0; hs < Person::NUMBER_OF_STATE - 1; hs++) {
     // Iterate over all the age classes
-    for (unsigned int ac = 0; ac < ageClasses; ac++) {
+    for (unsigned int ac = 0; ac < age_classes; ac++) {
       // Iterate over all the genotypes
-      auto peopleInAgeClass = index->vPerson()[location_id][hs][ac];
-      for (auto &person : peopleInAgeClass) {
+      auto people_in_age_class = index->vPerson()[location_id][hs][ac];
+      for (auto &person : people_in_age_class) {
         collect_genome_data_for_a_person(person, unit_id, level_id);
       }
     }
@@ -371,7 +371,7 @@ void SQLiteMonthlyReporter::collect_genome_data_for_location(size_t location_id,
 }
 
 void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_size,
-                                                       size_t numAgeClasses) {
+                                                       size_t num_age_classes) {
   // reset the data structures
   monthly_site_data_by_level[level_id].eir.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].pfpr_under5.assign(vector_size, 0);
@@ -380,7 +380,7 @@ void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_
   monthly_site_data_by_level[level_id].population.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].clinical_episodes.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].clinical_episodes_by_age_class.assign(
-      vector_size, std::vector<int>(numAgeClasses, 0));
+      vector_size, std::vector<int>(num_age_classes, 0));
   monthly_site_data_by_level[level_id].clinical_episodes_by_age.assign(vector_size,
                                                                        std::vector<int>(80, 0));
   monthly_site_data_by_level[level_id].population_by_age.assign(vector_size,
@@ -388,7 +388,7 @@ void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_
   monthly_site_data_by_level[level_id].total_immune_by_age.assign(vector_size,
                                                                   std::vector<double>(80, 0));
   monthly_site_data_by_level[level_id].recrudescence_treatment_by_age_class.assign(
-      vector_size, std::vector<ul>(numAgeClasses, 0));
+      vector_size, std::vector<ul>(num_age_classes, 0));
   monthly_site_data_by_level[level_id].recrudescence_treatment_by_age.assign(
       vector_size, std::vector<ul>(80, 0));
   monthly_site_data_by_level[level_id].multiple_of_infection.assign(
@@ -422,59 +422,59 @@ void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_
 }
 
 void SQLiteMonthlyReporter::reset_genome_data_structures(int level_id, int vector_size,
-                                                         size_t numGenotypes) {
+                                                         size_t num_genotypes) {
   // reset the data structures
   monthly_genome_data_by_level[level_id].occurrences.assign(vector_size,
-                                                            std::vector<int>(numGenotypes, 0));
+                                                            std::vector<int>(num_genotypes, 0));
   monthly_genome_data_by_level[level_id].clinical_occurrences.assign(
-      vector_size, std::vector<int>(numGenotypes, 0));
+      vector_size, std::vector<int>(num_genotypes, 0));
   monthly_genome_data_by_level[level_id].occurrences_0_5.assign(vector_size,
-                                                                std::vector<int>(numGenotypes, 0));
-  monthly_genome_data_by_level[level_id].occurrences_2_10.assign(vector_size,
-                                                                 std::vector<int>(numGenotypes, 0));
+                                                                std::vector<int>(num_genotypes, 0));
+  monthly_genome_data_by_level[level_id].occurrences_2_10.assign(
+      vector_size, std::vector<int>(num_genotypes, 0));
   monthly_genome_data_by_level[level_id].weighted_occurrences.assign(
-      vector_size, std::vector<double>(numGenotypes, 0));
+      vector_size, std::vector<double>(num_genotypes, 0));
 }
 
 void SQLiteMonthlyReporter::collect_genome_data_for_a_person(Person* person, int unit_id,
                                                              int level_id) {
-  const auto numGenotypes = Model::get_config()->number_of_parasite_types();
-  auto individual = std::vector<int>(numGenotypes, 0);
+  const auto num_genotypes = Config::number_of_parasite_types();
+  auto individual = std::vector<int>(num_genotypes, 0);
   // Get the person, press on if they are not infected
   auto &parasites = *person->get_all_clonal_parasite_populations();
-  auto numClones = parasites.size();
-  if (numClones == 0) { return; }
+  auto num_clones = parasites.size();
+  if (num_clones == 0) { return; }
 
   // Note the age and clinical status of the person
   auto age = person->get_age();
   auto clinical = static_cast<int>(person->get_host_state() == Person::HostStates::CLINICAL);
 
   // Count the genotypes present in the individual
-  for (unsigned int ndx = 0; ndx < numClones; ndx++) {
-    auto* parasitePopulation = parasites[ndx];
-    auto genotypeId = parasitePopulation->genotype()->genotype_id();
-    monthly_genome_data_by_level[level_id].occurrences[unit_id][genotypeId]++;
-    monthly_genome_data_by_level[level_id].occurrences_0_5[unit_id][genotypeId] +=
+  for (unsigned int ndx = 0; ndx < num_clones; ndx++) {
+    auto* parasite_population = parasites[ndx];
+    auto genotype_id = parasite_population->genotype()->genotype_id();
+    monthly_genome_data_by_level[level_id].occurrences[unit_id][genotype_id]++;
+    monthly_genome_data_by_level[level_id].occurrences_0_5[unit_id][genotype_id] +=
         (age <= 5) ? 1 : 0;
-    monthly_genome_data_by_level[level_id].occurrences_2_10[unit_id][genotypeId] +=
+    monthly_genome_data_by_level[level_id].occurrences_2_10[unit_id][genotype_id] +=
         (age >= 2 && age <= 10) ? 1 : 0;
-    individual[genotypeId]++;
+    individual[genotype_id]++;
 
     // Count a clinical occurrence if the individual has clinical
     // symptoms
-    monthly_genome_data_by_level[level_id].clinical_occurrences[unit_id][genotypeId] += clinical;
+    monthly_genome_data_by_level[level_id].clinical_occurrences[unit_id][genotype_id] += clinical;
   }
 
   // Update the weighted occurrences and reset the individual count
-  for (unsigned int ndx = 0; ndx < numGenotypes; ndx++) {
+  for (unsigned int ndx = 0; ndx < num_genotypes; ndx++) {
     if (individual[ndx] == 0) { continue; }
     monthly_genome_data_by_level[level_id].weighted_occurrences[unit_id][ndx] +=
-        (individual[ndx] / static_cast<double>(numClones));
+        (individual[ndx] / static_cast<double>(num_clones));
   }
 }
 
-void SQLiteMonthlyReporter::build_up_genome_data_insert_values(int monthId, int level_id) {
-  auto numGenotypes = Model::get_config()->number_of_parasite_types();
+void SQLiteMonthlyReporter::build_up_genome_data_insert_values(int month_id, int level_id) {
+  auto num_genotypes = Config::number_of_parasite_types();
 
   int min_unit_id = 0;
   int max_unit_id = 0;
@@ -496,24 +496,24 @@ void SQLiteMonthlyReporter::build_up_genome_data_insert_values(int monthId, int 
     // Skip if there are no infections in this unit
     if (monthly_site_data_by_level[level_id].infections_by_unit[unit_id] == 0) { continue; }
 
-    for (auto genotype = 0; genotype < numGenotypes; genotype++) {
+    for (auto genotype = 0; genotype < num_genotypes; genotype++) {
       if (monthly_genome_data_by_level[level_id].weighted_occurrences[unit_id][genotype] == 0) {
         continue;
       }
-      std::string singleRow = fmt::format(
-          "({}, {}, {}, {}, {}, {}, {}, {})", monthId, unit_id, genotype,
+      std::string single_row = fmt::format(
+          "({}, {}, {}, {}, {}, {}, {}, {})", month_id, unit_id, genotype,
           monthly_genome_data_by_level[level_id].occurrences[unit_id][genotype],
           monthly_genome_data_by_level[level_id].clinical_occurrences[unit_id][genotype],
           monthly_genome_data_by_level[level_id].occurrences_0_5[unit_id][genotype],
           monthly_genome_data_by_level[level_id].occurrences_2_10[unit_id][genotype],
           monthly_genome_data_by_level[level_id].weighted_occurrences[unit_id][genotype]);
 
-      insert_values.push_back(singleRow);
+      insert_values.push_back(single_row);
     }
   }
 }
 
-void SQLiteMonthlyReporter::monthly_report_genome_data(int monthId) {
+void SQLiteMonthlyReporter::monthly_report_genome_data(int month_id) {
   TransactionGuard transaction{db.get()};
 
   // Get admin levels count
@@ -537,9 +537,9 @@ void SQLiteMonthlyReporter::monthly_report_genome_data(int monthId) {
       vector_size = boundary->max_unit_id + 1;
     }
 
-    auto numGenotypes = Model::get_config()->number_of_parasite_types();
+    auto num_genotypes = Config::number_of_parasite_types();
 
-    reset_genome_data_structures(level_id, vector_size, numGenotypes);
+    reset_genome_data_structures(level_id, vector_size, num_genotypes);
 
     auto* index = Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>();
 
@@ -548,13 +548,11 @@ void SQLiteMonthlyReporter::monthly_report_genome_data(int monthId) {
       collect_genome_data_for_location(location, level_id);
     }
 
-    build_up_genome_data_insert_values(monthId, level_id);
+    build_up_genome_data_insert_values(month_id, level_id);
 
     if (insert_values.empty()) {
-      spdlog::info(
-          "No genotypes recorded in the simulation at timestep, "
-          "{}",
-          Model::get_scheduler()->current_time());
+      spdlog::info("No genotypes recorded in the simulation at timestep, {}",
+                   Model::get_scheduler()->current_time());
       continue;
     }
 
