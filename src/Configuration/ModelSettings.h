@@ -22,10 +22,10 @@ public:
   }
   [[nodiscard]] long get_initial_seed_number() const { return initial_seed_number_; }
   void set_initial_seed_number(const long value) {
+    initial_seed_number_ = value;
     if (value <= 0) {
       spdlog::info("Using random seed number");
     } else {
-      initial_seed_number_ = value;
       spdlog::info("Using predefined seed number: {}", value);
     }
   }

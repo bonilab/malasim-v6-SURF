@@ -56,11 +56,17 @@ void SpatialSettings::cross_validate() {
       throw std::invalid_argument(
           "All locations should be provided for location based spatial mode");
     }
+    if (location_based.age_distribution_by_location.size() != location_based.locations.size()
+        && location_based.age_distribution_by_location.size() != 1) {
+      throw std::invalid_argument(
+          "Age distribution by location size should be equal to number of locations or 1");
+    }
+
     // Check if age_distribution_by_location size matched initial_age_structure size
-    for (const auto &location : location_db_) {
-      if (location.age_distribution.size()
+    for (const auto &age_dist : location_based.age_distribution_by_location) {
+      if (age_dist.size()
           != Model::get_config()->get_population_demographic().get_initial_age_structure().size()) {
-        spdlog::info("Age distribution by location size: {}", location.age_distribution.size());
+        spdlog::info("Age distribution by location size: {}", age_dist.size());
         spdlog::info(
             "Initial age structure size: {}",
             Model::get_config()->get_population_demographic().get_initial_age_structure().size());

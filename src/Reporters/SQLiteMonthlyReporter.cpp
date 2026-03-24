@@ -27,9 +27,13 @@ void SQLiteMonthlyReporter::initialize(int job_number, const std::string &path) 
 
   // Inform the user of the reporter type
   if (enable_cell_level_reporting) {
-    spdlog::info(
-        "Using SQLiteMonthlyReporter with aggregation at cell/pixel level AND multiple admin "
-        "levels.");
+    if (admin_level_count == 0) {
+      spdlog::info("Using SQLiteMonthlyReporter with aggregation at cell/pixel level only.");
+    } else {
+      spdlog::info(
+          "Using SQLiteMonthlyReporter with aggregation at cell/pixel level AND multiple admin "
+          "levels.");
+    }
   } else {
     spdlog::info(
         "Using SQLiteMonthlyReporter with aggregation at multiple admin levels, cell level "
