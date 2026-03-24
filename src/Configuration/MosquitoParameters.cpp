@@ -47,19 +47,26 @@ void MosquitoParameters::process_config_using_locations(std::vector<Spatial::Loc
   if (get_mosquito_config().get_mode() == SpatialSettings::LOCATION_BASED_MODE) {
     spdlog::info("Processing MosquitoParameters using location based mode");
     LocationBased location_based = get_mosquito_config().get_location_based();
+
+    if (location_based.get_interrupted_feeding_rate().size() != location_based.get_prmc_size().size()) {
+      throw std::invalid_argument("Mosquito IFR array and PRMC size array must be the same size");
+    }
+
     if (location_based.get_interrupted_feeding_rate().size() == 1) {
       spdlog::info("1 IFR value provided, distributing equally to all locations");
       for (auto &location : locations) {
         location.mosquito_ifr = location_based.get_interrupted_feeding_rate()[0];
         location.mosquito_size = location_based.get_prmc_size()[0];
       }
-    }
-    if (location_based.get_interrupted_feeding_rate().size() == locations.size()) {
+    } else if (location_based.get_interrupted_feeding_rate().size() == locations.size()) {
       spdlog::info("IFR values provided for all locations");
       for (auto i = 0; i < locations.size(); i++) {
         locations[i].mosquito_ifr = location_based.get_interrupted_feeding_rate()[i];
         locations[i].mosquito_size = location_based.get_prmc_size()[i];
       }
+    } else {
+      throw std::invalid_argument(
+          "Mosquito IFR and PRMC size arrays must either have size 1 or match the number of locations");
     }
   }
 }

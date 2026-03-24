@@ -5,7 +5,8 @@
 void Spatial::BurkinaFasoSM::prepare() {
   // Allow the work to be done
   prepare_kernel();
-  spdlog::info("Kernel prepared for BurkinaFasoSM, kernel size x,y: {} - {}", kernel_.size(), kernel_[0].size());
+  spdlog::info("Kernel prepared for BurkinaFasoSM, kernel size x,y: {} - {}", kernel_.size(),
+               kernel_[0].size());
   travel_.clear();
   if (Model::get_spatial_data() != nullptr) {
     AscFile* travel_raster =
@@ -13,13 +14,12 @@ void Spatial::BurkinaFasoSM::prepare() {
     if (travel_raster != nullptr) {
       travel_ = std::move(prepare_surface(travel_raster, static_cast<int>(number_of_locations_)));
       spdlog::info("Travel raster prepared for BurkinaFasoSM, travel size: {}", travel_.size());
+    } else {
+      spdlog::warn(
+          "Travel raster is not set for BurkinaFasoSM, no travel friction will be applied.");
     }
-    else{
-      spdlog::info("Travel raster not found for BurkinaFasoSM");
-    }
-  }
-  else{
-    spdlog::info("BurkinaFasoSM: no spatial data found, surface travel not prepared.");
+  } else {
+    spdlog::warn("BurkinaFasoSM: no spatial data found, surface travel not prepared.");
   }
 }
 
@@ -49,14 +49,11 @@ DoubleVector Spatial::BurkinaFasoSM::get_v_relative_out_movement_to_destination(
   // Dependent objects should have been created already, so throw an exception
   // if they are not
   if (kernel_.empty()) {
-    throw std::runtime_error(
-        fmt::format("{} called without kernel prepared", __FUNCTION__));
+    throw std::runtime_error(fmt::format("{} called without kernel prepared", __FUNCTION__));
   }
 
   // Note the population size
   auto population = v_number_of_residents_by_location[from_location];
-
-  
 
   // Prepare the vector for results
   std::vector<double> results(number_of_locations, 0.0);

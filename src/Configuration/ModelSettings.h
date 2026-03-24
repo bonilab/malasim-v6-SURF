@@ -1,35 +1,30 @@
 #ifndef MODEL_SETTINGS_H
 #define MODEL_SETTINGS_H
 
-#include <yaml-cpp/yaml.h>
-#include <stdexcept>
 #include <spdlog/spdlog.h>
+#include <yaml-cpp/yaml.h>
+
+#include <stdexcept>
 
 #include "IConfigData.h"
-#include "Utils/YamlFile.h"
 #include "Utils/Random.h"
+#include "Utils/YamlFile.h"
 
 class ModelSettings : public IConfigData {
 public:
   // Getters
-  [[nodiscard]] int get_days_between_stdout_output() const {
-    return days_between_stdout_output_;
-  }
+  [[nodiscard]] int get_days_between_stdout_output() const { return days_between_stdout_output_; }
   // Setters with validation
   void set_days_between_stdout_output(const int value) {
     if (value <= 0)
-      throw std::invalid_argument(
-          "days_between_stdout_output must be greater than 0");
+      throw std::invalid_argument("days_between_stdout_output must be greater than 0");
     days_between_stdout_output_ = value;
   }
-  [[nodiscard]] long get_initial_seed_number() const {
-    return initial_seed_number_;
-  }
+  [[nodiscard]] long get_initial_seed_number() const { return initial_seed_number_; }
   void set_initial_seed_number(const long value) {
-    if (value < 0) {
+    if (value <= 0) {
       spdlog::info("Using random seed number");
-    }
-    else {
+    } else {
       initial_seed_number_ = value;
       spdlog::info("Using predefined seed number: {}", value);
     }
@@ -43,9 +38,7 @@ public:
   bool get_enable_recrudescence() const { return enable_recrudescence_; }
   void set_enable_recrudescence(const bool value) { enable_recrudescence_ = value; }
 
-  void process_config() override {
-    spdlog::info("Processing ModelSettings");
-  }
+  void process_config() override { spdlog::info("Processing ModelSettings"); }
 
 private:
   int days_between_stdout_output_ = 30;
@@ -81,17 +74,16 @@ struct YAML::convert<ModelSettings> {
       throw std::runtime_error("Missing 'cell_level_reporting' field.");
     }
 
-    rhs.set_days_between_stdout_output(
-        node["days_between_stdout_output"].as<int>());
+    rhs.set_days_between_stdout_output(node["days_between_stdout_output"].as<int>());
     rhs.set_initial_seed_number(node["initial_seed_number"].as<long>());
     rhs.set_record_genome_db(node["record_genome_db"].as<bool>());
     rhs.set_cell_level_reporting(node["cell_level_reporting"].as<bool>());
-    
+
     // enable_recrudescence is optional, defaults to true for backward compatibility
     if (node["enable_recrudescence"]) {
       rhs.set_enable_recrudescence(node["enable_recrudescence"].as<bool>());
     }
-    
+
     return true;
   }
 };  // namespace YAML

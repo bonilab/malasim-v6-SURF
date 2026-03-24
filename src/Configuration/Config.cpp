@@ -54,9 +54,7 @@ bool Config::load(const std::string &filename) {
 
     mosquito_parameters_ = config["mosquito_parameters"].as<MosquitoParameters>();
 
-    if (config["rapt_settings"]) {
-      rapt_settings_ = config["rapt_settings"].as<RaptSettings>();
-    }
+    if (config["rapt_settings"]) { rapt_settings_ = config["rapt_settings"].as<RaptSettings>(); }
 
     spdlog::info("Configuration file parsed successfully");
 
@@ -675,7 +673,8 @@ void Config::validate_all_cross_field_validations() {
     // Check if all location sizes are equal
     if (location_based.get_interrupted_feeding_rate().size()
         != location_based.get_prmc_size().size()) {
-      throw std::invalid_argument("All location sizes should be equal");
+      throw std::invalid_argument(
+          "Number of locations for interrupted feeding rate and prmc size should be equal");
     }
   }
 

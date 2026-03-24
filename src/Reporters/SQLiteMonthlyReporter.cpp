@@ -13,11 +13,13 @@
 
 // Initialize the reporter
 // Sets up the database and prepares it for data entry
-void SQLiteMonthlyReporter::initialize(int jobNumber, const std::string &path) {
-  // TODO: fix this for location based
-  int admin_level_count =
-      Model::get_spatial_data()->get_admin_level_manager()->get_level_names().size();
-
+void SQLiteMonthlyReporter::initialize(int job_number, const std::string &path) {
+  int admin_level_count = 0;
+  if ((Model::get_spatial_data() != nullptr)
+      && (Model::get_spatial_data()->get_admin_level_manager() != nullptr)) {
+    admin_level_count =
+        Model::get_spatial_data()->get_admin_level_manager()->get_level_names().size();
+  }
   if (admin_level_count == 0) {
     spdlog::info("No admin levels found, cell level reporting will be enabled.");
     enable_cell_level_reporting = true;
@@ -34,7 +36,7 @@ void SQLiteMonthlyReporter::initialize(int jobNumber, const std::string &path) {
         "reporting is disabled.");
   }
 
-  SQLiteDbReporter::initialize(jobNumber, path);
+  SQLiteDbReporter::initialize(job_number, path);
 
   // Add +1 for cell level
   monthly_site_data_by_level.resize(admin_level_count + 1);
@@ -46,11 +48,11 @@ void SQLiteMonthlyReporter::count_infections_for_location(int level_id, int loca
   auto unit_id = (level_id == CELL_LEVEL_ID)
                      ? location_id
                      : Model::get_spatial_data()->get_admin_unit(level_id, location_id);
-  std::vector<int> ageClasses = Model::get_config()->age_structure();
+  std::vector<int> age_classes = Model::get_config()->age_structure();
   auto* index = Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>();
 
   for (auto hs = 0; hs < Person::NUMBER_OF_STATE - 1; hs++) {
-    for (unsigned int ac = 0; ac < ageClasses.size(); ac++) {
+    for (unsigned int ac = 0; ac < age_classes.size(); ac++) {
       for (auto &person : index->vPerson()[location_id][hs][ac]) {
         // Is the individual infected by at least one parasite?
         if (person->get_all_clonal_parasite_populations()->empty()) { continue; }
@@ -61,7 +63,7 @@ void SQLiteMonthlyReporter::count_infections_for_location(int level_id, int loca
   }
 }
 
-void SQLiteMonthlyReporter::calculate_and_build_up_site_data_insert_values(int monthId,
+void SQLiteMonthlyReporter::calculate_and_build_up_site_data_insert_values(int month_id,
                                                                            int level_id) {
   int min_unit_id = 0;
   int max_unit_id = 0;
@@ -83,98 +85,98 @@ void SQLiteMonthlyReporter::calculate_and_build_up_site_data_insert_values(int m
     // Skip units with no population
     if (monthly_site_data_by_level[level_id].population[unit_id] == 0) continue;
 
-    double calculatedEir = (monthly_site_data_by_level[level_id].eir[unit_id] != 0)
-                               ? (monthly_site_data_by_level[level_id].eir[unit_id]
-                                  / monthly_site_data_by_level[level_id].population[unit_id])
-                               : 0;
-    double calculatedPfprUnder5 = (monthly_site_data_by_level[level_id].pfpr_under5[unit_id] != 0)
-                                      ? (monthly_site_data_by_level[level_id].pfpr_under5[unit_id]
+    double calculated_eir = (monthly_site_data_by_level[level_id].eir[unit_id] != 0)
+                                ? (monthly_site_data_by_level[level_id].eir[unit_id]
+                                   / monthly_site_data_by_level[level_id].population[unit_id])
+                                : 0;
+    double calculated_pfpr_under5 =
+        (monthly_site_data_by_level[level_id].pfpr_under5[unit_id] != 0)
+            ? (monthly_site_data_by_level[level_id].pfpr_under5[unit_id]
+               / monthly_site_data_by_level[level_id].population[unit_id])
+                  * 100.0
+            : 0;
+    double calculated_pfpr2to10 = (monthly_site_data_by_level[level_id].pfpr2to10[unit_id] != 0)
+                                      ? (monthly_site_data_by_level[level_id].pfpr2to10[unit_id]
                                          / monthly_site_data_by_level[level_id].population[unit_id])
                                             * 100.0
                                       : 0;
-    double calculatedPfpr2to10 = (monthly_site_data_by_level[level_id].pfpr2to10[unit_id] != 0)
-                                     ? (monthly_site_data_by_level[level_id].pfpr2to10[unit_id]
+    double calculated_pfpr_all = (monthly_site_data_by_level[level_id].pfpr_all[unit_id] != 0)
+                                     ? (monthly_site_data_by_level[level_id].pfpr_all[unit_id]
                                         / monthly_site_data_by_level[level_id].population[unit_id])
                                            * 100.0
                                      : 0;
-    double calculatedPfprAll = (monthly_site_data_by_level[level_id].pfpr_all[unit_id] != 0)
-                                   ? (monthly_site_data_by_level[level_id].pfpr_all[unit_id]
-                                      / monthly_site_data_by_level[level_id].population[unit_id])
-                                         * 100.0
-                                   : 0;
 
-    std::string singleRow =
-        fmt::format("({}, {}, {}, {}", monthId, unit_id,
+    std::string single_row =
+        fmt::format("({}, {}, {}, {}", month_id, unit_id,
                     monthly_site_data_by_level[level_id].population[unit_id],
                     monthly_site_data_by_level[level_id].clinical_episodes[unit_id]);
 
     // Append clinical episodes by age class
     for (const auto &episodes :
          monthly_site_data_by_level[level_id].clinical_episodes_by_age_class[unit_id]) {
-      singleRow += fmt::format(", {}", episodes);
+      single_row += fmt::format(", {}", episodes);
     }
 
     for (const auto &treatment :
          monthly_site_data_by_level[level_id].recrudescence_treatment_by_age_class[unit_id]) {
-      singleRow += fmt::format(", {}", treatment);
+      single_row += fmt::format(", {}", treatment);
     }
 
     for (const auto &episodes :
          monthly_site_data_by_level[level_id].clinical_episodes_by_age[unit_id]) {
-      singleRow += fmt::format(", {}", episodes);
+      single_row += fmt::format(", {}", episodes);
     }
 
-    for (const auto &population :
-         monthly_site_data_by_level[level_id].population_by_age[unit_id]) {
-      singleRow += fmt::format(", {}", population);
+    for (const auto &population : monthly_site_data_by_level[level_id].population_by_age[unit_id]) {
+      single_row += fmt::format(", {}", population);
     }
 
-    for (const auto &immune :
-         monthly_site_data_by_level[level_id].total_immune_by_age[unit_id]) {
-      singleRow += fmt::format(", {}", immune);
+    for (const auto &immune : monthly_site_data_by_level[level_id].total_immune_by_age[unit_id]) {
+      single_row += fmt::format(", {}", immune);
     }
 
     for (const auto &treatment :
          monthly_site_data_by_level[level_id].recrudescence_treatment_by_age[unit_id]) {
-      singleRow += fmt::format(", {}", treatment);
+      single_row += fmt::format(", {}", treatment);
     }
 
-    for (const auto &moi :
-         monthly_site_data_by_level[level_id].multiple_of_infection[unit_id]) {
-      singleRow += fmt::format(", {}", moi);
+    for (const auto &moi : monthly_site_data_by_level[level_id].multiple_of_infection[unit_id]) {
+      single_row += fmt::format(", {}", moi);
     }
 
     // Append age-indexed seeking-treatment counts (if present)
-    for (const auto &count : monthly_site_data_by_level[level_id].number_of_people_seeking_treatment_by_location_age_index[unit_id]) {
-      singleRow += fmt::format(", {}", count);
+    for (const auto &count :
+         monthly_site_data_by_level[level_id]
+             .number_of_people_seeking_treatment_by_location_age_index[unit_id]) {
+      single_row += fmt::format(", {}", count);
     }
 
-    singleRow +=
-        fmt::format(", {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
-                    monthly_site_data_by_level[level_id].treatments[unit_id], calculatedEir,
-                    calculatedPfprUnder5, calculatedPfpr2to10, calculatedPfprAll,
-                    monthly_site_data_by_level[level_id].infections_by_unit[unit_id],
-                    monthly_site_data_by_level[level_id].treatment_failures[unit_id],
-                    monthly_site_data_by_level[level_id].nontreatment[unit_id],
-                    monthly_site_data_by_level[level_id].treatments_under5[unit_id],
-                    monthly_site_data_by_level[level_id].treatments_over5[unit_id],
-                    monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_total[unit_id],
-                    monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_recrudescence[unit_id],
-                    monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_new_infection[unit_id],
-                    monthly_site_data_by_level[level_id].recrudescence_treatment[unit_id],
-                    monthly_site_data_by_level[level_id].total_number_of_bites_by_location[unit_id],
-                    monthly_site_data_by_level[level_id].total_number_of_bites_by_location_year[unit_id],
-                    monthly_site_data_by_level[level_id].person_days_by_location_year[unit_id],
-                    monthly_site_data_by_level[level_id].current_foi_by_location[unit_id]);
+    single_row += fmt::format(
+        ", {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+        monthly_site_data_by_level[level_id].treatments[unit_id], calculated_eir,
+        calculated_pfpr_under5, calculated_pfpr2to10, calculated_pfpr_all,
+        monthly_site_data_by_level[level_id].infections_by_unit[unit_id],
+        monthly_site_data_by_level[level_id].treatment_failures[unit_id],
+        monthly_site_data_by_level[level_id].nontreatment[unit_id],
+        monthly_site_data_by_level[level_id].treatments_under5[unit_id],
+        monthly_site_data_by_level[level_id].treatments_over5[unit_id],
+        monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_total[unit_id],
+        monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_recrudescence[unit_id],
+        monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_new_infection[unit_id],
+        monthly_site_data_by_level[level_id].recrudescence_treatment[unit_id],
+        monthly_site_data_by_level[level_id].total_number_of_bites_by_location[unit_id],
+        monthly_site_data_by_level[level_id].total_number_of_bites_by_location_year[unit_id],
+        monthly_site_data_by_level[level_id].person_days_by_location_year[unit_id],
+        monthly_site_data_by_level[level_id].current_foi_by_location[unit_id]);
 
-    insert_values.push_back(singleRow);
+    insert_values.push_back(single_row);
   }
 }
 
 // Collect and store monthly site data
 // Aggregates data related to various site metrics and stores them in the
 // database
-void SQLiteMonthlyReporter::monthly_report_site_data(int monthId) {
+void SQLiteMonthlyReporter::monthly_report_site_data(int month_id) {
   TransactionGuard transaction{db.get()};
 
   // Handle all levels including cell level in a single loop
@@ -210,7 +212,7 @@ void SQLiteMonthlyReporter::monthly_report_site_data(int monthId) {
     }
 
     // Calculate and insert data for this admin level
-    calculate_and_build_up_site_data_insert_values(monthId, level_id);
+    calculate_and_build_up_site_data_insert_values(month_id, level_id);
     insert_monthly_site_data(level_id, insert_values);
   }
 }
@@ -251,7 +253,6 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
   monthly_site_data_by_level[level_id].recrudescence_treatment[unit_id] +=
       Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[location_id];
 
-
   for (auto ndx = 0; ndx < ageClasses.size(); ndx++) {
     // Collect the treatment by age class, following the 0-59 month convention
     // for under-5
@@ -269,22 +270,19 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
             ->monthly_number_of_clinical_episode_by_location_age_class()[location_id][ndx];
   }
 
-  for (auto age = 0;  age < 80; age++) {
+  for (auto age = 0; age < 80; age++) {
     monthly_site_data_by_level[level_id].clinical_episodes_by_age[unit_id][age] +=
-        Model::get_mdc()
-            ->monthly_number_of_clinical_episode_by_location_age()[location_id][age];
+        Model::get_mdc()->monthly_number_of_clinical_episode_by_location_age()[location_id][age];
   }
 
-  for (auto age = 0;  age < 80; age++) {
+  for (auto age = 0; age < 80; age++) {
     monthly_site_data_by_level[level_id].population_by_age[unit_id][age] +=
-        Model::get_mdc()
-            ->popsize_by_location_age()[location_id][age];
+        Model::get_mdc()->popsize_by_location_age()[location_id][age];
   }
 
-  for (auto age = 0;  age < 80; age++) {
+  for (auto age = 0; age < 80; age++) {
     monthly_site_data_by_level[level_id].total_immune_by_age[unit_id][age] +=
-        Model::get_mdc()
-            ->total_immune_by_location_age()[location_id][age];
+        Model::get_mdc()->total_immune_by_location_age()[location_id][age];
   }
 
   for (auto ndx = 0; ndx < ageClasses.size(); ndx++) {
@@ -293,7 +291,7 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
             ->monthly_number_of_recrudescence_treatment_by_location_age_class()[location_id][ndx];
   }
 
-  for (auto age = 0;  age < 80; age++) {
+  for (auto age = 0; age < 80; age++) {
     monthly_site_data_by_level[level_id].recrudescence_treatment_by_age[unit_id][age] +=
         Model::get_mdc()
             ->monthly_number_of_recrudescence_treatment_by_location_age()[location_id][age];
@@ -332,12 +330,19 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
         (Model::get_mdc()->blood_slide_prevalence_by_location()[location_id] * locationPopulation);
   }
 
-  const auto &mdc_age_index = Model::get_mdc()->monthly_number_of_people_seeking_treatment_by_location_age_index();
+  const auto &mdc_age_index =
+      Model::get_mdc()->monthly_number_of_people_seeking_treatment_by_location_age_index();
   if (!mdc_age_index.empty() && location_id < static_cast<int>(mdc_age_index.size())) {
     const auto &vec = mdc_age_index[location_id];
     // Ensure target vector is large enough
-    for (size_t idx = 0; idx < vec.size() && idx < monthly_site_data_by_level[level_id].number_of_people_seeking_treatment_by_location_age_index[unit_id].size(); ++idx) {
-      monthly_site_data_by_level[level_id].number_of_people_seeking_treatment_by_location_age_index[unit_id][idx] += vec[idx];
+    for (size_t idx = 0;
+         idx < vec.size()
+         && idx < monthly_site_data_by_level[level_id]
+                      .number_of_people_seeking_treatment_by_location_age_index[unit_id]
+                      .size();
+         ++idx) {
+      monthly_site_data_by_level[level_id]
+          .number_of_people_seeking_treatment_by_location_age_index[unit_id][idx] += vec[idx];
     }
   }
 }
@@ -371,24 +376,28 @@ void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_
   monthly_site_data_by_level[level_id].population.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].clinical_episodes.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].clinical_episodes_by_age_class.assign(
-  vector_size, std::vector<int>(numAgeClasses, 0));
-  monthly_site_data_by_level[level_id].clinical_episodes_by_age.assign(
-  vector_size, std::vector<int>(80, 0));
-  monthly_site_data_by_level[level_id].population_by_age.assign(
-  vector_size, std::vector<int>(80, 0));
-  monthly_site_data_by_level[level_id].total_immune_by_age.assign(
-  vector_size, std::vector<double>(80, 0));
+      vector_size, std::vector<int>(numAgeClasses, 0));
+  monthly_site_data_by_level[level_id].clinical_episodes_by_age.assign(vector_size,
+                                                                       std::vector<int>(80, 0));
+  monthly_site_data_by_level[level_id].population_by_age.assign(vector_size,
+                                                                std::vector<int>(80, 0));
+  monthly_site_data_by_level[level_id].total_immune_by_age.assign(vector_size,
+                                                                  std::vector<double>(80, 0));
   monthly_site_data_by_level[level_id].recrudescence_treatment_by_age_class.assign(
-  vector_size, std::vector<ul>(numAgeClasses, 0));
+      vector_size, std::vector<ul>(numAgeClasses, 0));
   monthly_site_data_by_level[level_id].recrudescence_treatment_by_age.assign(
-  vector_size, std::vector<ul>(80, 0));
+      vector_size, std::vector<ul>(80, 0));
   monthly_site_data_by_level[level_id].multiple_of_infection.assign(
-  vector_size, std::vector<int>(ModelDataCollector::NUMBER_OF_REPORTED_MOI, 0));
-  const auto age_index_count = static_cast<int>(Model::get_config()
-      ->get_epidemiological_parameters().get_age_based_probability_of_seeking_treatment()
-      .get_ages().size());
-  monthly_site_data_by_level[level_id].number_of_people_seeking_treatment_by_location_age_index.assign(
-      vector_size, std::vector<int>((age_index_count>0)?age_index_count:1, 0));
+      vector_size, std::vector<int>(ModelDataCollector::NUMBER_OF_REPORTED_MOI, 0));
+  const auto age_index_count =
+      static_cast<int>(Model::get_config()
+                           ->get_epidemiological_parameters()
+                           .get_age_based_probability_of_seeking_treatment()
+                           .get_ages()
+                           .size());
+  monthly_site_data_by_level[level_id]
+      .number_of_people_seeking_treatment_by_location_age_index.assign(
+          vector_size, std::vector<int>((age_index_count > 0) ? age_index_count : 1, 0));
   monthly_site_data_by_level[level_id].treatments.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].treatment_failures.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].nontreatment.assign(vector_size, 0);
@@ -396,11 +405,14 @@ void SQLiteMonthlyReporter::reset_site_data_structures(int level_id, int vector_
   monthly_site_data_by_level[level_id].treatments_over5.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].infections_by_unit.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_total.assign(vector_size, 0);
-  monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_recrudescence.assign(vector_size, 0);
-  monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_new_infection.assign(vector_size, 0);
+  monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_recrudescence.assign(vector_size,
+                                                                                       0);
+  monthly_site_data_by_level[level_id].progress_to_clinical_in_7d_new_infection.assign(vector_size,
+                                                                                       0);
   monthly_site_data_by_level[level_id].recrudescence_treatment.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].total_number_of_bites_by_location.assign(vector_size, 0);
-  monthly_site_data_by_level[level_id].total_number_of_bites_by_location_year.assign(vector_size, 0);
+  monthly_site_data_by_level[level_id].total_number_of_bites_by_location_year.assign(vector_size,
+                                                                                     0);
   monthly_site_data_by_level[level_id].person_days_by_location_year.assign(vector_size, 0);
   monthly_site_data_by_level[level_id].current_foi_by_location.assign(vector_size, 0);
 }
@@ -546,6 +558,4 @@ void SQLiteMonthlyReporter::monthly_report_genome_data(int monthId) {
   }
 }
 
-void SQLiteMonthlyReporter::after_run() {
-  SQLiteDbReporter::after_run();
-}
+void SQLiteMonthlyReporter::after_run() { SQLiteDbReporter::after_run(); }

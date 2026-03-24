@@ -48,11 +48,12 @@ bool Model::initialize() {
       random_->set_seed(config_->get_model_settings().get_initial_seed_number());
     }
 
+    spdlog::info("Model initialized with seed: " + std::to_string(random_->get_seed()));
+
     if (utils::Cli::get_instance().get_output_path().empty()) {
       utils::Cli::get_instance().set_output_path("./");
     }
 
-    spdlog::info("Model initialized with seed: " + std::to_string(random_->get_seed()));
     // add reporter here
     if (utils::Cli::get_instance().get_reporter().empty()) {
       add_reporter(Reporter::MakeReport(Reporter::SQLITE_MONTHLY_REPORTER));

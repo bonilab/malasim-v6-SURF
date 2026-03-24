@@ -51,12 +51,13 @@ void LocationBasedProcessor::process_config() {
     }
   }
 
-  // check if age distribution by location size is equal to number of locations
-  if (location_based.age_distribution_by_location.size() != number_of_location) {
+  // show error if not size equal to number of locations or 1
+  if (location_based.age_distribution_by_location.size() != number_of_location
+      && location_based.age_distribution_by_location.size() != 1) {
     throw std::runtime_error(
-        "Age distribution by location size should be equal to number of locations");
+        "Age distribution by location size should be equal to number of locations or 1");
   }
-  // check if age distribution by location size is equal to initial age structure size
+  // show error if not size equal to initial age structure size
   for (const auto &age_distribution : location_based.age_distribution_by_location) {
     if (age_distribution.size() <= 0) {
       throw std::runtime_error("Number of age distribution by location should be greater than 0");
@@ -67,5 +68,9 @@ void LocationBasedProcessor::process_config() {
   get_spatial_settings()->set_location_db(location_db);
   get_spatial_settings()->set_spatial_distance_matrix(spatial_distance_matrix);
   get_spatial_settings()->set_number_of_locations(number_of_location);
+
+  // ensure spatial_data and its admin_level_manager are prepared
+  get_spatial_settings()->set_spatial_data(std::make_unique<SpatialData>(get_spatial_settings()));
+  get_spatial_settings()->spatial_data()->initialize_admin_boundaries();
 }
 
