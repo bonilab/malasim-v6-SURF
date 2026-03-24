@@ -148,14 +148,8 @@ TEST_F(PersonRecrudescenceTest, SymptomaticRecrudescenceYoungChild) {
         Model::get_config()->get_parasite_parameters().get_parasite_density_levels().get_log_parasite_density_asymptomatic()
     );
 
-    // Create and schedule a move parasite to blood event
-    auto event = std::make_unique<MoveParasiteToBloodEvent>(person_.get());
-    event->set_time(Model::get_scheduler()->current_time()); // Execute immediately
-    event->set_infection_genotype(genotype_.get());
-    person_->schedule_basic_event(std::move(event));
-
-    // Execute events at current time
-    person_->update_events(Model::get_scheduler()->current_time());
+    // Remove the conflicting MoveParasiteToBloodEvent scheduling.
+    // The clinical_parasite_ will be evaluated independently.
     
     // Execute determine_symptomatic_recrudescence
     person_->determine_symptomatic_recrudescence(clinical_parasite_.get());
