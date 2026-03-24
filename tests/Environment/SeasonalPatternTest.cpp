@@ -6,6 +6,9 @@
 #include "Environment/SeasonalPattern.h"
 #include "SeasonalPatternFixture.h"
 
+#include "Configuration/Config.h"
+#include "Simulation/Model.h"
+
 class TestSeasonalPattern : public SeasonalPattern {
 public:
   static std::unique_ptr<SeasonalPattern> build(const YAML::Node &node, SpatialData* spatial_data) {
@@ -30,6 +33,9 @@ public:
 
 protected:
   int get_admin_unit_for_location(int location) const override {
+    if (Model::get_config() && Model::get_config()->get_spatial_settings().get_mode() == SpatialSettings::LOCATION_BASED_MODE) {
+      return SeasonalPattern::get_admin_unit_for_location(location);
+    }
     if (location == 999) { throw std::out_of_range("Location is out of range"); }
     return location;
   }
@@ -37,8 +43,15 @@ protected:
 
 class SeasonalPatternTest : public ::testing::Test, protected SeasonalPatternFixture {
 protected:
-  void SetUp() override { SeasonalPatternFixture::SetUp(); }
-  void TearDown() override { SeasonalPatternFixture::TearDown(); }
+  void SetUp() override {
+    SeasonalPatternFixture::SetUp();
+    Model::set_config(std::make_unique<Config>());
+    Model::get_config()->get_spatial_settings().set_mode(SpatialSettings::GRID_BASED_MODE);
+  }
+  void TearDown() override {
+    SeasonalPatternFixture::TearDown();
+    Model::get_instance()->release();
+  }
 };
 
 TEST_F(SeasonalPatternTest, CanCreateWithMonthlyData) {
@@ -126,4 +139,35 @@ TEST_F(SeasonalPatternTest, HandlesNonExistentFile) {
   auto fake_spatial_data =
       std::unique_ptr<SpatialData>(TestSeasonalPattern::create_fake_spatial_data());
   EXPECT_THROW(TestSeasonalPattern::build(node, fake_spatial_data.get()), std::runtime_error);
+}
+
+TEST_F(SeasonalPatternTest, LocationBasedMode) {
+  // Set to location_based mode
+  Model::get_config()->get_spatial_settings().set_mode(SpatialSettings::LOCATION_BASED_MODE);
+
+  auto node = YAML::Load(fmt::format(R"(
+      enable: true
+      mode: "pattern"
+      pattern:
+        admin_level: "district"
+        filename: "{}"
+        period: 12
+    )",
+                                     monthly_file));
+
+  auto fake_spatial_data =
+      std::unique_ptr<SpatialData>(TestSeasonalPattern::create_fake_spatial_data());
+  
+  // This should not throw even though spatial data's admin boundaries are minimal
+  auto pattern = TestSeasonalPattern::build(node, fake_spatial_data.get());
+
+  ASSERT_NE(pattern, nullptr);
+  EXPECT_TRUE(pattern->get_is_monthly());
+  EXPECT_EQ(pattern->get_period(), 12);
+
+  // In LOCATION_BASED_MODE, all locations map to min_admin_unit_id (which is 0)
+  // and they receive factors parsed from the first row of the CSV independent of what was passed.
+  EXPECT_DOUBLE_EQ(pattern->get_seasonal_factor(date::sys_days{date::year{2000}/1/1}, 999), 0.5);
+  EXPECT_DOUBLE_EQ(pattern->get_seasonal_factor(date::sys_days{date::year{2000}/2/1}, 1), 0.6);
+  EXPECT_DOUBLE_EQ(pattern->get_seasonal_factor(date::sys_days{date::year{2000}/3/1}, 42), 0.7);
 }

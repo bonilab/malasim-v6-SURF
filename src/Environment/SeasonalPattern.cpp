@@ -6,18 +6,19 @@
 #include "Spatial/GIS/SpatialData.h"
 
 void SeasonalPattern::build(SpatialData* spatial_data) {
-  if (Model::get_config()->get_spatial_settings().get_mode() == SpatialSettings::LOCATION_BASED_MODE) {
-    spdlog::error("Seasonal pattern is not supported for location-based mode.");
-    throw std::runtime_error("Seasonal pattern is not supported for location-based mode.");
-  }
-  admin_level_id = spatial_data->get_admin_level_id(admin_level);
-  if (admin_level_id == -1) {
-    throw std::invalid_argument("The admin level parameter is invalid.");
+  bool is_location_based = Model::get_config()->get_spatial_settings().get_mode()
+                           == SpatialSettings::LOCATION_BASED_MODE;
+
+  if (!is_location_based) {
+    admin_level_id = spatial_data->get_admin_level_id(admin_level);
+    if (admin_level_id == -1) {
+      throw std::invalid_argument("The admin level parameter is invalid.");
+    }
   }
   read(filename);
 
   // Validate against SpatialData if available
-  if (spatial_data->get_unit_count(admin_level_id) > 0) {
+  if (!is_location_based && spatial_data->get_unit_count(admin_level_id) > 0) {
     const auto* boundary = spatial_data->get_boundary(admin_level);
     if (admin_unit_adjustments.size() != boundary->max_unit_id + 1) {
       throw std::runtime_error(fmt::format("Expected {} {}s, got {}", boundary->max_unit_id + 1,
@@ -27,6 +28,10 @@ void SeasonalPattern::build(SpatialData* spatial_data) {
 }
 
 int SeasonalPattern::get_admin_unit_for_location(int location) const {
+  if (Model::get_config()->get_spatial_settings().get_mode()
+      == SpatialSettings::LOCATION_BASED_MODE) {
+    return min_admin_unit_id;
+  }
   if (Model::get_spatial_data()->get_unit_count(admin_level_id) <= 0) { return min_admin_unit_id; }
 
   return Model::get_spatial_data()->get_admin_unit(admin_level_id, location);
@@ -42,11 +47,14 @@ void SeasonalPattern::read(const std::string &filename) {
   min_admin_unit_id = std::numeric_limits<int>::max();
   max_admin_unit_id = std::numeric_limits<int>::min();
   std::map<int, std::vector<double>> temp_adjustments;
+  bool is_location_based = Model::get_config()->get_spatial_settings().get_mode()
+                           == SpatialSettings::LOCATION_BASED_MODE;
+
   while (std::getline(in, line)) {
     std::stringstream ss(line);
     std::string token;
     std::getline(ss, token, ',');
-    int admin_unit_id = std::stoi(token);
+    int admin_unit_id = is_location_based ? 0 : std::stoi(token);
     min_admin_unit_id = std::min(min_admin_unit_id, admin_unit_id);
     max_admin_unit_id = std::max(max_admin_unit_id, admin_unit_id);
     std::vector<double> factors;
@@ -61,6 +69,8 @@ void SeasonalPattern::read(const std::string &filename) {
       throw std::runtime_error("Incorrect number of seasonal factors in file.");
     }
     temp_adjustments[admin_unit_id] = factors;
+
+    if (is_location_based) { break; }
   }
 
   // Determine if input is 0-based or 1-based
