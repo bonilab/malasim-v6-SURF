@@ -22,6 +22,11 @@ class Config;
 class Population;
 class ImmuneSystem;
 
+using Age = uint8_t;
+using AgeClass = uint8_t;
+static constexpr Age K_INVALID_AGE = 255;
+static constexpr AgeClass K_INVALID_AGE_CLASS = 255;
+
 class Person : public PersonIndexAllHandler,
                public PersonIndexByLocationStateAgeClassHandler,
                public PersonIndexByLocationMovingLevelHandler {
@@ -29,7 +34,7 @@ class Person : public PersonIndexAllHandler,
 public:
   // day_that_last_trip_outside_district_was_initiated_sable copy and assignment
   Person(const Person &) = delete;
-  Person& operator=(const Person &) = delete;
+  Person &operator=(const Person &) = delete;
   Person(Person &&) = delete;
   Person &operator=(Person &&) = delete;
 
@@ -298,18 +303,23 @@ public:
   // Helper methods for scheduling
   static int calculate_future_time(int days_from_now);
 
-  void determine_relapse_or_not(ClonalParasitePopulation *clinical_caused_parasite);
-  void schedule_relapse_event(ClonalParasitePopulation *clinical_caused_parasite, const int &time_until_relapse);
+  void determine_relapse_or_not(ClonalParasitePopulation* clinical_caused_parasite);
+  void schedule_relapse_event(ClonalParasitePopulation* clinical_caused_parasite,
+                              const int &time_until_relapse);
 
-  void schedule_end_clinical_by_no_treatment_event(ClonalParasitePopulation *clinical_caused_parasite);
+  void schedule_end_clinical_by_no_treatment_event(
+      ClonalParasitePopulation* clinical_caused_parasite);
 
 private:
-  int age_{-1};
+  // Non-owning. Population owns all Person instances.
   Population* population_{nullptr};
+  Age age_{K_INVALID_AGE};
+  AgeClass age_class_{K_INVALID_AGE_CLASS};
+  HostStates host_state_{SUSCEPTIBLE};
+  RecurrenceStatus recurrence_status_{RecurrenceStatus::NONE};
+
   int location_{-1};
   int residence_location_{-1};
-  HostStates host_state_{SUSCEPTIBLE};
-  int age_class_{-1};
   int birthday_{-1};
   int latest_update_time_{-1};
   int moving_level_{-1};
@@ -325,9 +335,9 @@ private:
   std::unique_ptr<ImmuneSystem> immune_system_{nullptr};
   std::unique_ptr<SingleHostClonalParasitePopulations> all_clonal_parasite_populations_{nullptr};
   std::unique_ptr<DrugsInBlood> drugs_in_blood_{nullptr};
+  // Non-owning. Lifetime manged by Model GenotypeDB
   Genotype* liver_parasite_type_{nullptr};
   int latest_time_received_public_treatment_{-30};
-  RecurrenceStatus recurrence_status_{RecurrenceStatus::NONE};
   EventManager<PersonEvent> event_manager_;
 
 #ifdef ENABLE_TRAVEL_TRACKING

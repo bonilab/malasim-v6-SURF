@@ -170,7 +170,7 @@ std::size_t Population::size(const int &location, const int &age_class) {
 
   if (pi_lsa == nullptr) { return 0; }
   std::size_t temp = 0;
-  if (age_class == -1) {
+  if (age_class == K_INVALID_AGE_CLASS) {
     for (auto state = 0; state < Person::NUMBER_OF_STATE - 1; state++) {
       for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
         temp += pi_lsa->vPerson()[location][state][ac].size();

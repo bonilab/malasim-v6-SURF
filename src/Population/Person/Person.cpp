@@ -83,7 +83,7 @@ void Person::set_host_state(const HostStates &value) {
       all_clonal_parasite_populations_->clear();
       // TODO: remove all events
       Model::get_mdc()->record_1_death(location_, birthday_, number_of_times_bitten_, age_class_,
-                                       static_cast<int>(age_));
+                                       age_);
     }
 
     host_state_ = value;
@@ -100,7 +100,7 @@ void Person::set_age(const uint &value) {
 
     // update age class
     if (Model::get_instance() != nullptr) {
-      auto ac = age_class_ == -1 ? 0 : age_class_;
+      auto ac = age_class_ == K_INVALID_AGE_CLASS ? 0 : age_class_;
       while (ac < (Model::get_config()->number_of_age_classes() - 1)
              && age_ >= Model::get_config()->age_structure()[ac]) {
         ac++;

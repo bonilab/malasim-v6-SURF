@@ -54,7 +54,7 @@ public:
    * If the input location is -1, return total size
    * @param location
    */
-  std::size_t size(const int &location = -1, const int &age_class = -1);
+  std::size_t size(const int &location = -1, const int &age_class = K_INVALID_AGE_CLASS);
 
   virtual std::size_t size(const int &location, const Person::HostStates &hs, const int &age_class);
 
