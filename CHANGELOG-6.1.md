@@ -1,4 +1,4 @@
-# Changelog v6.0.1
+# Changelog v6.1
 
 ## Refactor
 
