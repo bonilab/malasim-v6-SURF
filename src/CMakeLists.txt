@@ -8,13 +8,6 @@ find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 option(ENABLE_TRAVEL_TRACKING "Enable tracking of individual travel data and generating travel reports" OFF)
 
-if(ENABLE_TRAVEL_TRACKING)
-  message(STATUS "Travel tracking feature is enabled")
-  # Add definitions or configurations specific to the travel tracking feature
-  # add_definitions(-DENABLE_TRAVEL_TRACKING)
-  target_compile_definitions(MalaSimCore PUBLIC ENABLE_TRAVEL_TRACKING)
-endif()
-
 # include_directories(
 #   ${PROJECT_SOURCE_DIR}/src
 # )
@@ -41,7 +34,16 @@ list(FILTER MALASIM_CORE_SOURCES EXCLUDE REGEX "${PROJECT_SOURCE_DIR}/src/malasi
 add_library(MalaSimCore STATIC
     # Add your source files here
     ${MALASIM_CORE_SOURCES}
+
 )
+
+if(ENABLE_TRAVEL_TRACKING)
+  message(STATUS "Travel tracking feature is enabled")
+  # Add definitions or configurations specific to the travel tracking feature
+  # add_definitions(-DENABLE_TRAVEL_TRACKING)
+  target_compile_definitions(MalaSimCore PUBLIC ENABLE_TRAVEL_TRACKING)
+endif()
+
 target_include_directories(MalaSimCore PUBLIC "${PROJECT_SOURCE_DIR}/src")
 
 # Add coverage flags to MalaSimCore if enabled

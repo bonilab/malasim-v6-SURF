@@ -8,6 +8,7 @@
 #ifndef MODELDATACOLLECTOR_H
 #define MODELDATACOLLECTOR_H
 
+#include "Core/types.h"
 #include "Utils/TypeDef.h"
 
 class Model;
@@ -45,9 +46,7 @@ private:
   DoubleVector2 total_immune_by_location_age_;
 
 public:
-  DoubleVector2 &total_immune_by_location_age() {
-    return total_immune_by_location_age_;
-  }
+  DoubleVector2 &total_immune_by_location_age() { return total_immune_by_location_age_; }
   void set_total_immune_by_location_age(const DoubleVector2 &value) {
     total_immune_by_location_age_ = value;
   }
@@ -596,6 +595,7 @@ public:
 
 private:
   DoubleVector3 last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5_;
+
 public:
   DoubleVector3 &last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5() {
     return last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5_;
@@ -784,7 +784,8 @@ public:
   LongVector2 &monthly_number_of_recrudescence_treatment_by_location_age_class() {
     return monthly_number_of_recrudescence_treatment_by_location_age_class_;
   }
-  void set_monthly_number_of_recrudescence_treatment_by_location_age_class(const LongVector2 &value) {
+  void set_monthly_number_of_recrudescence_treatment_by_location_age_class(
+      const LongVector2 &value) {
     monthly_number_of_recrudescence_treatment_by_location_age_class_ = value;
   }
 
@@ -1017,7 +1018,7 @@ public:
   static const int NUMBER_OF_REPORTED_MOI = 10;
   // disallow copy and assign
   ModelDataCollector(const ModelDataCollector &) = delete;
-  ModelDataCollector& operator=(const ModelDataCollector &) = delete;
+  ModelDataCollector &operator=(const ModelDataCollector &) = delete;
   ModelDataCollector(ModelDataCollector &&) = delete;
   ModelDataCollector &operator=(ModelDataCollector &&) = delete;
 
@@ -1037,7 +1038,7 @@ public:
   virtual void collect_1_clinical_episode(const int &location, const int &age,
                                           const int &age_class);
 
-  virtual void update_person_days_by_years(const int &location, const int &days);
+  virtual void update_person_days_by_years(const core::LocationId &location, const int &days);
 
   void calculate_eir();
 
@@ -1299,13 +1300,15 @@ public:
   [[nodiscard]] IntVector2 &monthly_number_of_people_seeking_treatment_by_location_age_index() {
     return monthly_number_of_people_seeking_treatment_by_location_age_index_;
   }
-  void set_monthly_number_of_people_seeking_treatment_by_location_age_index(const IntVector2 &value) {
+  void set_monthly_number_of_people_seeking_treatment_by_location_age_index(
+      const IntVector2 &value) {
     monthly_number_of_people_seeking_treatment_by_location_age_index_ = value;
   }
 
-  // Record one person seeking treatment at a location for a given age-index (index into ages vector from config)
-  void record_1_person_seeking_treatment_by_location_age_index(const int &location, const int &age_index);
-
+  // Record one person seeking treatment at a location for a given age-index (index into ages vector
+  // from config)
+  void record_1_person_seeking_treatment_by_location_age_index(const int &location,
+                                                               const int &age_index);
 };
 
 #endif /* MODELDATACOLLECTOR_H */

@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "Core/Scheduler/Scheduler.h"
+#include "Core/types.h"
 #include "Events/BirthdayEvent.h"
 #include "Events/CirculateToTargetLocationNextDayEvent.h"
 #include "Events/EndClinicalEvent.h"
@@ -60,12 +61,14 @@ void Person::notify_change(const Property &property, const void* old_value, cons
   if (population_ != nullptr) { population_->notify_change(this, property, old_value, new_value); }
 }
 
-void Person::set_location(const int &value) {
+void Person::set_location(const core::LocationId &value) {
   if (location_ != value) {
     if (Model::get_mdc() != nullptr) {
       const auto day_diff =
           (Constants::DAYS_IN_YEAR - Model::get_scheduler()->get_current_day_in_year());
-      if (location_ != -1) { Model::get_mdc()->update_person_days_by_years(location_, -day_diff); }
+      if (location_ != core::K_INVALID_LOCATION_ID) {
+        Model::get_mdc()->update_person_days_by_years(location_, -day_diff);
+      }
       Model::get_mdc()->update_person_days_by_years(value, day_diff);
     }
 
@@ -90,7 +93,7 @@ void Person::set_host_state(const HostStates &value) {
   }
 }
 
-void Person::set_age(const uint &value) {
+void Person::set_age(const core::Age &value) {
   if (age_ != value) {
     // TODO::if age access the limit of age structure i.e. 100, remove person???
 
@@ -110,14 +113,14 @@ void Person::set_age(const uint &value) {
   }
 }
 
-void Person::set_age_class(const int &value) {
+void Person::set_age_class(const core::AgeClass &value) {
   if (age_class_ != value) {
     notify_change(AGE_CLASS, &age_class_, &value);
     age_class_ = value;
   }
 }
 
-void Person::set_moving_level(int value) {
+void Person::set_moving_level(core::MovingLevel value) {
   if (moving_level_ != value) {
     notify_change(MOVING_LEVEL, &moving_level_, &value);
     moving_level_ = value;
@@ -155,9 +158,9 @@ double Person::relative_infectivity(const double &log10_parasite_density) {
                          ->get_epidemiological_parameters()
                          .get_relative_infectivity()
                          .get_ro_star();
-  const auto p = Model::get_random()->cdf_standard_normal_distribution(d_n);
+  const auto prob_get_1_gametocyte = Model::get_random()->cdf_standard_normal_distribution(d_n);
 
-  const auto return_value = (p * p) + 0.01;
+  const auto return_value = (prob_get_1_gametocyte * prob_get_1_gametocyte) + 0.01;
   return return_value > 1.0 ? 1.0 : return_value;
 }
 
@@ -598,7 +601,7 @@ void Person::randomly_choose_target_location() {
     return;
   }
 
-  auto target_location{-1};
+  auto target_location{core::K_INVALID_LOCATION_ID};
   if (today_target_locations_.size() == 1) {
     target_location = today_target_locations_.at(0);
   } else {
@@ -682,7 +685,7 @@ double Person::get_age_dependent_biting_factor() const {
   if (age_ < 2) return 0.1789;
   if (age_ < 3) return 0.2195;
   if (age_ < 4) return 0.2520;
-  if (age_ < 20) return (17.5 + (age_ - 4) * 2.75) / 61.5;
+  if (age_ < 20) return (17.5 + ((age_ - 4) * 2.75)) / 61.5;
   return 1.0;
 }
 
@@ -958,7 +961,7 @@ void Person::schedule_mature_gametocyte_event(ClonalParasitePopulation* parasite
   schedule_basic_event(std::move(event));
 }
 
-void Person::schedule_move_to_target_location_next_day_event(int target_location) {
+void Person::schedule_move_to_target_location_next_day_event(core::LocationId target_location) {
   this->number_of_trips_taken_++;
 
   auto event = std::make_unique<CirculateToTargetLocationNextDayEvent>(this);
@@ -999,9 +1002,9 @@ void Person::schedule_relapse_event(ClonalParasitePopulation* clinical_caused_pa
 
 void Person::determine_relapse_or_not(ClonalParasitePopulation* clinical_caused_parasite) {
   if (all_clonal_parasite_populations_->contain(clinical_caused_parasite)) {
-    const auto p = Model::get_random()->random_flat(0.0, 1.0);
+    const auto p_relapse = Model::get_random()->random_flat(0.0, 1.0);
 
-    if (p <= Model::get_config()->get_epidemiological_parameters().get_p_relapse()) {
+    if (p_relapse <= Model::get_config()->get_epidemiological_parameters().get_p_relapse()) {
       //        if (P <= get_probability_progress_to_clinical()) {
       // progress to clinical after several days
       clinical_caused_parasite->set_update_function(Model::progress_to_clinical_update_function());

@@ -94,9 +94,11 @@ public:
   [[nodiscard]] Population* get_population() const { return population_; }
   void set_population(Population* population) { population_ = population; }
 
-  void set_age_class(const int &value);
+  [[nodiscard]] core::AgeClass get_age_class() const { return age_class_; }
+  void set_age_class(const core::AgeClass &value);
 
-  void set_moving_level(int value);
+  [[nodiscard]] core::MovingLevel get_moving_level() const { return moving_level_; }
+  void set_moving_level(core::MovingLevel value);
 
   ImmuneSystem* get_immune_system() { return immune_system_.get(); }
 
@@ -107,34 +109,32 @@ public:
     return all_clonal_parasite_populations_.get();
   }
 
-  [[nodiscard]] int get_location() const { return location_; }
+  [[nodiscard]] core::LocationId get_location() const { return location_; }
+  void set_location(const core::LocationId &value);
 
-  [[nodiscard]] int get_residence_location() const { return residence_location_; }
-
-  void set_residence_location(int residence_location) { residence_location_ = residence_location; }
+  [[nodiscard]] core::LocationId get_residence_location() const { return residence_location_; }
+  void set_residence_location(core::LocationId residence_location) {
+    residence_location_ = residence_location;
+  }
 
   void set_host_state(const HostStates &value);
 
   [[nodiscard]] Person::HostStates get_host_state() const { return host_state_; }
 
-  void set_age(const uint &value);
-  [[nodiscard]] uint get_age() const { return age_; }
+  void set_age(const core::Age &value);
+  [[nodiscard]] core::Age get_age() const { return age_; }
 
-  [[nodiscard]] int get_age_class() const { return age_class_; }
+  [[nodiscard]] core::SimDay get_birthday() const { return birthday_; }
+  void set_birthday(core::SimDay birthday) { birthday_ = birthday; }
 
-  [[nodiscard]] int get_birthday() const { return birthday_; }
-  void set_birthday(int birthday) { birthday_ = birthday; }
-
-  [[nodiscard]] virtual int get_latest_update_time() const { return latest_update_time_; }
-  virtual void set_latest_update_time(int lastest_update_time) {
+  [[nodiscard]] virtual core::SimDay get_latest_update_time() const { return latest_update_time_; }
+  virtual void set_latest_update_time(core::SimDay lastest_update_time) {
     latest_update_time_ = lastest_update_time;
   }
 
-  [[nodiscard]] int get_moving_level() const { return moving_level_; }
+  std::vector<core::GenotypeId> &get_today_infections() { return today_infections_; }
 
-  std::vector<int> &get_today_infections() { return today_infections_; }
-
-  std::vector<int> &get_today_target_locations() { return today_target_locations_; }
+  std::vector<core::LocationId> &get_today_target_locations() { return today_target_locations_; }
 
   [[nodiscard]] std::vector<double> get_prob_present_at_mda_by_age() const {
     return prob_present_at_mda_by_age_;
@@ -156,10 +156,11 @@ public:
   [[nodiscard]] int get_last_therapy_id() const { return last_therapy_id_; }
   void set_last_therapy_id(int last_therapy_id) { last_therapy_id_ = last_therapy_id; }
 
-  [[nodiscard]] std::map<int, double> get_starting_drug_values_for_mac() const {
+  [[nodiscard]] std::map<core::DrugId, double> get_starting_drug_values_for_mac() const {
     return starting_drug_values_for_mac_;
   }
-  void set_starting_drug_values_for_mac(const std::map<int, double> &starting_drug_values_for_mac) {
+  void set_starting_drug_values_for_mac(
+      const std::map<core::DrugId, double> &starting_drug_values_for_mac) {
     starting_drug_values_for_mac_ = starting_drug_values_for_mac;
   }
 
@@ -177,10 +178,11 @@ public:
     current_relative_biting_rate_ = current_relative_biting_rate;
   }
 
-  [[nodiscard]] int get_latest_time_received_public_treatment() const {
+  [[nodiscard]] core::SimDay get_latest_time_received_public_treatment() const {
     return latest_time_received_public_treatment_;
   }
-  void set_latest_time_received_public_treatment(int latest_time_received_public_treatment) {
+  void set_latest_time_received_public_treatment(
+      core::SimDay latest_time_received_public_treatment) {
     latest_time_received_public_treatment_ = latest_time_received_public_treatment;
   }
 
@@ -192,8 +194,6 @@ public:
   void update_relative_bitting_rate();
 
   void notify_change(const Property &property, const void* old_value, const void* new_value);
-
-  void set_location(const int &value);
 
   DrugsInBlood* drugs_in_blood() { return drugs_in_blood_.get(); }
 
@@ -288,7 +288,7 @@ public:
   void schedule_update_by_drug_event(ClonalParasitePopulation* parasite);
 
   // Group 3: Movement Event Scheduling
-  void schedule_move_to_target_location_next_day_event(int target_location);
+  void schedule_move_to_target_location_next_day_event(core::LocationId target_location);
   void schedule_return_to_residence_event(int length_of_trip);
 
   // Group 4: Person Event Scheduling
@@ -314,35 +314,43 @@ private:
   HostStates host_state_{SUSCEPTIBLE};
   RecurrenceStatus recurrence_status_{RecurrenceStatus::NONE};
 
-  int location_{-1};
-  int residence_location_{-1};
-  int birthday_{-1};
-  int latest_update_time_{-1};
-  int moving_level_{-1};
-  std::vector<int> today_infections_;
-  std::vector<int> today_target_locations_;
+  core::LocationId location_{core::K_INVALID_LOCATION_ID};
+  core::MovingLevel moving_level_{core::K_INVALID_MOVING_LEVEL};
+  core::LocationId residence_location_{core::K_INVALID_LOCATION_ID};
+
+  core::SimDay birthday_{core::K_INVALID_SIM_DAY};
+  core::SimDay latest_update_time_{core::K_INVALID_SIM_DAY};
+
+  std::vector<core::GenotypeId> today_infections_;
+  std::vector<core::LocationId> today_target_locations_;
   std::vector<double> prob_present_at_mda_by_age_;
-  int number_of_times_bitten_{0};
-  int number_of_trips_taken_{0};
-  int last_therapy_id_{0};
-  std::map<int, double> starting_drug_values_for_mac_;
+
+  core::BiteCount number_of_times_bitten_{0};
+  core::TripCount number_of_trips_taken_{0};
+
+  core::TherapyId last_therapy_id_{0};
+
+  std::map<core::DrugId, double> starting_drug_values_for_mac_;
   double innate_relative_biting_rate_{0};
   double current_relative_biting_rate_{0};
+
   std::unique_ptr<ImmuneSystem> immune_system_{nullptr};
   std::unique_ptr<SingleHostClonalParasitePopulations> all_clonal_parasite_populations_{nullptr};
   std::unique_ptr<DrugsInBlood> drugs_in_blood_{nullptr};
   // Non-owning. Lifetime manged by Model GenotypeDB
   Genotype* liver_parasite_type_{nullptr};
-  int latest_time_received_public_treatment_{-30};
+  core::SimDay latest_time_received_public_treatment_{-30};
   EventManager<PersonEvent> event_manager_;
 
 #ifdef ENABLE_TRAVEL_TRACKING
-  int day_that_last_trip_was_initiated_{-1};
-  int day_that_last_trip_outside_district_was_initiated_{-1};
+  core::SimDay day_that_last_trip_was_initiated_{core::K_INVALID_SIM_DAY};
+  core::SimDay day_that_last_trip_outside_district_was_initiated_{core::K_INVALID_SIM_DAY};
 
 public:
-  int get_day_that_last_trip_was_initiated() const { return day_that_last_trip_was_initiated_; }
-  int get_day_that_last_trip_outside_district_was_initiated() const {
+  core::SimDay get_day_that_last_trip_was_initiated() const {
+    return day_that_last_trip_was_initiated_;
+  }
+  core::SimDay get_day_that_last_trip_outside_district_was_initiated() const {
     return day_that_last_trip_outside_district_was_initiated_;
   }
 #endif

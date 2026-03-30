@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "Core/Scheduler/EventManager.h"
+#include "Core/types.h"
 #include "Events/Event.h"
 #include "Utils/Helpers/StringHelpers.h"
 #include "date/date.h"
@@ -14,7 +15,7 @@ class Scheduler {
 public:
   // Disable copy and assignment
   Scheduler(const Scheduler &) = delete;
-  Scheduler& operator=(const Scheduler &) = delete;
+  Scheduler &operator=(const Scheduler &) = delete;
   Scheduler(Scheduler &&) = delete;
   Scheduler &operator=(Scheduler &&) = delete;
 
@@ -22,8 +23,8 @@ public:
   virtual ~Scheduler();
 
   // Getter and Setter for current_time
-  [[nodiscard]] int current_time() const { return current_time_; }
-  void set_current_time(int time) { current_time_ = time; }
+  [[nodiscard]] core::SimDay current_time() const { return current_time_; }
+  void set_current_time(core::SimDay time) { current_time_ = time; }
 
   // Getter and Setter for is_force_stop
   [[nodiscard]] bool is_force_stop() const { return is_force_stop_; }
@@ -80,7 +81,7 @@ public:
   [[nodiscard]] const EventManager<WorldEvent> &get_world_events() const { return world_events_; }
 
 private:
-  int current_time_{-1};
+  core::SimDay current_time_{core::K_INVALID_SIM_DAY};
   bool is_force_stop_{false};
   date::sys_days calendar_date_;
   EventManager<WorldEvent> world_events_;  // Use EventManager for world/population events

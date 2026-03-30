@@ -5,10 +5,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include "Core/types.h"
 class Constants {
 public:
-    static constexpr double PI = 3.14159265358979323846;
-    static constexpr int DAYS_IN_YEAR = 365;
+  static constexpr double PI = 3.14159265358979323846;
+  static constexpr core::SimDay DAYS_IN_YEAR = 365;
 };
 
-#endif //CONSTANTS_H
+#endif  // CONSTANTS_H

@@ -1,5 +1,7 @@
 #include "ModelDataCollector.h"
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -7,6 +9,7 @@
 
 #include "Configuration/Config.h"
 #include "Core/Scheduler/Scheduler.h"
+#include "Core/types.h"
 #include "Parasites/Genotype.h"
 #include "Population/ClonalParasitePopulation.h"
 #include "Population/ImmuneSystem/ImmuneSystem.h"
@@ -16,7 +19,6 @@
 #include "Treatment/Therapies/SCTherapy.h"
 #include "Utils/Constants.h"
 #include "Utils/Index/PersonIndexByLocationStateAgeClass.h"
-#include <spdlog/spdlog.h>
 
 // Fill the vector indicated with zeros, this should compile into a memset call
 // which is faster than a loop
@@ -28,272 +30,269 @@
 
 class PersonIndexByLocationStateAgeClass;
 
-ModelDataCollector::ModelDataCollector(){}
+ModelDataCollector::ModelDataCollector() {}
 
 ModelDataCollector::~ModelDataCollector() = default;
 
 void ModelDataCollector::initialize() {
-    births_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    deaths_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    malaria_deaths_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    malaria_deaths_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
+  births_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  deaths_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  malaria_deaths_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  malaria_deaths_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
 
-    popsize_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    popsize_residence_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  popsize_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  popsize_residence_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
 
-    blood_slide_prevalence_by_location_ =
-        DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    blood_slide_prevalence_by_location_age_group_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
-    blood_slide_number_by_location_age_group_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
-    blood_slide_prevalence_by_location_age_group_by_5_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
-    blood_slide_number_by_location_age_group_by_5_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
-    blood_slide_prevalence_by_location_age_ =
-        DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(80, 0.0));
-    blood_slide_number_by_location_age_ =
-        DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(80, 0.0));
-    fraction_of_positive_that_are_clinical_by_location_ =
-        DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    popsize_by_location_hoststate_ = IntVector2(Model::get_config()->number_of_locations(),
-                                                IntVector(Person::NUMBER_OF_STATE, 0));
-    popsize_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    popsize_by_location_age_class_by_5_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    popsize_by_location_hoststate_age_class_ =
-        IntVector3(Model::get_config()->number_of_locations(),
-                   IntVector2(Person::NUMBER_OF_STATE,
-                              IntVector(Model::get_config()->number_of_age_classes(), 0)));
+  blood_slide_prevalence_by_location_ =
+      DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  blood_slide_prevalence_by_location_age_group_ =
+      DoubleVector2(Model::get_config()->number_of_locations(),
+                    DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
+  blood_slide_number_by_location_age_group_ =
+      DoubleVector2(Model::get_config()->number_of_locations(),
+                    DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
+  blood_slide_prevalence_by_location_age_group_by_5_ =
+      DoubleVector2(Model::get_config()->number_of_locations(),
+                    DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
+  blood_slide_number_by_location_age_group_by_5_ =
+      DoubleVector2(Model::get_config()->number_of_locations(),
+                    DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
+  blood_slide_prevalence_by_location_age_ =
+      DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(80, 0.0));
+  blood_slide_number_by_location_age_ =
+      DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(80, 0.0));
+  fraction_of_positive_that_are_clinical_by_location_ =
+      DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  popsize_by_location_hoststate_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(Person::NUMBER_OF_STATE, 0));
+  popsize_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  popsize_by_location_age_class_by_5_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  popsize_by_location_hoststate_age_class_ =
+      IntVector3(Model::get_config()->number_of_locations(),
+                 IntVector2(Person::NUMBER_OF_STATE,
+                            IntVector(Model::get_config()->number_of_age_classes(), 0)));
 
-    total_immune_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    total_immune_by_location_age_class_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
-    total_immune_by_location_age_ =
-        DoubleVector2(Model::get_config()->number_of_locations(),
-                      DoubleVector(100, 0.0));
+  total_immune_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  total_immune_by_location_age_class_ =
+      DoubleVector2(Model::get_config()->number_of_locations(),
+                    DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
+  total_immune_by_location_age_ =
+      DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(100, 0.0));
 
-    total_number_of_bites_by_location_ = LongVector(Model::get_config()->number_of_locations(), 0);
-    total_number_of_bites_by_location_year_ =
-        LongVector(Model::get_config()->number_of_locations(), 0);
-    person_days_by_location_year_ = LongVector(Model::get_config()->number_of_locations(), 0);
-
-    eir_by_location_year_ =
-        DoubleVector2(Model::get_config()->number_of_locations());
-    eir_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-
-    cumulative_clinical_episodes_by_location_ =
-        LongVector(Model::get_config()->number_of_locations(), 0);
-    cumulative_clinical_episodes_by_location_age_ =
-        LongVector2(Model::get_config()->number_of_locations(), LongVector(100, 0));
-    cumulative_clinical_episodes_by_location_age_group_ =
-        LongVector2(Model::get_config()->number_of_locations(),
-                    LongVector(Model::get_config()->number_of_age_classes(), 0));
-
-    average_number_biten_by_location_person_ =
-        DoubleVector2(Model::get_config()->number_of_locations());
-    percentage_bites_on_top_20_by_location_ =
-        DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-
-    cumulative_mutants_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-
-    cumulative_discounted_ntf_by_location_ =
-        DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    cumulative_ntf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    cumulative_tf_by_location_ = LongVector(Model::get_config()->number_of_locations(), 0.0);
-    cumulative_number_treatments_by_location_ =
-        LongVector(Model::get_config()->number_of_locations(), 0.0);
-
-    today_tf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    today_number_of_treatments_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    today_ritf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-
-    total_number_of_treatments_60_by_location_ = IntVector2(
-        Model::get_config()->number_of_locations(),
-        IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
-    total_ritf_60_by_location_ = IntVector2(
-        Model::get_config()->number_of_locations(),
-        IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
-    total_tf_60_by_location_ = IntVector2(
-        Model::get_config()->number_of_locations(),
-        IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
-
-    current_ritf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    current_tf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-
-    progress_to_clinical_in_7d_counter = std::vector<ProgressToClinicalCounter>(
-        Model::get_config()->number_of_locations(),ProgressToClinicalCounter());
-
-    current_utl_duration_ = 0;
-    utl_duration_ = IntVector();
-
-    number_of_treatments_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
-    number_of_treatments_success_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
-    number_of_treatments_fail_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
-
-    mosquito_recombination_events_count_ =
-        LongVector2(Model::get_config()->number_of_locations(), LongVector(2, 0));
-
-    amu_per_parasite_pop_ = 0;
-    amu_per_person_ = 0;
-    amu_for_clinical_caused_parasite_ = 0;
-
-    afu_ = 0;
-
-    discounted_amu_per_parasite_pop_ = 0;
-    discounted_amu_per_person_ = 0;
-    discounted_amu_for_clinical_caused_parasite_ = 0;
-
-    discounted_afu_ = 0;
-
-    multiple_of_infection_by_location_ = IntVector2(Model::get_config()->number_of_locations(),
-                                                    IntVector(NUMBER_OF_REPORTED_MOI, 0));
-
-    current_eir_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
-    last_update_total_number_of_bites_by_location_ =
-        LongVector(Model::get_config()->number_of_locations(), 0);
-
-    last_10_blood_slide_prevalence_by_location_ =
-        DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
-    last_10_fraction_positive_that_are_clinical_by_location_ =
-        DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
-    last_10_fraction_positive_that_are_clinical_by_location_age_class_ = DoubleVector3(
-        Model::get_config()->number_of_locations(),
-        DoubleVector2(Model::get_config()->number_of_age_classes(), DoubleVector(10, 0.0)));
-    last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5_ = DoubleVector3(
-        Model::get_config()->number_of_locations(),
-        DoubleVector2(Model::get_config()->number_of_age_classes(), DoubleVector(10, 0.0)));
-    total_parasite_population_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    number_of_positive_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-
-    total_parasite_population_by_location_age_group_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    number_of_positive_by_location_age_group_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    number_of_clinical_by_location_age_group_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    number_of_clinical_by_location_age_group_by_5_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    number_of_death_by_location_age_group_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-
-    number_of_untreated_cases_by_location_age_year_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-    number_of_treatments_by_location_age_year_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-    number_of_deaths_by_location_age_year_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-    number_of_malaria_deaths_treated_by_location_age_year_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-    number_of_malaria_deaths_non_treated_by_location_age_year_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-
-    popsize_by_location_age_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
-
-    tf_at_15_ = 0;
-    single_resistance_frequency_at_15_ = 0;
-    double_resistance_frequency_at_15_ = 0;
-    triple_resistance_frequency_at_15_ = 0;
-    quadruple_resistance_frequency_at_15_ = 0;
-    quintuple_resistance_frequency_at_15_ = 0;
-    art_resistance_frequency_at_15_ = 0;
-    total_resistance_frequency_at_15_ = 0;
-
-    total_number_of_treatments_60_by_therapy_ = IntVector2(
-        Model::get_therapy_db().size(),
-        IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
-    total_tf_60_by_therapy_ = IntVector2(
-        Model::get_therapy_db().size(),
-        IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
-    current_tf_by_therapy_ = DoubleVector(Model::get_therapy_db().size(), 0.0);
-    today_tf_by_therapy_ = IntVector(Model::get_therapy_db().size(), 0);
-    today_number_of_treatments_by_therapy_ = IntVector(Model::get_therapy_db().size(), 0);
-
-    monthly_number_of_treatment_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_recrudescence_treatment_by_location_ =
+  total_number_of_bites_by_location_ = LongVector(Model::get_config()->number_of_locations(), 0);
+  total_number_of_bites_by_location_year_ =
       LongVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_recrudescence_treatment_by_location_age_class_ =
+  person_days_by_location_year_ = LongVector(Model::get_config()->number_of_locations(), 0);
+
+  eir_by_location_year_ = DoubleVector2(Model::get_config()->number_of_locations());
+  eir_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+
+  cumulative_clinical_episodes_by_location_ =
+      LongVector(Model::get_config()->number_of_locations(), 0);
+  cumulative_clinical_episodes_by_location_age_ =
+      LongVector2(Model::get_config()->number_of_locations(), LongVector(100, 0));
+  cumulative_clinical_episodes_by_location_age_group_ =
       LongVector2(Model::get_config()->number_of_locations(),
-      LongVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_number_of_recrudescence_treatment_by_location_age_ =
+                  LongVector(Model::get_config()->number_of_age_classes(), 0));
+
+  average_number_biten_by_location_person_ =
+      DoubleVector2(Model::get_config()->number_of_locations());
+  percentage_bites_on_top_20_by_location_ =
+      DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+
+  cumulative_mutants_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+
+  cumulative_discounted_ntf_by_location_ =
+      DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  cumulative_ntf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  cumulative_tf_by_location_ = LongVector(Model::get_config()->number_of_locations(), 0.0);
+  cumulative_number_treatments_by_location_ =
+      LongVector(Model::get_config()->number_of_locations(), 0.0);
+
+  today_tf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  today_number_of_treatments_by_location_ =
+      IntVector(Model::get_config()->number_of_locations(), 0);
+  today_ritf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+
+  total_number_of_treatments_60_by_location_ = IntVector2(
+      Model::get_config()->number_of_locations(),
+      IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
+  total_ritf_60_by_location_ = IntVector2(
+      Model::get_config()->number_of_locations(),
+      IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
+  total_tf_60_by_location_ = IntVector2(
+      Model::get_config()->number_of_locations(),
+      IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
+
+  current_ritf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  current_tf_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+
+  progress_to_clinical_in_7d_counter = std::vector<ProgressToClinicalCounter>(
+      Model::get_config()->number_of_locations(), ProgressToClinicalCounter());
+
+  current_utl_duration_ = 0;
+  utl_duration_ = IntVector();
+
+  number_of_treatments_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
+  number_of_treatments_success_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
+  number_of_treatments_fail_with_therapy_id_ = IntVector(Model::get_therapy_db().size(), 0);
+
+  mosquito_recombination_events_count_ =
+      LongVector2(Model::get_config()->number_of_locations(), LongVector(2, 0));
+
+  amu_per_parasite_pop_ = 0;
+  amu_per_person_ = 0;
+  amu_for_clinical_caused_parasite_ = 0;
+
+  afu_ = 0;
+
+  discounted_amu_per_parasite_pop_ = 0;
+  discounted_amu_per_person_ = 0;
+  discounted_amu_for_clinical_caused_parasite_ = 0;
+
+  discounted_afu_ = 0;
+
+  multiple_of_infection_by_location_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(NUMBER_OF_REPORTED_MOI, 0));
+
+  current_eir_by_location_ = DoubleVector(Model::get_config()->number_of_locations(), 0.0);
+  last_update_total_number_of_bites_by_location_ =
+      LongVector(Model::get_config()->number_of_locations(), 0);
+
+  last_10_blood_slide_prevalence_by_location_ =
+      DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
+  last_10_fraction_positive_that_are_clinical_by_location_ =
+      DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
+  last_10_fraction_positive_that_are_clinical_by_location_age_class_ = DoubleVector3(
+      Model::get_config()->number_of_locations(),
+      DoubleVector2(Model::get_config()->number_of_age_classes(), DoubleVector(10, 0.0)));
+  last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5_ = DoubleVector3(
+      Model::get_config()->number_of_locations(),
+      DoubleVector2(Model::get_config()->number_of_age_classes(), DoubleVector(10, 0.0)));
+  total_parasite_population_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  number_of_positive_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+
+  total_parasite_population_by_location_age_group_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  number_of_positive_by_location_age_group_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  number_of_clinical_by_location_age_group_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  number_of_clinical_by_location_age_group_by_5_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  number_of_death_by_location_age_group_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+
+  number_of_untreated_cases_by_location_age_year_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+  number_of_treatments_by_location_age_year_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+  number_of_deaths_by_location_age_year_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+  number_of_malaria_deaths_treated_by_location_age_year_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+  number_of_malaria_deaths_non_treated_by_location_age_year_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+
+  popsize_by_location_age_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(80, 0));
+
+  tf_at_15_ = 0;
+  single_resistance_frequency_at_15_ = 0;
+  double_resistance_frequency_at_15_ = 0;
+  triple_resistance_frequency_at_15_ = 0;
+  quadruple_resistance_frequency_at_15_ = 0;
+  quintuple_resistance_frequency_at_15_ = 0;
+  art_resistance_frequency_at_15_ = 0;
+  total_resistance_frequency_at_15_ = 0;
+
+  total_number_of_treatments_60_by_therapy_ = IntVector2(
+      Model::get_therapy_db().size(),
+      IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
+  total_tf_60_by_therapy_ = IntVector2(
+      Model::get_therapy_db().size(),
+      IntVector(Model::get_config()->get_epidemiological_parameters().get_tf_window_size(), 0));
+  current_tf_by_therapy_ = DoubleVector(Model::get_therapy_db().size(), 0.0);
+  today_tf_by_therapy_ = IntVector(Model::get_therapy_db().size(), 0);
+  today_number_of_treatments_by_therapy_ = IntVector(Model::get_therapy_db().size(), 0);
+
+  monthly_number_of_treatment_by_location_ =
+      IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_recrudescence_treatment_by_location_ =
+      LongVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_recrudescence_treatment_by_location_age_class_ =
       LongVector2(Model::get_config()->number_of_locations(),
-                 LongVector(80, 0));
-    monthly_number_of_tf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_new_infections_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_clinical_episode_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_clinical_episode_by_location_age_ =
-        IntVector2(Model::get_config()->number_of_locations(), IntVector(100, 0));
-    monthly_number_of_mutation_events_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
+                  LongVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_number_of_recrudescence_treatment_by_location_age_ =
+      LongVector2(Model::get_config()->number_of_locations(), LongVector(80, 0));
+  monthly_number_of_tf_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_new_infections_by_location_ =
+      IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_clinical_episode_by_location_ =
+      IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_clinical_episode_by_location_age_ =
+      IntVector2(Model::get_config()->number_of_locations(), IntVector(100, 0));
+  monthly_number_of_mutation_events_by_location_ =
+      IntVector(Model::get_config()->number_of_locations(), 0);
 
-    current_number_of_mutation_events_in_this_year_ = 0;
-    mutation_tracker =
-        std::vector<std::vector<MutationTrackerInfo>>(Model::get_config()->number_of_locations());
+  current_number_of_mutation_events_in_this_year_ = 0;
+  mutation_tracker =
+      std::vector<std::vector<MutationTrackerInfo>>(Model::get_config()->number_of_locations());
 
-    mosquito_recombined_resistant_genotype_tracker =
-        std::vector<std::vector<RecombinedResistantGenotypeInfo>>(
-            Model::get_config()->number_of_locations());
+  mosquito_recombined_resistant_genotype_tracker =
+      std::vector<std::vector<RecombinedResistantGenotypeInfo>>(
+          Model::get_config()->number_of_locations());
 
-    number_of_mutation_events_by_year_ = LongVector();
+  number_of_mutation_events_by_year_ = LongVector();
 
-    monthly_treatment_failure_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_nontreatment_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_number_of_treatment_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_number_of_treatment_by_location_therapy_ = IntVector2(
-        Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
-    monthly_number_of_clinical_episode_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_nontreatment_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_treatment_complete_by_location_therapy_ = IntVector2(
-        Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
-    monthly_treatment_failure_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_treatment_failure_by_location_therapy_ = IntVector2(
-        Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
-    monthly_treatment_success_by_location_ =
-        IntVector(Model::get_config()->number_of_locations(), 0);
-    monthly_treatment_success_by_location_age_class_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector(Model::get_config()->number_of_age_classes(), 0));
-    monthly_treatment_success_by_location_therapy_ = IntVector2(
-        Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
-    current_number_of_mutation_events_ = 0;
-    number_of_mutation_events_by_year_ = LongVector();
+  monthly_treatment_failure_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_nontreatment_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_number_of_treatment_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_number_of_treatment_by_location_therapy_ = IntVector2(
+      Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
+  monthly_number_of_clinical_episode_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_nontreatment_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_treatment_complete_by_location_therapy_ = IntVector2(
+      Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
+  monthly_treatment_failure_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_treatment_failure_by_location_therapy_ = IntVector2(
+      Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
+  monthly_treatment_success_by_location_ = IntVector(Model::get_config()->number_of_locations(), 0);
+  monthly_treatment_success_by_location_age_class_ =
+      IntVector2(Model::get_config()->number_of_locations(),
+                 IntVector(Model::get_config()->number_of_age_classes(), 0));
+  monthly_treatment_success_by_location_therapy_ = IntVector2(
+      Model::get_config()->number_of_locations(), IntVector(Model::get_therapy_db().size(), 0));
+  current_number_of_mutation_events_ = 0;
+  number_of_mutation_events_by_year_ = LongVector();
 
-    // Initialize new monthly_number_of_people_seeking_treatment_by_location_age_index_
-    const auto ages_count = static_cast<int>(Model::get_config()->get_epidemiological_parameters().get_age_based_probability_of_seeking_treatment().get_ages().size());
-    monthly_number_of_people_seeking_treatment_by_location_age_index_ =
-        IntVector2(Model::get_config()->number_of_locations(),
-                   IntVector((ages_count>0)?ages_count:1, 0));
+  // Initialize new monthly_number_of_people_seeking_treatment_by_location_age_index_
+  const auto ages_count = static_cast<int>(Model::get_config()
+                                               ->get_epidemiological_parameters()
+                                               .get_age_based_probability_of_seeking_treatment()
+                                               .get_ages()
+                                               .size());
+  monthly_number_of_people_seeking_treatment_by_location_age_index_ = IntVector2(
+      Model::get_config()->number_of_locations(), IntVector((ages_count > 0) ? ages_count : 1, 0));
 }
 
 void ModelDataCollector::perform_population_statistic() {
@@ -354,9 +353,9 @@ void ModelDataCollector::perform_population_statistic() {
             total_parasite_population_by_location_[loc] += moi;
             total_parasite_population_by_location_age_group_[loc][person->get_age_class()] += moi;
 
-              if (moi <= NUMBER_OF_REPORTED_MOI) {
-                  multiple_of_infection_by_location_[loc][moi - 1]++;
-              }
+            if (moi <= NUMBER_OF_REPORTED_MOI) {
+              multiple_of_infection_by_location_[loc][moi - 1]++;
+            }
           }
         }
       }
@@ -450,33 +449,29 @@ void ModelDataCollector::collect_1_clinical_episode(const int &location, const i
   }
 }
 
-void ModelDataCollector::record_1_death(const int &location,
-                                        const int &birthday,
-                                        const int &number_of_times_bitten,
-                                        const int &age_group,
+void ModelDataCollector::record_1_death(const int &location, const int &birthday,
+                                        const int &number_of_times_bitten, const int &age_group,
                                         const int &age) {
   if (Model::get_scheduler()->current_time()
-      >= Model::get_config()
-             ->get_simulation_timeframe()
-             .get_start_collect_data_day()) {
-      // spdlog::info("1 death");
-      update_person_days_by_years(
-          location,
-          -(Constants::DAYS_IN_YEAR - Model::get_scheduler()->get_current_day_in_year()));
-      update_average_number_bitten(location, birthday, number_of_times_bitten);
-      number_of_death_by_location_age_group_[location][age_group] += 1;
-      const int age_clamp = (age < 79) ? age : 79;
-      number_of_deaths_by_location_age_year_[location][age_clamp] += 1;
-      deaths_by_location_[location] += 1;
-    }
+      >= Model::get_config()->get_simulation_timeframe().get_start_collect_data_day()) {
+    // spdlog::info("1 death");
+    update_person_days_by_years(
+        location, -(Constants::DAYS_IN_YEAR - Model::get_scheduler()->get_current_day_in_year()));
+    update_average_number_bitten(location, birthday, number_of_times_bitten);
+    number_of_death_by_location_age_group_[location][age_group] += 1;
+    const int age_clamp = (age < 79) ? age : 79;
+    number_of_deaths_by_location_age_year_[location][age_clamp] += 1;
+    deaths_by_location_[location] += 1;
+  }
 }
-
 
 void ModelDataCollector::record_1_malaria_death(const int &loc, const int &age, bool treated) {
   if (!recording_) return;
   const int age_clamp = (age < 80) ? age : 79;
-  if (treated)  number_of_malaria_deaths_treated_by_location_age_year_[loc][age_clamp] += 1;
-  else          number_of_malaria_deaths_non_treated_by_location_age_year_[loc][age_clamp] += 1;
+  if (treated)
+    number_of_malaria_deaths_treated_by_location_age_year_[loc][age_clamp] += 1;
+  else
+    number_of_malaria_deaths_non_treated_by_location_age_year_[loc][age_clamp] += 1;
 }
 
 void ModelDataCollector::update_average_number_bitten(const int &location, const int &birthday,
@@ -576,8 +571,8 @@ void ModelDataCollector::end_of_time_step() {
     auto t_treatment60 = 0;
     auto t_ritf60 = 0;
     auto t_tf60 = 0;
-    for (auto i = 0;
-         i < Model::get_config()->get_epidemiological_parameters().get_tf_window_size(); i++) {
+    for (auto i = 0; i < Model::get_config()->get_epidemiological_parameters().get_tf_window_size();
+         i++) {
       t_treatment60 += total_number_of_treatments_60_by_location_[location][i];
       t_ritf60 += total_ritf_60_by_location_[location][i];
       t_tf60 += total_tf_60_by_location_[location][i];
@@ -602,21 +597,19 @@ void ModelDataCollector::end_of_time_step() {
   }
   for (auto therapy_id = 0; static_cast<size_t>(therapy_id) < Model::get_therapy_db().size();
        therapy_id++) {
-    total_number_of_treatments_60_by_therapy_[therapy_id][Model::get_scheduler()->current_time()
-                                                          % Model::get_config()
-                                                                ->get_epidemiological_parameters()
-                                                                .get_tf_window_size()] =
-        today_number_of_treatments_by_therapy_[therapy_id];
-    total_tf_60_by_therapy_[therapy_id][Model::get_scheduler()->current_time()
-                                        % Model::get_config()
-                                              ->get_epidemiological_parameters()
-                                              .get_tf_window_size()] =
-        today_tf_by_therapy_[therapy_id];
+    total_number_of_treatments_60_by_therapy_
+        [therapy_id][Model::get_scheduler()->current_time()
+                     % Model::get_config()->get_epidemiological_parameters().get_tf_window_size()] =
+            today_number_of_treatments_by_therapy_[therapy_id];
+    total_tf_60_by_therapy_
+        [therapy_id][Model::get_scheduler()->current_time()
+                     % Model::get_config()->get_epidemiological_parameters().get_tf_window_size()] =
+            today_tf_by_therapy_[therapy_id];
 
     auto t_treatment60 = 0;
     auto t_tf60 = 0;
-    for (auto i = 0;
-         i < Model::get_config()->get_epidemiological_parameters().get_tf_window_size(); i++) {
+    for (auto i = 0; i < Model::get_config()->get_epidemiological_parameters().get_tf_window_size();
+         i++) {
       t_treatment60 += total_number_of_treatments_60_by_therapy_[therapy_id][i];
       t_tf60 += total_tf_60_by_therapy_[therapy_id][i];
     }
@@ -646,19 +639,29 @@ void ModelDataCollector::record_1_treatment(const int &location, const int &age,
 
   // Also count this as a person seeking treatment in the age-indexed monthly counter.
   // Compute age index using age breakpoints from config: find largest i such that ages[i] <= age.
-  const auto &ages_vec = Model::get_config()->get_epidemiological_parameters().get_age_based_probability_of_seeking_treatment().get_ages();
+  const auto &ages_vec = Model::get_config()
+                             ->get_epidemiological_parameters()
+                             .get_age_based_probability_of_seeking_treatment()
+                             .get_ages();
   if (!monthly_number_of_people_seeking_treatment_by_location_age_index_.empty()) {
     int age_index = 0;
     if (!ages_vec.empty()) {
       // find largest index i where ages_vec[i] <= age
       age_index = 0;
       for (size_t i = 0; i < ages_vec.size(); ++i) {
-        if (age >= ages_vec[i]) { age_index = static_cast<int>(i); }
-        else { break; }
+        if (age >= ages_vec[i]) {
+          age_index = static_cast<int>(i);
+        } else {
+          break;
+        }
       }
       // ensure age_index within bounds
-      if (age_index >= static_cast<int>(monthly_number_of_people_seeking_treatment_by_location_age_index_[location].size())) {
-        age_index = static_cast<int>(monthly_number_of_people_seeking_treatment_by_location_age_index_[location].size()) - 1;
+      if (age_index >= static_cast<int>(
+              monthly_number_of_people_seeking_treatment_by_location_age_index_[location].size())) {
+        age_index =
+            static_cast<int>(
+                monthly_number_of_people_seeking_treatment_by_location_age_index_[location].size())
+            - 1;
       }
     } else {
       age_index = 0;
@@ -748,24 +751,19 @@ void ModelDataCollector::record_1_tf(const int &location, const bool &by_drug) {
  * From MainDataCollector
  */
 
-void ModelDataCollector::collect_number_of_bites(const int &location,
-                                                 const int &number_of_bites) {
+void ModelDataCollector::collect_number_of_bites(const int &location, const int &number_of_bites) {
   // v5 behaviour: start collecting once current_time >= start_collect_data_day
   if (Model::get_scheduler()->current_time()
-      >= Model::get_config()
-             ->get_simulation_timeframe()
-             .get_start_collect_data_day()) {
-    total_number_of_bites_by_location_[location]      += number_of_bites;
+      >= Model::get_config()->get_simulation_timeframe().get_start_collect_data_day()) {
+    total_number_of_bites_by_location_[location] += number_of_bites;
     total_number_of_bites_by_location_year_[location] += number_of_bites;
     // spdlog::info("ModelDataCollector::collect_number_of_bites {} {} {} {} {}",
     //   Model::get_scheduler()->current_time(),
     //   location, number_of_bites,
     // total_number_of_bites_by_location_[location],
     // total_number_of_bites_by_location_year_[location]);
-             }
+  }
 }
-
-
 
 void ModelDataCollector::record_1_infection(const int &location) {
   if (!recording_) { return; }
@@ -775,24 +773,22 @@ void ModelDataCollector::record_1_infection(const int &location) {
 void ModelDataCollector::yearly_update() {
   const auto current_time = Model::get_scheduler()->current_time();
   const auto start_collect =
-      Model::get_config()
-          ->get_simulation_timeframe()
-          .get_start_collect_data_day();
+      Model::get_config()->get_simulation_timeframe().get_start_collect_data_day();
 
   if (current_time == start_collect) {
     // First “year”: initialise person-days based on current population
     for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
       person_days_by_location_year_[loc] =
-        Model::get_population()->size_at(loc) * Constants::DAYS_IN_YEAR;
+          Model::get_population()->size_at(loc) * Constants::DAYS_IN_YEAR;
       // spdlog::info("{} {} {} {} {}",current_time, loc, Model::get_population()->size_at(loc),
       //   Constants::DAYS_IN_YEAR,person_days_by_location_year_[loc]);
     }
   } else {
     // Subsequent years: compute EIR and reset yearly counters
     for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
-      auto eir = (static_cast<double>(total_number_of_bites_by_location_year_[loc]) /
-             static_cast<double>(person_days_by_location_year_[loc])) *
-            Constants::DAYS_IN_YEAR;
+      auto eir = (static_cast<double>(total_number_of_bites_by_location_year_[loc])
+                  / static_cast<double>(person_days_by_location_year_[loc]))
+                 * Constants::DAYS_IN_YEAR;
 
       // v5: always push yearly EIR (the “only record year have positive EIR”
       // line was commented out there as well)
@@ -800,77 +796,67 @@ void ModelDataCollector::yearly_update() {
 
       // Reset yearly accumulators
       person_days_by_location_year_[loc] =
-        Model::get_population()->size_at(loc) * Constants::DAYS_IN_YEAR;
+          Model::get_population()->size_at(loc) * Constants::DAYS_IN_YEAR;
       // spdlog::info("{} {} {} {} {}",current_time, loc, Model::get_population()->size_at(loc),
       //   Constants::DAYS_IN_YEAR,person_days_by_location_year_[loc]);
       total_number_of_bites_by_location_year_[loc] = 0;
 
       for (auto age = 0; age < 80; age++) {
-        number_of_untreated_cases_by_location_age_year_[loc][age]              = 0;
-        number_of_treatments_by_location_age_year_[loc][age]                   = 0;
-        number_of_deaths_by_location_age_year_[loc][age]                       = 0;
-        number_of_malaria_deaths_treated_by_location_age_year_[loc][age]       = 0;
-        number_of_malaria_deaths_non_treated_by_location_age_year_[loc][age]   = 0;
+        number_of_untreated_cases_by_location_age_year_[loc][age] = 0;
+        number_of_treatments_by_location_age_year_[loc][age] = 0;
+        number_of_deaths_by_location_age_year_[loc][age] = 0;
+        number_of_malaria_deaths_treated_by_location_age_year_[loc][age] = 0;
+        number_of_malaria_deaths_non_treated_by_location_age_year_[loc][age] = 0;
       }
     }
 
     // keep v5/v6 logic for mutation events as-is
-    if (current_time >=
-        Model::get_config()
-            ->get_simulation_timeframe()
-            .get_start_of_comparison_period()) {
-      number_of_mutation_events_by_year_.push_back(
-          current_number_of_mutation_events_in_this_year_);
+    if (current_time
+        >= Model::get_config()->get_simulation_timeframe().get_start_of_comparison_period()) {
+      number_of_mutation_events_by_year_.push_back(current_number_of_mutation_events_in_this_year_);
       current_number_of_mutation_events_in_this_year_ = 0;
     }
   }
 }
-void ModelDataCollector::update_person_days_by_years(const int &location,
+void ModelDataCollector::update_person_days_by_years(const core::LocationId &location,
                                                      const int &days) {
   // v5 behaviour: only accumulate person-days once we start collecting
   if (Model::get_scheduler()->current_time()
-      >= Model::get_config()
-             ->get_simulation_timeframe()
-             .get_start_collect_data_day()) {
+      >= Model::get_config()->get_simulation_timeframe().get_start_collect_data_day()) {
     person_days_by_location_year_[location] += days;
-    // spdlog::info("ModelDataCollector::update_person_days_by_years {} {} {} {}",Model::get_scheduler()->current_time(), location, days,person_days_by_location_year_[location]);
-             }
+    // spdlog::info("ModelDataCollector::update_person_days_by_years {} {} {}
+    // {}",Model::get_scheduler()->current_time(), location,
+    // days,person_days_by_location_year_[location]);
+  }
 }
 void ModelDataCollector::calculate_eir() {
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
     if (eir_by_location_year_[loc].empty()) {
       // collecting for less than 1 year since start_collect_data_day
       const auto start_collect =
-          Model::get_config()
-              ->get_simulation_timeframe()
-              .get_start_collect_data_day();
+          Model::get_config()->get_simulation_timeframe().get_start_collect_data_day();
 
-      const double total_time_in_years =
-          (Model::get_scheduler()->current_time() - start_collect) /
-          static_cast<double>(Constants::DAYS_IN_YEAR);
+      const double total_time_in_years = (Model::get_scheduler()->current_time() - start_collect)
+                                         / static_cast<double>(Constants::DAYS_IN_YEAR);
 
       double eir = (person_days_by_location_year_[loc] == 0)
                        ? 0.0
-                       : (static_cast<double>(
-                              total_number_of_bites_by_location_year_[loc]) /
-                          static_cast<double>(person_days_by_location_year_[loc])) *
-                             Constants::DAYS_IN_YEAR;
+                       : (static_cast<double>(total_number_of_bites_by_location_year_[loc])
+                          / static_cast<double>(person_days_by_location_year_[loc]))
+                             * Constants::DAYS_IN_YEAR;
 
       // average over the partial-year duration
       eir /= (total_time_in_years > 0.0 ? total_time_in_years : 1.0);
       eir_by_location_[loc] = eir;
     } else {
       // average over all non-zero yearly EIRs
-      double sum_eir = std::accumulate(
-          eir_by_location_year_[loc].begin(),
-          eir_by_location_year_[loc].end(), 0.0);
+      double sum_eir = std::accumulate(eir_by_location_year_[loc].begin(),
+                                       eir_by_location_year_[loc].end(), 0.0);
 
-      const auto number_of_0 = std::count(
-          eir_by_location_year_[loc].begin(),
-          eir_by_location_year_[loc].end(), 0.0);
+      const auto number_of_0 =
+          std::count(eir_by_location_year_[loc].begin(), eir_by_location_year_[loc].end(), 0.0);
 
-      const double denom =
-          static_cast<double>(eir_by_location_year_[loc].size() - number_of_0);
+      const double denom = static_cast<double>(eir_by_location_year_[loc].size() - number_of_0);
 
       eir_by_location_[loc] = (denom == 0.0) ? 0.0 : (sum_eir / denom);
     }
@@ -1084,20 +1070,19 @@ void ModelDataCollector::zero_population_statistics() {
   zero_fill_matrix_2d(multiple_of_infection_by_location_);
 }
 
-
-void ModelDataCollector::record_1_person_seeking_treatment_by_location_age_index(const int &location, const int &age_index) {
+void ModelDataCollector::record_1_person_seeking_treatment_by_location_age_index(
+    const int &location, const int &age_index) {
   if (!recording_) { return; }
   if (location < 0 || location >= Model::get_config()->number_of_locations()) { return; }
   if (age_index < 0) { return; }
-  const auto &ages_vec = Model::get_config()->get_epidemiological_parameters().get_age_based_probability_of_seeking_treatment().get_ages();
+  const auto &ages_vec = Model::get_config()
+                             ->get_epidemiological_parameters()
+                             .get_age_based_probability_of_seeking_treatment()
+                             .get_ages();
   const auto ages_count = static_cast<int>(ages_vec.size());
   const int ages_count_as_buckets = std::max(1, ages_count);
   int idx = age_index;
   if (idx >= ages_count_as_buckets) idx = ages_count_as_buckets - 1;
   monthly_number_of_people_seeking_treatment_by_location_age_index_[location][idx] += 1;
 }
-
-
-
-
 

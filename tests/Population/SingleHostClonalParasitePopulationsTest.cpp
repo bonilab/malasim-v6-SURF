@@ -4,18 +4,18 @@
 #include <memory>
 #include <set>
 
+#include "Core/types.h"
 #include "Parasites/Genotype.h"
 #include "Population/ClonalParasitePopulation.h"
 #include "Population/DrugsInBlood.h"
 #include "Population/Person/Person.h"
 #include "Population/SingleHostClonalParasitePopulations.h"
-#include "Treatment/Therapies/Drug.h"
 
 // Mock Person class
 class MockPerson : public Person {
 public:
   MockPerson() : Person() {}
-  MOCK_METHOD(int, get_latest_update_time, (), (const, override));
+  MOCK_METHOD(core::SimDay, get_latest_update_time, (), (const, override));
 };
 
 class SingleHostClonalParasitePopulationsTest : public ::testing::Test {

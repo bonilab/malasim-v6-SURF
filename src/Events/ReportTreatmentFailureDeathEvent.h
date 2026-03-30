@@ -8,6 +8,7 @@
 #define REPORTTREATMENTFAILUREDEATHEVENT_H
 
 // #include "Core/ObjectPool.h"
+#include "Core/types.h"
 #include "Event.h"
 
 class Person;
@@ -30,15 +31,15 @@ public:
     return "ReportTreatmentFailureDeathEvent";
   }
 
-  [[nodiscard]] int age_class() const { return age_class_; }
-  void set_age_class(int value) { age_class_ = value; }
+  [[nodiscard]] core::AgeClass age_class() const { return age_class_; }
+  void set_age_class(core::AgeClass value) { age_class_ = value; }
   [[nodiscard]] int location_id() const { return location_id_; }
   void set_location_id(int value) { location_id_ = value; }
   [[nodiscard]] int therapy_id() const { return therapy_id_; }
   void set_therapy_id(int value) { therapy_id_ = value; }
 
 private:
-  int age_class_{-1};
+  core::AgeClass age_class_{core::K_INVALID_AGE_CLASS};
   int location_id_{-1};
   int therapy_id_{-1};
   void do_execute() override;
