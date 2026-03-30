@@ -100,7 +100,7 @@ void Person::set_age(const uint &value) {
 
     // update age class
     if (Model::get_instance() != nullptr) {
-      auto ac = age_class_ == K_INVALID_AGE_CLASS ? 0 : age_class_;
+      auto ac = age_class_ == core::K_INVALID_AGE_CLASS ? 0 : age_class_;
       while (ac < (Model::get_config()->number_of_age_classes() - 1)
              && age_ >= Model::get_config()->age_structure()[ac]) {
         ac++;

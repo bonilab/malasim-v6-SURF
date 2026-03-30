@@ -9,7 +9,6 @@
 #include "Population/ImmuneSystem/NonInfantImmuneComponent.h"
 #include "Population/Person/Person.h"
 #include "Simulation/Model.h"
-#include "Treatment/Therapies/Drug.h"
 #include "Treatment/Therapies/DrugType.h"
 #include "Treatment/Therapies/SCTherapy.h"
 #include "Utils/Cli.h"
@@ -56,7 +55,7 @@ TEST_F(PersonGenerateIndividualTest, InitializePersonLikePopulationGenerateIndiv
   person_->set_host_state(Person::SUSCEPTIBLE);
 
   // 4. Set age based on age class (using age class 1 for this test)
-  AgeClass age_class = 1;
+  core::AgeClass age_class = 1;
   uint age_from = (age_class == 0) ? 0
                                    : Model::get_config()
                                          ->get_population_demographic()
@@ -65,7 +64,7 @@ TEST_F(PersonGenerateIndividualTest, InitializePersonLikePopulationGenerateIndiv
       Model::get_config()->get_population_demographic().get_initial_age_structure()[age_class];
 
   // Use a fixed age within the range for testing (instead of random)
-  Age age = static_cast<int>(age_from + (age_to - age_from) / 2);
+  core::Age age = static_cast<int>(age_from + (age_to - age_from) / 2);
   person_->set_age(age);
 
   // 5. Set birthday (simplified for test - using a fixed value)

@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "Core/types.h"
 #include "Events/Event.h"
 #include "Population/SingleHostClonalParasitePopulations.h"
 #include "Utils/Index/PersonIndexAllHandler.h"
@@ -21,11 +22,6 @@ class Random;
 class Config;
 class Population;
 class ImmuneSystem;
-
-using Age = uint8_t;
-using AgeClass = uint8_t;
-static constexpr Age K_INVALID_AGE = 255;
-static constexpr AgeClass K_INVALID_AGE_CLASS = 255;
 
 class Person : public PersonIndexAllHandler,
                public PersonIndexByLocationStateAgeClassHandler,
@@ -313,8 +309,8 @@ public:
 private:
   // Non-owning. Population owns all Person instances.
   Population* population_{nullptr};
-  Age age_{K_INVALID_AGE};
-  AgeClass age_class_{K_INVALID_AGE_CLASS};
+  core::Age age_{core::K_INVALID_AGE};
+  core::AgeClass age_class_{core::K_INVALID_AGE_CLASS};
   HostStates host_state_{SUSCEPTIBLE};
   RecurrenceStatus recurrence_status_{RecurrenceStatus::NONE};
 

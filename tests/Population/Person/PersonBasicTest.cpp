@@ -8,8 +8,7 @@ protected:
     PersonTestBase::SetUp();
     // If specific overrides are needed for this test suite,
     ON_CALL(*mock_population_, notify_change(_, _, _, _))
-        .WillByDefault([](Person*, const Person::Property &, const void*,
-                          const void*) { return; });
+        .WillByDefault([](Person*, const Person::Property &, const void*, const void*) { return; });
   }
 
   // Helper to calculate expected age class based on base fixture's demographic
@@ -18,8 +17,7 @@ protected:
     int expected_class = 0;
     const auto &age_limits = mock_config_->get_population_demographic().get_age_structure();
     int num_classes = mock_config_->get_population_demographic().get_number_of_age_classes();
-    while (expected_class < (num_classes - 1)
-           && age >= age_limits[expected_class]) {
+    while (expected_class < (num_classes - 1) && age >= age_limits[expected_class]) {
       expected_class++;
     }
     return expected_class;
@@ -52,7 +50,8 @@ TEST_F(PersonBasicTest, ConfigMockSetup) {
 
   // Verify the mock returns the correct age structure
   // This implicitly tests the ON_CALL for age_structure() in SetUp
-  const auto &expected_age_structure = mock_config_->get_population_demographic().get_age_structure();
+  const auto &expected_age_structure =
+      mock_config_->get_population_demographic().get_age_structure();
   const auto &actual_age_structure = Model::get_config()->age_structure();
   EXPECT_EQ(actual_age_structure, expected_age_structure)
       << "Call to Model::get_config()->age_structure() did not return the "
@@ -64,17 +63,15 @@ TEST_F(PersonBasicTest, ConfigMockSetup) {
 
 TEST_F(PersonBasicTest, InitialState) {
   EXPECT_EQ(person_->get_host_state(), Person::HostStates::SUSCEPTIBLE);
-  EXPECT_EQ(person_->get_age(), K_INVALID_AGE);
+  EXPECT_EQ(person_->get_age(), core::K_INVALID_AGE);
   EXPECT_EQ(person_->get_location(), -1);
   EXPECT_EQ(person_->get_residence_location(), -1);
 }
 
 // Test setting initial age and verifying class assignment
 TEST_F(PersonBasicTest, AgeSetInitialClass) {
-
   // Expect notifications for both age and age class change (from 0 to 2)
-  EXPECT_CALL(*mock_population_, notify_change(_, _, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, _, _, _)).Times(2);
 
   const int age_to_set = 25;
   const int expected_class = get_expected_age_class(age_to_set);
@@ -89,11 +86,9 @@ TEST_F(PersonBasicTest, AgeSetInitialClass) {
 // Test age increase within the same class
 TEST_F(PersonBasicTest, AgeIncrementStaysInClass) {
   // 1 for initial age change, 1 for age change after age set
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _)).Times(2);
   // only 1 for initial age class change
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _))
-      .Times(1);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _)).Times(1);
 
   // Pre-condition: Set age to 25 (class 2)
   person_->set_age(25);
@@ -114,11 +109,9 @@ TEST_F(PersonBasicTest, AgeIncrementStaysInClass) {
 // Test age change that crosses a class boundary
 TEST_F(PersonBasicTest, AgeSetCrossesClassBoundary) {
   // 1 for initial age change, 1 for age change after age set
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _)).Times(2);
   // 1 for initial age class change, 1 for age class change after age set
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _)).Times(2);
 
   // Pre-condition: Set age to 26 (class 2)
   person_->set_age(26);
@@ -138,24 +131,20 @@ TEST_F(PersonBasicTest, AgeSetCrossesClassBoundary) {
 // Test floating age calculation - Requires MockScheduler setup
 TEST_F(PersonBasicTest, AgeFloatingCalculation) {
   // 1 for initial age change, 1 for age change after age set
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE, _, _)).Times(2);
   // 1 for initial age class change, 1 for age class change after age set
-  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::AGE_CLASS, _, _)).Times(2);
 
   // Pre-condition: Set age to 26 (class 2)
-  person_->set_age(26); 
+  person_->set_age(26);
   ASSERT_EQ(person_->get_age_class(), 2);
 
-  const int current_sim_time =
-      11415;  // Example time: 31 years + 100 days offset
+  const int current_sim_time = 11415;  // Example time: 31 years + 100 days offset
   const int birthday_time = 100;
 
   // Set age and birthday - assume age is consistent with birthday and current
   // time
-  person_->set_age(
-      31);  // Set this just for consistency, not strictly needed for the calc
+  person_->set_age(31);  // Set this just for consistency, not strictly needed for the calc
   person_->set_birthday(birthday_time);
 
   EXPECT_DOUBLE_EQ(person_->age_in_floating(current_sim_time), 31.0);
@@ -163,9 +152,7 @@ TEST_F(PersonBasicTest, AgeFloatingCalculation) {
 
 TEST_F(PersonBasicTest, LocationManagement) {
   // Test location setting
-  EXPECT_CALL(*mock_population_,
-              notify_change(_, Person::Property::LOCATION, _, _))
-      .Times(1);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::LOCATION, _, _)).Times(1);
 
   person_->set_location(5);
   EXPECT_EQ(person_->get_location(), 5);
@@ -177,9 +164,7 @@ TEST_F(PersonBasicTest, LocationManagement) {
 
 TEST_F(PersonBasicTest, HostStateTransitions) {
   // Test state transitions with notifications
-  EXPECT_CALL(*mock_population_,
-              notify_change(_, Person::Property::HOST_STATE, _, _))
-      .Times(2);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::HOST_STATE, _, _)).Times(2);
 
   EXPECT_EQ(person_->get_host_state(), Person::HostStates::SUSCEPTIBLE);
 
@@ -204,9 +189,7 @@ TEST_F(PersonBasicTest, BitingRateManagement) {
 
 TEST_F(PersonBasicTest, MovingLevelManagement) {
   // Test moving level setting
-  EXPECT_CALL(*mock_population_,
-              notify_change(_, Person::Property::MOVING_LEVEL, _, _))
-      .Times(1);
+  EXPECT_CALL(*mock_population_, notify_change(_, Person::Property::MOVING_LEVEL, _, _)).Times(1);
 
   person_->set_moving_level(2);
   EXPECT_EQ(person_->get_moving_level(), 2);
@@ -223,7 +206,6 @@ TEST_F(PersonBasicTest, RecurrenceStatus) {
   EXPECT_EQ(person_->get_recurrence_status(), Person::RecurrenceStatus::NONE);
 
   person_->set_recurrence_status(Person::RecurrenceStatus::WITH_SYMPTOM);
-  EXPECT_EQ(person_->get_recurrence_status(),
-            Person::RecurrenceStatus::WITH_SYMPTOM);
+  EXPECT_EQ(person_->get_recurrence_status(), Person::RecurrenceStatus::WITH_SYMPTOM);
 }
 

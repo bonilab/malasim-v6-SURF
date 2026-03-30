@@ -170,7 +170,7 @@ std::size_t Population::size(const int &location, const int &age_class) {
 
   if (pi_lsa == nullptr) { return 0; }
   std::size_t temp = 0;
-  if (age_class == K_INVALID_AGE_CLASS) {
+  if (age_class == core::K_INVALID_AGE_CLASS) {
     for (auto state = 0; state < Person::NUMBER_OF_STATE - 1; state++) {
       for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
         temp += pi_lsa->vPerson()[location][state][ac].size();
@@ -225,10 +225,9 @@ void Population::perform_infection_event() {
     const double foi = force_of_infection_for_n_days_by_location_[tracking_index][loc];
     if (foi <= DBL_EPSILON) continue;
 
-    const double new_beta =
-        Model::get_config()->location_db()[loc].beta *
-        Model::get_config()->get_seasonality_settings().get_seasonal_factor(
-            Model::get_scheduler()->get_calendar_date(), loc);
+    const double new_beta = Model::get_config()->location_db()[loc].beta
+                            * Model::get_config()->get_seasonality_settings().get_seasonal_factor(
+                                Model::get_scheduler()->get_calendar_date(), loc);
 
     const double poisson_means = new_beta * foi;
     const int number_of_bites = Model::get_random()->random_poisson(poisson_means);
@@ -249,11 +248,9 @@ void Population::perform_infection_event() {
 
     // Draw bite recipients
     auto persons_bitten_today = Model::get_random()->roulette_sampling<Person>(
-        number_of_bites,
-        individual_relative_biting_by_location_[loc],
+        number_of_bites, individual_relative_biting_by_location_[loc],
         all_alive_persons_by_location_[loc],
-        /*allow_repetition=*/false,
-        sum_relative_biting_by_location_[loc]);
+        /*allow_repetition=*/false, sum_relative_biting_by_location_[loc]);
 
     // Early guard on mosquito table
     if (Model::get_mosquito()->genotypes_table[tracking_index][loc].empty()) {
@@ -266,19 +263,16 @@ void Population::perform_infection_event() {
 
     for (auto* person : persons_bitten_today) {
       assert(person->get_host_state() != Person::DEAD);
-      if (!use_challenge) {
-        person->increase_number_of_times_bitten();
-      }
+      if (!use_challenge) { person->increase_number_of_times_bitten(); }
 
       const int genotype_id = Model::get_mosquito()->random_genotype(loc, tracking_index);
-      if (genotype_id < 0) continue; // extra safety
+      if (genotype_id < 0) continue;  // extra safety
 
       // Draw once per bite
       const double draw = Model::get_random()->random_flat(0.0, 1.0);
 
       bool infected = false;
       if (use_challenge) {
-
         double pr = Model::get_config()->get_transmission_settings().get_transmission_parameter();
 
         double theta = person->get_immune_system()->get_current_value();
@@ -295,19 +289,16 @@ void Population::perform_infection_event() {
           infected = (draw <= person->p_infection_from_an_infectious_bite());
         } else {
           infected = (draw <= Model::get_config()
-                               ->get_transmission_settings()
-                               .get_p_infection_from_an_infectious_bite());
+                                  ->get_transmission_settings()
+                                  .get_p_infection_from_an_infectious_bite());
         }
       }
 
-      if (infected &&
-          person->get_host_state() != Person::EXPOSED &&
-          person->liver_parasite_type() == nullptr) {
+      if (infected && person->get_host_state() != Person::EXPOSED
+          && person->liver_parasite_type() == nullptr) {
         person->get_today_infections().push_back(genotype_id);
         today_infections.push_back(person);
-        if (use_challenge) {
-          person->increase_number_of_times_bitten();
-        }
+        if (use_challenge) { person->increase_number_of_times_bitten(); }
       }
     }
   }
@@ -323,7 +314,6 @@ void Population::perform_infection_event() {
 
   today_infections.clear();
 }
-
 
 void Population::generate_individual(int location, int age_class) {
   auto person = std::make_unique<Person>();

@@ -20,7 +20,7 @@ public:
   Population &operator=(Population &&) = delete;
   // Disable copy and assignment
   Population(const Population &) = delete;
-  Population& operator=(const Population &) = delete;
+  Population &operator=(const Population &) = delete;
 
   Population();
 
@@ -54,7 +54,7 @@ public:
    * If the input location is -1, return total size
    * @param location
    */
-  std::size_t size(const int &location = -1, const int &age_class = K_INVALID_AGE_CLASS);
+  std::size_t size(const int &location = -1, const int &age_class = core::K_INVALID_AGE_CLASS);
 
   virtual std::size_t size(const int &location, const Person::HostStates &hs, const int &age_class);
 
