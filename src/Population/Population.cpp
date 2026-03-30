@@ -137,7 +137,9 @@ void Population::add_person(std::unique_ptr<Person> person) {
   for (auto &person_index : *person_index_list_) { person_index->add(person.get()); }
 
   // Update the count at the location
-  popsize_by_location_[person->get_location()]++;
+  if (person->get_location() != core::K_INVALID_LOCATION_ID) {
+    popsize_by_location_[person->get_location()]++;
+  }
   // all_persons will take ownership
   all_persons_->add(std::move(person));
 }
@@ -146,7 +148,9 @@ void Population::remove_dead_person(Person* person) { remove_person(person); }
 
 void Population::remove_person(Person* person) {
   // persons_.erase(std::ranges::remove(persons_, person).begin(), persons_.end());
-  popsize_by_location_[person->get_location()]--;
+  if (person->get_location() != core::K_INVALID_LOCATION_ID) {
+    popsize_by_location_[person->get_location()]--;
+  }
   for (auto &person_index : *person_index_list_) { person_index->remove(person); }
   all_persons_->remove(person);
 }
@@ -276,7 +280,7 @@ void Population::perform_infection_event() {
         double pr = Model::get_config()->get_transmission_settings().get_transmission_parameter();
 
         double theta = person->get_immune_system()->get_current_value();
-        double pr_inf = pr * (1 - (theta - 0.2) / 0.6) + 0.1 * ((theta - 0.2) / 0.6);
+        double pr_inf = (pr * (1 - ((theta - 0.2) / 0.6))) + (0.1 * ((theta - 0.2) / 0.6));
 
         if (theta > 0.8) pr_inf = 0.1;
         if (theta < 0.2) pr_inf = pr;
