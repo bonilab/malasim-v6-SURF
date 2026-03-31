@@ -1,5 +1,9 @@
 # Changelog v6.1
 
+## Features
+
+- **Memory Statistics**: Added `--memory-stats` CLI option to print sizeof for key classes (Person, ClonalParasitePopulation, Population) and exit without loading input or running simulation
+
 ## Bug Fixes
 
 - **Population out-of-bounds access**: Added guards for `K_INVALID_LOCATION_ID` in `Population::add_person()` and `remove_person()` to prevent crashes when Person is created with default constructor (location_ = K_INVALID_LOCATION_ID)
@@ -30,6 +34,9 @@
 
 ## Files Changed
 
+- `src/Utils/Cli.h` - Added `print_memory_stats` field and `--memory-stats` flag
+- `src/malasim/main.cpp` - Added memory stats printing and early exit
+- `tests/Utils/CliTest.cpp` - Added tests for `--memory-stats` flag
 - `src/Utils/Cli.h` - Removed singleton, converted to static utility class
 - `src/Simulation/Model.h` - Added cli_input_ member and accessors
 - `src/Simulation/Model.cpp` - Use cli_input_ member

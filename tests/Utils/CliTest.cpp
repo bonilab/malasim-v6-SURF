@@ -88,4 +88,22 @@ TEST_F(CliParseTest, ParseDistrictMovement) {
   EXPECT_TRUE(cli_input.record_district_movement);
 }
 
+TEST_F(CliParseTest, ParseMemoryStatsFlag) {
+  const char* argv[] = {"malasim", "--memory-stats"};
+  int argc = 2;
+
+  auto cli_input = utils::Cli::parse_args(argc, const_cast<char**>(argv));
+
+  EXPECT_TRUE(cli_input.print_memory_stats);
+}
+
+TEST_F(CliParseTest, MemoryStatsFlagDefaultFalse) {
+  const char* argv[] = {"malasim"};
+  int argc = 1;
+
+  auto cli_input = utils::Cli::parse_args(argc, const_cast<char**>(argv));
+
+  EXPECT_FALSE(cli_input.print_memory_stats);
+}
+
 }  // namespace

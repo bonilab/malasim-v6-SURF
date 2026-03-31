@@ -23,6 +23,7 @@ struct MaSimAppInput {
   bool record_cell_movement{false};
   bool record_district_movement{false};
   bool record_movement{false};
+  bool print_memory_stats{false};
 };
 
 struct DxGAppInput {
@@ -118,6 +119,9 @@ public:
                    "Record the movement between districts.");
 
     app.add_option("--replicate", input.replicate, "Replicate number. Default: 1");
+
+    app.add_flag("--memory-stats", input.print_memory_stats,
+                   "Print memory statistics for key classes and exit.");
   }
 
   static void create_dxg_cli_options(CLI::App &app, DxGAppInput &input) {

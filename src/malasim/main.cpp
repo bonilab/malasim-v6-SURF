@@ -4,6 +4,10 @@
 #include "spdlog/spdlog.h"
 #include "version.h"
 
+#include "Population/Person/Person.h"
+#include "Population/ClonalParasitePopulation.h"
+#include "Population/Population.h"
+
 double get_memory_kb() {
   struct rusage usage{};
   getrusage(RUSAGE_SELF, &usage);
@@ -27,6 +31,15 @@ int main(int argc, char** argv) {
     spdlog::error("Argument parsing failed. Exiting.");
     return 1;
   }
+
+  if (Model::get_cli_input().print_memory_stats) {
+    std::cout << "sizeof(Person) = " << sizeof(Person) << '\n';
+    std::cout << "sizeof(ClonalParasitePopulation) = " << sizeof(ClonalParasitePopulation) << '\n';
+    std::cout << "sizeof(Population) = " << sizeof(Population) << '\n';
+    spdlog::drop_all();
+    return 0;
+  }
+
   if (Model::get_instance()->initialize()) {
     Model::get_instance()->run();
 
