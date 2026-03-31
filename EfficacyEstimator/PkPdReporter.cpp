@@ -11,7 +11,7 @@
 #include "Simulation/Model.h"
 #include "Utils/Index/PersonIndexAll.h"
 
-PkPdReporter::PkPdReporter(utils::Cli::DxGAppInput* appInput) : appInput { appInput } {
+PkPdReporter::PkPdReporter(utils::DxGAppInput* appInput) : appInput { appInput } {
   if (appInput && !appInput->output_file.empty()) {
     outputFStream.open(appInput->output_file);
   }

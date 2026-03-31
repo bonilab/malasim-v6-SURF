@@ -11,7 +11,9 @@ protected:
 
     void SetUp() override {
         test_fixtures::setup_test_environment();
-        utils::Cli::get_instance().set_input_path("test_input.yml");
+        utils::MaSimAppInput cli_input;
+    cli_input.input_path = "test_input.yml";
+    Model::set_cli_input(cli_input);
         Model::get_instance()->initialize();
         // Set up default PopulationEvents
 

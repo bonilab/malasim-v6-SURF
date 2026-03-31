@@ -1,6 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <Utils/Cli.h>
 #include <Utils/Random.h>
 
 #include <cstddef>
@@ -22,7 +23,6 @@ namespace Spatial {
 class Location;
 }
 
-class Cli;
 class Model {
 public:
   // Provides global access to the singleton instance
@@ -36,7 +36,7 @@ public:
 
   // Prevent copying and moving
   Model(const Model &) = delete;
-  Model& operator=(const Model &) = delete;
+  Model &operator=(const Model &) = delete;
   Model(Model &&) = delete;
   Model &operator=(Model &&) = delete;
 
@@ -47,6 +47,8 @@ private:
   ~Model() = default;
 
   bool is_initialized_{false};
+
+  utils::MaSimAppInput cli_input_;
 
   std::unique_ptr<Config> config_{nullptr};
   std::unique_ptr<Scheduler> scheduler_{nullptr};
@@ -79,6 +81,14 @@ public:
   void monthly_update();
   void yearly_update();
   void release();
+
+  static void set_cli_input(utils::MaSimAppInput cli_input) {
+    get_instance()->cli_input_ = std::move(cli_input);
+  }
+
+  static const utils::MaSimAppInput& get_cli_input() {
+    return get_instance()->cli_input_;
+  }
 
   static Config* get_config() { return get_instance()->config_.get(); }
   static void set_config(std::unique_ptr<Config> config) {
@@ -169,7 +179,7 @@ public:
   void report_begin_of_time_step();
   void add_reporter(std::unique_ptr<Reporter> reporter);
 
-  std::vector<std::unique_ptr<Reporter>>& get_reporters();
+  std::vector<std::unique_ptr<Reporter>> &get_reporters();
 };
 
 #endif  // MODEL_H

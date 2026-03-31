@@ -22,7 +22,7 @@ bool Config::load(const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
 
     spdlog::info("Configuration file loaded successfully: "
-                 + utils::Cli::get_instance().get_input_path());
+                 + Model::get_cli_input().input_path);
 
     model_settings_ = config["model_settings"].as<ModelSettings>();
     simulation_timeframe_ = config["simulation_timeframe"].as<SimulationTimeframe>();

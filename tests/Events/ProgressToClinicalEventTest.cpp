@@ -40,7 +40,9 @@ TEST(ProgressToClinicalEventDeterministicTest, ShouldReceiveTreatmentRespectsAge
     });
 
     // Initialize model
-    utils::Cli::get_instance().set_input_path("test_input.yml");
+    utils::MaSimAppInput cli_input;
+    cli_input.input_path = "test_input.yml";
+    Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());
 
     // Replace treatment coverage with a constant value (base_p)
@@ -74,7 +76,9 @@ TEST(ProgressToClinicalEventDeterministicTest, ShouldReceiveTreatmentRespectsAge
         n["ages"] = std::vector<int>{0,5,10,15,20,30,40};
     });
 
-    utils::Cli::get_instance().set_input_path("test_input.yml");
+    utils::MaSimAppInput cli_input2;
+    cli_input2.input_path = "test_input.yml";
+    Model::set_cli_input(cli_input2);
     ASSERT_TRUE(Model::get_instance()->initialize());
 
     // Reinstall deterministic RNG and constant TCM

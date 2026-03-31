@@ -1,112 +1,95 @@
+#pragma once
+
 #include <spdlog/spdlog.h>
 
 #include <CLI/CLI.hpp>
+#include <fstream>
+#include <stdexcept>
 #include <string>
 
 namespace utils {
+
+struct MaSimAppInput {
+  std::string input_path{"input.yml"};
+  std::string output_path;
+  std::string reporter;
+  int verbosity{0};
+  int job_number{0};
+  int replicate{1};
+  std::string list_reporters{"lr"};
+  std::string help{"h"};
+  bool dump_movement_matrix{false};
+  bool record_individual_movement{false};
+  bool record_cell_movement{false};
+  bool record_district_movement{false};
+  bool record_movement{false};
+};
+
+struct DxGAppInput {
+  std::string input_file{"input.yml"};
+  std::string output_file;
+  std::vector<int> therapies;
+  std::vector<int> therapy_list;
+  std::vector<std::string> genotypes;
+  bool is_crt_calibration = false;
+  double as_iov = -1.0;
+  double as_iiv = -1.0;
+  double as_ec50 = -1.0;
+  bool is_ee_calibration = false;
+  int number_of_drugs_in_combination{1};
+  bool is_art{false};
+  std::vector<int> dosing_days;
+  std::vector<double> half_life;
+  std::vector<double> k_max;
+  std::vector<double> ec50;
+  std::vector<double> slope;
+  std::vector<double> mean_drug_absorption;
+  int population_size{10000};
+  bool is_print_immunity_level{false};
+  bool is_old_format{false};
+};
+
 class Cli {
 public:
-  struct MaSimAppInput {
-    std::string input_path{"input.yml"};
-    std::string output_path;
-    std::string reporter;
-    int verbosity{0};
-    int job_number{0};
-    int replicate{1};
-    std::string list_reporters{"lr"};
-    std::string help{"h"};
-    bool dump_movement_matrix{false};
-    bool record_individual_movement{false};
-    bool record_cell_movement{false};
-    bool record_district_movement{false};
-    bool record_movement{false};
-  };
-  struct DxGAppInput {
-    std::string input_file{"input.yml"};
-    std::string output_file;
-    std::vector<int> therapies;
-    std::vector<int> therapy_list;
-    std::vector<std::string> genotypes;
-    bool is_crt_calibration = false;
-    double as_iov = -1.0;
-    double as_iiv = -1.0;
-    double as_ec50 = -1.0;
-    bool is_ee_calibration = false;
-    int number_of_drugs_in_combination{1};
-    bool is_art{false};
-    std::vector<int> dosing_days;
-    std::vector<double> half_life;
-    std::vector<double> k_max;
-    std::vector<double> ec50;
-    std::vector<double> slope;
-    std::vector<double> mean_drug_absorption;
-    int population_size{10000};
-    bool is_print_immunity_level{false};
-    bool is_old_format{false};
-  };
+  // Static parse function that returns parsed input
+  static MaSimAppInput parse_args(int argc, char** argv) {
+    MaSimAppInput cli_input;
+    CLI::App app{"Individual-based simulation for malaria"};
+    create_cli_options(app, cli_input);
 
-  // Static method to get the single instance of the class
-  static Cli &get_instance() {
-    static Cli instance;  // Guaranteed to be destroyed and instantiated on first use.
-    return instance;
-  }
-
-  Cli(Cli &&) = delete;
-  Cli &operator=(Cli &&) = delete;
-  // Delete copy constructor and assignment operator
-  Cli(const Cli &) = delete;
-  void operator=(const Cli &) = delete;
-
-  explicit Cli(MaSimAppInput cli_input) : cli_input_(std::move(cli_input)) {}
-
-  // Parse function
-  void parse(int argc, char** argv) {
-    bool is_dxg = false;
-
+    // Check for DxG mode (not supported in static parse)
     for (int i = 1; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--DxG" || arg == "DxG=1" || arg == "DxG=true") {
-        is_dxg = true;
-        break;
+        throw std::runtime_error("DxG mode not supported in static parse");
       }
     }
-
-    spdlog::info("Parsing command line arguments");
 
     try {
-      if (is_dxg) {
-        create_dxg_cli_options(app_, dxg_input_);
-        app_.parse(argc, argv);
-      } else {
-        create_cli_options(app_, cli_input_);
-        app_.parse(argc, argv);
-        validate_config(cli_input_);
-      }
+      app.parse(argc, argv);
     } catch (const CLI::ParseError &e) {
       spdlog::error("CLI parsing failed: {}", e.what());
-      throw;  // or return false if you refactor to use a return value
+      throw;
     }
+
+    return cli_input;
   }
 
-  // Accessors for parameters
-  [[nodiscard]] std::string get_input_path() const { return cli_input_.input_path; }
-  void set_input_path(const std::string &input_path) { cli_input_.input_path = input_path; }
-  [[nodiscard]] int get_job_number() const { return cli_input_.job_number; }
-  [[nodiscard]] int get_replicate() const { return cli_input_.replicate; }
-  [[nodiscard]] std::string get_reporter() const { return cli_input_.reporter; }
-  [[nodiscard]] std::string get_output_path() const { return cli_input_.output_path; }
-  void set_output_path(const std::string &output_path) { cli_input_.output_path = output_path; }
-  [[nodiscard]] int get_verbosity() const { return cli_input_.verbosity; }
-  [[nodiscard]] bool get_dump_movement_matrix() const { return cli_input_.dump_movement_matrix; }
-  [[nodiscard]] bool get_record_individual_movement() const {
-    return cli_input_.record_individual_movement;
+  // Static parse function for DxG mode
+  static DxGAppInput parse_dxg_args(int argc, char** argv) {
+    DxGAppInput dxg_input;
+    CLI::App app{"DxG Generator for malaria"};
+    create_dxg_cli_options(app, dxg_input);
+
+    try {
+      app.parse(argc, argv);
+    } catch (const CLI::ParseError &e) {
+      spdlog::error("CLI parsing failed: {}", e.what());
+      throw;
+    }
+
+    return dxg_input;
   }
-  [[nodiscard]] bool get_record_cell_movement() const { return cli_input_.record_cell_movement; }
-  [[nodiscard]] bool get_record_district_movement() const {
-    return cli_input_.record_district_movement;
-  }
-  [[nodiscard]] bool get_record_movement() const { return cli_input_.record_movement; }
-  [[nodiscard]] DxGAppInput get_dxg_app_input() { return dxg_input_; }
 
   static void create_cli_options(CLI::App &app, MaSimAppInput &input) {
     app.add_option("-i,--input", input.input_path, "Input filename. Default: `input.yml`.");
@@ -122,16 +105,16 @@ public:
         "-j,--job", input.job_number,
         "Sets the study to associate with the configuration (or database id). Default: 0");
 
-    app.add_option("-d,--dump", input.dump_movement_matrix,
+    app.add_flag("-d,--dump", input.dump_movement_matrix,
                    "Dump the movement matrix as calculated.");
 
     app.add_option("-l,--list", input.list_reporters, "List the possible reporters.");
 
-    app.add_option("--im", input.record_individual_movement, "Record individual movement data.");
+    app.add_flag("--im", input.record_individual_movement, "Record individual movement data.");
 
-    app.add_option("--mc", input.record_cell_movement, "Record the movement between cells.");
+    app.add_flag("--mc", input.record_cell_movement, "Record the movement between cells.");
 
-    app.add_option("--md", input.record_district_movement,
+    app.add_flag("--md", input.record_district_movement,
                    "Record the movement between districts.");
 
     app.add_option("--replicate", input.replicate, "Replicate number. Default: 1");
@@ -216,14 +199,6 @@ public:
 
     return true;
   }
-
-private:
-  // Private constructor for Singleton
-  Cli() = default;
-  ~Cli() = default;
-  CLI::App app_{"Individual-based simulation for malaria"};
-  MaSimAppInput cli_input_;
-  DxGAppInput dxg_input_;
 };
-}  // namespace utils
 
+}  // namespace utils

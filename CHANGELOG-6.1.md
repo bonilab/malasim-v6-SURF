@@ -8,6 +8,13 @@
 
 ## Refactor
 
+- **CLI Refactor**: Removed singleton pattern from `Cli` class
+  - `MaSimAppInput` and `DxGAppInput` are now standalone structs in `utils` namespace
+  - Added static `Cli::parse_args()` and `Cli::parse_dxg_args()` methods
+  - `Model` now owns `cli_input_` member with `set_cli_input()`/`get_cli_input()` accessors
+  - `Config` and `ReporterUtils` now use `Model::get_cli_input()` instead of `Cli::get_instance()`
+  - Main executable and tests updated to use new pattern
+
 - **Age and Age Class Types**: Changed `age_` and `age_class_` member variables in `Person` class from `int` to `uint8_t` with symbolic sentinel values
   - Added `Age = uint8_t` and `AgeClass = uint8_t` typedefs in `Person.h`
   - Added `K_INVALID_AGE` (255) and `K_INVALID_AGE_CLASS` (255) constants
@@ -22,6 +29,31 @@
 - **Test logging**: Changed default log level from `info` to `warn`; set `MALASIM_LOG_LEVEL` env var to control logging (e.g., `MALASIM_LOG_LEVEL=info` for verbose output)
 
 ## Files Changed
+
+- `src/Utils/Cli.h` - Removed singleton, converted to static utility class
+- `src/Simulation/Model.h` - Added cli_input_ member and accessors
+- `src/Simulation/Model.cpp` - Use cli_input_ member
+- `src/Configuration/Config.cpp` - Use Model::get_cli_input()
+- `src/Reporters/Utility/ReporterUtils.cpp` - Use Model::get_cli_input()
+- `src/malasim/main.cpp` - Use Cli::parse_args()
+- `EfficacyEstimator/DxGGenerator_main.cpp` - Use Cli::parse_dxg_args()
+- `tests/Utils/CliTest.cpp` - New tests for CLI parsing
+- `tests/Population/Person/PersonTestBase.h` - Updated to use new CLI pattern
+- `tests/Events/ProgressToClinicalEventTest.cpp` - Updated to use new CLI pattern
+- `tests/Population/PopulationGenerateIndividualTest.cpp` - Updated to use new CLI pattern
+- `tests/MDC/ModelDataCollectorTest.cpp` - Updated to use new CLI pattern
+- `tests/Population/Person/PersonRecrudescenceTest.cpp` - Updated to use new CLI pattern
+- `tests/Population/Person/PersonEventTest.cpp` - Updated to use new CLI pattern
+- `tests/Population/DrugsInBloodTest.cpp` - Updated to use new CLI pattern
+- `tests/Treatment/LinearTCMTest.cpp` - Updated to use new CLI pattern
+- `tests/Treatment/Strategies/*.cpp` (14 files) - Updated to use new CLI pattern
+- `tests/Treatment/Therapies/*.cpp` (6 files) - Updated to use new CLI pattern
+- `tests/Spatial/Movement/*.cpp` (4 files) - Updated to use new CLI pattern
+- `tests/Configuration/yaml_population_events_conversion_test.cpp` - Updated to use new CLI pattern
+- `tests/README.md` - Documentation updates
+- `CHANGELOG-6.1.md` - This changelog
+
+## Files Changed (from v6.0)
 
 - `src/Population/Person/Person.h` - Added type aliases and constants
 - `src/Population/Person/Person.cpp` - Fixed sentinel comparison

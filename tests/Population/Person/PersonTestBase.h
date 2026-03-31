@@ -18,8 +18,12 @@ protected:
   void SetUp() override {
     // Create test configuration file
     test_fixtures::create_complete_test_environment();
-    utils::Cli::get_instance().set_input_path("test_input.yml");
-    
+
+    // Set CLI input for model
+    utils::MaSimAppInput cli_input;
+    cli_input.input_path = "test_input.yml";
+    Model::set_cli_input(cli_input);
+
     // Get the Model instance and set up with standard mocks
     original_model_ = Model::get_instance();
     auto mocks = test_fixtures::setup_model_with_mocks(original_model_);

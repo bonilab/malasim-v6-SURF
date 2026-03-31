@@ -28,7 +28,7 @@ class PkPdReporter : public Reporter {
     const std::string group_sep = "-1111\t";
     const std::string sep = ",";
 
-    PkPdReporter(utils::Cli::DxGAppInput* appInput=nullptr);
+    PkPdReporter(utils::DxGAppInput* appInput=nullptr);
 
   virtual ~PkPdReporter();
 
@@ -45,7 +45,7 @@ class PkPdReporter : public Reporter {
   void monthly_report() override;
 
  private:
-    utils::Cli::DxGAppInput* appInput{nullptr};
+    utils::DxGAppInput* appInput{nullptr};
     std::ofstream outputFStream;
 
 };

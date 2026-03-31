@@ -35,10 +35,10 @@
 #include "Utils/Index/PersonIndexAll.h"
 #include "Utils/Random.h"
 
-bool validate_config_for_ee(utils::Cli::DxGAppInput &input);
-double get_efficacy_for_therapy(std::string g_str, Model* p_model, utils::Cli::DxGAppInput &input,
+bool validate_config_for_ee(utils::DxGAppInput &input);
+double get_efficacy_for_therapy(std::string g_str, Model* p_model, utils::DxGAppInput &input,
                                 int therapy_id);
-double get_efficacy_for_therapy_crt(Model* p_model, utils::Cli::DxGAppInput &input, int therapy_id);
+double get_efficacy_for_therapy_crt(Model* p_model, utils::DxGAppInput &input, int therapy_id);
 
 // efficacy_map efficacies;
 
@@ -51,15 +51,14 @@ inline double round(double val) {
  *
  */
 int main(int argc, char** argv) {
-  utils::Cli::get_instance().parse(argc, argv);
+  auto input = utils::Cli::parse_dxg_args(argc, argv);
   Model::get_instance()->initialize();
 
   auto* p_model = Model::get_instance();
-  auto input = utils::Cli::get_instance().get_dxg_app_input();
 
   if (input.as_iiv != -1) {
     for (auto &sd : Model::get_drug_db()->at(0)->age_group_specific_drug_concentration_sd()) {
-      sd = utils::Cli::get_instance().get_dxg_app_input().as_iiv;
+      sd = input.as_iiv;
     }
   }
 
@@ -255,7 +254,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-double get_efficacy_for_therapy(std::string g_str, Model* p_model, utils::Cli::DxGAppInput &input,
+double get_efficacy_for_therapy(std::string g_str, Model* p_model, utils::DxGAppInput &input,
                                 int therapy_id) {
   Therapy* main_therapy = Model::get_therapy_db()[therapy_id].get();
   dynamic_cast<SFTStrategy*>(Model::get_treatment_strategy())->get_therapy_list().clear();
@@ -311,7 +310,7 @@ double get_efficacy_for_therapy(std::string g_str, Model* p_model, utils::Cli::D
   return result;
 }
 
-double get_efficacy_for_therapy_crt(Model* p_model, utils::Cli::DxGAppInput &input,
+double get_efficacy_for_therapy_crt(Model* p_model, utils::DxGAppInput &input,
                                     int therapy_id) {
   Therapy* main_therapy = Model::get_therapy_db()[therapy_id].get();
   dynamic_cast<SFTStrategy*>(Model::get_treatment_coverage())->get_therapy_list().clear();
@@ -379,7 +378,7 @@ double get_efficacy_for_therapy_crt(Model* p_model, utils::Cli::DxGAppInput &inp
   return result;
 }
 
-bool validate_config_for_ee(utils::Cli::DxGAppInput &input) {
+bool validate_config_for_ee(utils::DxGAppInput &input) {
   input.number_of_drugs_in_combination = input.half_life.size();
 
   if (input.number_of_drugs_in_combination > 5) {

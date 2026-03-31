@@ -21,7 +21,8 @@ int main(int argc, char** argv) {
   spdlog::info("Malaria Simulation v{}", VERSION);
   spdlog::info("Starting...");
   try {
-    utils::Cli::get_instance().parse(argc, argv);
+    auto cli_input = utils::Cli::parse_args(argc, argv);
+    Model::set_cli_input(std::move(cli_input));
   } catch (...) {
     spdlog::error("Argument parsing failed. Exiting.");
     return 1;

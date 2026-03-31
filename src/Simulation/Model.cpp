@@ -13,7 +13,6 @@
 #include "Reporters/Reporter.h"
 #include "Treatment/LinearTCM.h"
 #include "Treatment/SteadyTCM.h"
-#include "Utils/Cli.h"
 
 bool Model::initialize() {
   config_ = std::make_unique<Config>();
@@ -32,7 +31,7 @@ bool Model::initialize() {
   genotype_db_ = std::make_unique<GenotypeDatabase>();
   drug_db_ = std::make_unique<DrugDatabase>();
 
-  if (utils::Cli::get_instance().get_input_path().empty()) {
+  if (cli_input_.input_path.empty()) {
     // spdlog::error("Input path is empty. Please provide a valid input path.");
     // return false;
     spdlog::warn("Input path is empty. Model initialized without configuration file.");
@@ -40,8 +39,8 @@ bool Model::initialize() {
   }
 
   // if input path is not empty, load configuration file
-  spdlog::info("Loading configuration file: " + utils::Cli::get_instance().get_input_path());
-  if (config_->load(utils::Cli::get_instance().get_input_path())) {
+  spdlog::info("Loading configuration file: " + cli_input_.input_path);
+  if (config_->load(cli_input_.input_path)) {
     if (config_->get_model_settings().get_initial_seed_number() <= 0) {
       random_->set_seed(std::chrono::system_clock::now().time_since_epoch().count());
     } else {
@@ -50,17 +49,17 @@ bool Model::initialize() {
 
     spdlog::info("Model initialized with seed: " + std::to_string(random_->get_seed()));
 
-    if (utils::Cli::get_instance().get_output_path().empty()) {
-      utils::Cli::get_instance().set_output_path("./");
+    if (cli_input_.output_path.empty()) {
+      cli_input_.output_path = "./";
     }
 
     // add reporter here
-    if (utils::Cli::get_instance().get_reporter().empty()) {
+    if (cli_input_.reporter.empty()) {
       add_reporter(Reporter::MakeReport(Reporter::SQLITE_MONTHLY_REPORTER));
     } else {
-      if (Reporter::ReportTypeMap.contains(utils::Cli::get_instance().get_reporter())) {
+      if (Reporter::ReportTypeMap.contains(cli_input_.reporter)) {
         add_reporter(Reporter::MakeReport(
-            Reporter::ReportTypeMap[utils::Cli::get_instance().get_reporter()]));
+            Reporter::ReportTypeMap[cli_input_.reporter]));
       }
     }
 
@@ -70,8 +69,8 @@ bool Model::initialize() {
 
     // initialize reporters
     for (auto &reporter : reporters_) {
-      reporter->initialize(utils::Cli::get_instance().get_job_number(),
-                           utils::Cli::get_instance().get_output_path());
+      reporter->initialize(cli_input_.job_number,
+                           cli_input_.output_path);
     }
     spdlog::info("Model initialized reporters.");
 
@@ -112,17 +111,17 @@ bool Model::initialize() {
       }
     }
 
-    if (utils::Cli::get_instance().get_record_movement()) {
+    if (cli_input_.record_movement) {
       // Generate a movement reporter
       auto reporter = Reporter::MakeReport(Reporter::ReportType::MOVEMENT_REPORTER);
-      reporter->initialize(utils::Cli::get_instance().get_job_number(),
-                           utils::Cli::get_instance().get_output_path());
+      reporter->initialize(cli_input_.job_number,
+                           cli_input_.output_path);
       add_reporter(std::move(reporter));
     }
     is_initialized_ = true;
   } else {
     spdlog::error("Failed to load configuration file: "
-                  + utils::Cli::get_instance().get_input_path());
+                  + cli_input_.input_path);
   }
   return is_initialized_;
 }
