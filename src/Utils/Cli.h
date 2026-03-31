@@ -20,6 +20,7 @@ public:
     bool record_cell_movement{false};
     bool record_district_movement{false};
     bool record_movement{false};
+    bool print_memory_stats{false};
   };
   struct DxGAppInput {
     std::string input_file{ "input.yml" };
@@ -110,6 +111,7 @@ public:
     return cli_input_.record_district_movement;
   }
   [[nodiscard]] bool get_record_movement() const { return cli_input_.record_movement; }
+  [[nodiscard]] bool get_print_memory_stats() const { return cli_input_.print_memory_stats; }
   [[nodiscard]] DxGAppInput get_dxg_app_input() {
     return dxg_input_;
   }
@@ -141,6 +143,9 @@ public:
                    "Record the movement between districts.");
 
     app.add_option("--replicate", input.replicate, "Replicate number. Default: 1");
+
+    app.add_flag("--memory-stats", input.print_memory_stats,
+                   "Print memory statistics for key classes and exit.");
   }
 
   static void create_dxg_cli_options(CLI::App &app, DxGAppInput &input) {

@@ -4,6 +4,24 @@
 #include "spdlog/spdlog.h"
 #include "version.h"
 
+#include "Population/Person/Person.h"
+#include "Population/ClonalParasitePopulation.h"
+#include "Population/Population.h"
+
+#include <sys/resource.h>
+
+double get_memory_kb() {
+  struct rusage usage{};
+  getrusage(RUSAGE_SELF, &usage);
+#ifdef __APPLE__
+  // macOS: ru_maxrss in bytes
+  return usage.ru_maxrss / 1024.0;
+#else
+  // Linux: ru_maxrss in kilobytes
+  return usage.ru_maxrss;
+#endif
+}
+
 int main(int argc, char** argv) {
   Logger::initialize(spdlog::level::info);
   spdlog::info("Malaria Simulation v{}",VERSION);
@@ -14,8 +32,20 @@ int main(int argc, char** argv) {
     spdlog::error("Argument parsing failed. Exiting.");
     return 1;
   }
+
+  if (utils::Cli::get_instance().get_print_memory_stats()) {
+    std::cout << "sizeof(Person) = " << sizeof(Person) << '\n';
+    std::cout << "sizeof(ClonalParasitePopulation) = " << sizeof(ClonalParasitePopulation) << '\n';
+    std::cout << "sizeof(Population) = " << sizeof(Population) << '\n';
+    spdlog::drop_all();
+    return 0;
+  }
+
   if (Model::get_instance()->initialize()) {
     Model::get_instance()->run();
+
+    double memory_kb = get_memory_kb();
+    std::cout << "Memory Usage: " << memory_kb << " KB" << '\n';
     Model::get_instance()->release();
   } else {
     spdlog::get("default_logger")->error("Model initialization failed.");
