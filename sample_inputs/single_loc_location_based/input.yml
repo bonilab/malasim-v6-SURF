@@ -129,7 +129,7 @@ spatial_settings:
     beta_by_location: [0.054]
 
     #if the number of values less than number of locations, the first value will be applied for all locations
-    population_size_by_location: [10000]
+    population_size_by_location: [1000000]
 
 # ---------------------------------------------------------------
 # 6. Seasonality Settings

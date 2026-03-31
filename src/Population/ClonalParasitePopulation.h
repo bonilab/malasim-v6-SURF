@@ -1,6 +1,7 @@
 #ifndef CLONALPARASITEPOPULATION_H
 #define CLONALPARASITEPOPULATION_H
 
+#include "Core/types.h"
 #include "ParasiteDensity/ParasiteDensityUpdateFunction.h"
 #include "Treatment/Therapies/DrugType.h"
 #include "Utils/Index/Indexer.h"
@@ -35,8 +36,8 @@ public:
   [[nodiscard]] double gametocyte_level() const noexcept { return gametocyte_level_; }
   void set_gametocyte_level(const double &value) noexcept { gametocyte_level_ = value; }
 
-  [[nodiscard]] int first_date_in_blood() const { return first_date_in_blood_; }
-  void set_first_date_in_blood(const int &value) { first_date_in_blood_ = value; }
+  [[nodiscard]] core::SimDay first_date_in_blood() const { return first_date_in_blood_; }
+  void set_first_date_in_blood(const core::SimDay &value) { first_date_in_blood_ = value; }
 
   [[nodiscard]] Genotype* genotype() const noexcept { return genotype_; }
   void set_genotype(Genotype* value) noexcept { genotype_ = value; }
@@ -63,14 +64,17 @@ public:
   void perform_drug_action(double percent_parasite_remove, double log10_parasite_density_cured);
 
 private:
-  double last_update_log10_parasite_density_{LOG_ZERO_PARASITE_DENSITY};
-  double gametocyte_level_{0.0};
-  int first_date_in_blood_{-1};
+  SingleHostClonalParasitePopulations* parasite_population_{nullptr};
   // Non-owning pointer. SingleHostClonalParasitePopulations owns all ClonalParasitePopulation
   // instances.
-  SingleHostClonalParasitePopulations* parasite_population_{nullptr};
   Genotype* genotype_{nullptr};
+  // Non-owning pointer
   ParasiteDensityUpdateFunction* update_function_{nullptr};
+
+  double last_update_log10_parasite_density_{LOG_ZERO_PARASITE_DENSITY};
+  double gametocyte_level_{0.0};
+
+  core::SimDay first_date_in_blood_{core::K_INVALID_SIM_DAY};
 };
 
 #endif /* CLONALPARASITEPOPULATION_H */

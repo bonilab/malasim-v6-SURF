@@ -307,8 +307,25 @@ public:
       ClonalParasitePopulation* clinical_caused_parasite);
 
 private:
+  std::vector<core::GenotypeId> today_infections_;
+  std::vector<core::LocationId> today_target_locations_;
+  std::vector<double> prob_present_at_mda_by_age_;
+  std::map<core::DrugId, double> starting_drug_values_for_mac_;
+
+  std::unique_ptr<ImmuneSystem> immune_system_{nullptr};
+  std::unique_ptr<SingleHostClonalParasitePopulations> all_clonal_parasite_populations_{nullptr};
+  std::unique_ptr<DrugsInBlood> drugs_in_blood_{nullptr};
+
+  EventManager<PersonEvent> event_manager_;
+
+  // Non-owning. Lifetime manged by Model GenotypeDB
+  Genotype* liver_parasite_type_{nullptr};
   // Non-owning. Population owns all Person instances.
   Population* population_{nullptr};
+
+  double innate_relative_biting_rate_{0};
+  double current_relative_biting_rate_{0};
+
   core::Age age_{core::K_INVALID_AGE};
   core::AgeClass age_class_{core::K_INVALID_AGE_CLASS};
   HostStates host_state_{SUSCEPTIBLE};
@@ -320,27 +337,11 @@ private:
 
   core::SimDay birthday_{core::K_INVALID_SIM_DAY};
   core::SimDay latest_update_time_{core::K_INVALID_SIM_DAY};
-
-  std::vector<core::GenotypeId> today_infections_;
-  std::vector<core::LocationId> today_target_locations_;
-  std::vector<double> prob_present_at_mda_by_age_;
-
   core::BiteCount number_of_times_bitten_{0};
   core::TripCount number_of_trips_taken_{0};
 
   core::TherapyId last_therapy_id_{0};
-
-  std::map<core::DrugId, double> starting_drug_values_for_mac_;
-  double innate_relative_biting_rate_{0};
-  double current_relative_biting_rate_{0};
-
-  std::unique_ptr<ImmuneSystem> immune_system_{nullptr};
-  std::unique_ptr<SingleHostClonalParasitePopulations> all_clonal_parasite_populations_{nullptr};
-  std::unique_ptr<DrugsInBlood> drugs_in_blood_{nullptr};
-  // Non-owning. Lifetime manged by Model GenotypeDB
-  Genotype* liver_parasite_type_{nullptr};
   core::SimDay latest_time_received_public_treatment_{-30};
-  EventManager<PersonEvent> event_manager_;
 
 #ifdef ENABLE_TRAVEL_TRACKING
   core::SimDay day_that_last_trip_was_initiated_{core::K_INVALID_SIM_DAY};
