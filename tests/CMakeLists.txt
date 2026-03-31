@@ -44,7 +44,7 @@ endif()
 
 # Link the core library and GTest to the test executable
 target_link_libraries(malasim_test PRIVATE
-  GTest::gtest GTest::gmock
+  GTest::gmock_main
   MalaSimCore
 )
 

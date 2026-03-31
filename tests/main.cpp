@@ -1,4 +1,4 @@
-#include <spdlog/spdlog-inl.h>
+#include <spdlog/spdlog.h>
 
 #include "gtest/gtest.h"
 

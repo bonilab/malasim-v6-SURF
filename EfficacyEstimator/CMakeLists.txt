@@ -21,14 +21,7 @@ find_package(unofficial-sqlite3 CONFIG REQUIRED)
 add_dependencies(DxGGenerator MalaSimCore)
 
 # Link MalaSimCore to DxGGenerator
-target_link_libraries(DxGGenerator PRIVATE MalaSimCore
-        fmt::fmt-header-only
-        GSL::gsl GSL::gslcblas
-        yaml-cpp::yaml-cpp
-        spdlog::spdlog
-        date::date date::date-tz
-        CLI11::CLI11
-        unofficial::sqlite3::sqlite3
+target_link_libraries(DxGGenerator  PUBLIC MalaSimCore
 )
 
 # Include the directory containing MalaSimCore headers
