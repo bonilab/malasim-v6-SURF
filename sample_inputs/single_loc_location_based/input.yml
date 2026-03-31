@@ -36,7 +36,7 @@ simulation_timeframe:
   start_of_comparison_period: 2000/1/1
 
   # Simulation ending date
-  ending_date: 2001/1/1
+  ending_date: 2000/2/1
 
   # Day to start collecting data
   start_collect_data_day: 0
@@ -82,7 +82,7 @@ population_demographic:
 # 5. Raster and Geographic Settings
 # ---------------------------------------------------------------
 spatial_settings:
-  mode: "location_based" 
+  mode: "location_based"
   grid_based:
     # Approximate national age distribution (to be updated with specific country data)
     age_distribution_by_location: [[0.0423, 0.0423, 0.0423, 0.0423, 0.0349, 0.0349, 0.0349, 0.0349, 0.0349, 0.0317, 0.0317, 0.0317, 0.0317, 0.0317, 0.1743, 0.1132, 0.0832, 0.0601, 0.0341, 0.0331, 0.0]]
@@ -129,7 +129,7 @@ spatial_settings:
     beta_by_location: [0.054]
 
     #if the number of values less than number of locations, the first value will be applied for all locations
-    population_size_by_location: [50000]
+    population_size_by_location: [10000]
 
 # ---------------------------------------------------------------
 # 6. Seasonality Settings

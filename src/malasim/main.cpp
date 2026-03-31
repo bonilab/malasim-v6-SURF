@@ -4,9 +4,21 @@
 #include "spdlog/spdlog.h"
 #include "version.h"
 
+double get_memory_kb() {
+  struct rusage usage{};
+  getrusage(RUSAGE_SELF, &usage);
+#ifdef __APPLE__
+  // macOS: ru_maxrss in bytes
+  return usage.ru_maxrss / 1024.0;
+#else
+  // Linux: ru_maxrss in kilobytes
+  return usage.ru_maxrss;
+#endif
+}
+
 int main(int argc, char** argv) {
   Logger::initialize(spdlog::level::info);
-  spdlog::info("Malaria Simulation v{}",VERSION);
+  spdlog::info("Malaria Simulation v{}", VERSION);
   spdlog::info("Starting...");
   try {
     utils::Cli::get_instance().parse(argc, argv);
@@ -16,6 +28,9 @@ int main(int argc, char** argv) {
   }
   if (Model::get_instance()->initialize()) {
     Model::get_instance()->run();
+
+    double memory_kb = get_memory_kb();
+    std::cout << "Memory Usage: " << memory_kb << " KB" << '\n';
     Model::get_instance()->release();
   } else {
     spdlog::get("default_logger")->error("Model initialization failed.");

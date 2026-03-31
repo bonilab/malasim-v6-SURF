@@ -26,6 +26,21 @@ private:
     sqlite3_bind_int(stmt, index, value);
   }
 
+  // Binds a 16-bit unsigned integer value
+  static void bind_single_value(sqlite3_stmt* stmt, int index, std::uint16_t value) {
+    sqlite3_bind_int(stmt, index, static_cast<int>(value));
+  }
+
+  // Binds a 16-bit signed integer value
+  static void bind_single_value(sqlite3_stmt* stmt, int index, std::int16_t value) {
+    sqlite3_bind_int(stmt, index, static_cast<int>(value));
+  }
+
+  // Binds a 32-bit unsigned integer value
+  static void bind_single_value(sqlite3_stmt* stmt, int index, std::uint32_t value) {
+    sqlite3_bind_int64(stmt, index, static_cast<sqlite3_int64>(value));
+  }
+
   // Binds a time_t value to the second placeholder in the prepared SQL
   // statement.
   // This is used for binding time values (typically representing dates or

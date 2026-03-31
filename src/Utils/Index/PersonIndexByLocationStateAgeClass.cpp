@@ -1,6 +1,7 @@
 #include "PersonIndexByLocationStateAgeClass.h"
 #include "PersonIndexByLocationStateAgeClassHandler.h"
 #include "Configuration/Config.h"
+#include "Core/types.h"
 #include "Simulation/Model.h"
 
 #include <cassert>
@@ -30,17 +31,18 @@ void PersonIndexByLocationStateAgeClass::Initialize(const int &no_location, cons
 }
 
 void PersonIndexByLocationStateAgeClass::add(Person *p) {
-  assert(vPerson_.size() > p->get_location() && p->get_location() >= 0);
+  assert(p->get_location() != core::K_INVALID_LOCATION_ID);
+  assert(p->get_age_class() != core::K_INVALID_AGE_CLASS);
+  assert(vPerson_.size() > p->get_location());
   assert(vPerson_[p->get_location()].size() > p->get_host_state());
   assert(vPerson_[p->get_location()][p->get_host_state()].size() > p->get_age_class());
-  assert(p->get_age_class() >= 0);
 
   add(p, p->get_location(), p->get_host_state(), p->get_age_class());
 
 }
 
-void PersonIndexByLocationStateAgeClass::add(Person *p, const int &location, const Person::HostStates &host_state,
-                                             const int &age_class) {
+void PersonIndexByLocationStateAgeClass::add(Person *p, core::LocationId location, const Person::HostStates &host_state,
+                                             core::AgeClass age_class) {
   vPerson_[location][host_state][age_class].push_back(p);
   p->PersonIndexByLocationStateAgeClassHandler::set_index(vPerson_[location][host_state][age_class].size() - 1);
 }
@@ -76,19 +78,19 @@ PersonIndexByLocationStateAgeClass::notify_change(Person *p, const Person::Prope
                                                   const void *newValue) {
 
   switch (property) {
-    case Person::LOCATION:change_property(p, *(int *) newValue, p->get_host_state(), p->get_age_class());
+    case Person::LOCATION:change_property(p, *(core::LocationId *) newValue, p->get_host_state(), p->get_age_class());
       break;
     case Person::HOST_STATE:change_property(p, p->get_location(), *(Person::HostStates *) newValue, p->get_age_class());
       break;
-    case Person::AGE_CLASS:change_property(p, p->get_location(), p->get_host_state(), *(int *) newValue);
+    case Person::AGE_CLASS:change_property(p, p->get_location(), p->get_host_state(), *(core::AgeClass *) newValue);
       break;
     default:break;
   }
 
 }
 
-void PersonIndexByLocationStateAgeClass::change_property(Person *p, const int &location,
-                                                         const Person::HostStates &host_state, const int &age_class) {
+void PersonIndexByLocationStateAgeClass::change_property(Person *p, core::LocationId location,
+                                                         const Person::HostStates &host_state, core::AgeClass age_class) {
   //remove from old position
   remove_without_set_index(p); //to save 1 set and improve performance since the index of p will changed when add
 

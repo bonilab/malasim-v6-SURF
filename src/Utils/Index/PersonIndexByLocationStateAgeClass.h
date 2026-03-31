@@ -44,9 +44,9 @@ private:
  private:
   void remove_without_set_index(Person *p);
 
-  void add(Person *p, const int &location, const Person::HostStates &host_state, const int &age_class);
+  void add(Person *p, core::LocationId location, const Person::HostStates &host_state, core::AgeClass age_class);
 
-  void change_property(Person *p, const int &location, const Person::HostStates &host_state, const int &age_class);
+  void change_property(Person *p, core::LocationId location, const Person::HostStates &host_state, core::AgeClass age_class);
 };
 
 #endif    /* PERSONINDEXBYLOCATIONSTATEAGECLASS_H */
