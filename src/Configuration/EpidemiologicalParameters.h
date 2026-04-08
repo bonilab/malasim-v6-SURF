@@ -118,62 +118,117 @@ public:
     double ro_star_ = 0.00031;
     double blood_meal_volume_ = 3.0;
   };
+
   // New: Age-based probability of seeking treatment
   class AgeBasedProbabilityOfSeekingTreatment {
-  public:
-    struct PowerConfig {
-      double base = 1.0;                      // multiplicative base
-      std::string exponent_source = "index";  // how to derive exponent
-    };
+    public:
+        struct PowerConfig {
+            double base = 1.0;                      // multiplicative base
+            std::string exponent_source = "index"; // how to derive exponent
+        };
 
-    [[nodiscard]] const std::string &get_type() const { return type_; }
-    void set_type(const std::string &value) { type_ = value; }
+        [[nodiscard]] const std::string& get_type() const { return type_; }
+        void set_type(const std::string& value) { type_ = value; }
 
-    [[nodiscard]] const PowerConfig &get_power() const { return power_; }
-    void set_power(const PowerConfig &value) { power_ = value; }
+        [[nodiscard]] const PowerConfig& get_power() const { return power_; }
+        void set_power(const PowerConfig& value) { power_ = value; }
 
-    [[nodiscard]] const std::vector<int> &get_ages() const { return ages_; }
-    void set_ages(const std::vector<int> &value) { ages_ = value; }
+        [[nodiscard]] const std::vector<int>& get_ages() const { return ages_; }
+        void set_ages(const std::vector<int>& value) { ages_ = value; }
 
-    // Enabled/disabled flag
-    [[nodiscard]] bool is_enabled() const { return enabled_; }
-    void set_enabled(bool v) { enabled_ = v; }
+        [[nodiscard]] bool is_enabled() const { return enabled_; }
+        void set_enabled(bool v) { enabled_ = v; }
 
-    // Returns a multiplicative modifier to apply to base treatment probability
-    double evaluate_for_age(const int age) const {
-      if (!enabled_) return 1.0;  // when disabled, no age-based modification
-      if (type_.empty()) return 1.0;
-      if (type_ == "power") {
-        if (ages_.empty()) return 1.0;
-        // exponent_source == index: find bin index based on ages vector
-        if (power_.exponent_source == "index") {
-          // ages defines boundaries: ages[i] is start of bin i
-          // find largest i such that age >= ages[i]
-          int idx = 0;
-          for (size_t i = 0; i < ages_.size(); ++i) {
-            if (age >= ages_[i])
-              idx = static_cast<int>(i);
-            else
-              break;
-          }
-          // exponent = idx + 1
-          return std::pow(power_.base, idx + 1);
+        void validate() const {
+            if (!enabled_) return;
+
+            if (type_.empty()) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.type must not be empty when enabled");
+            }
+
+            if (type_ != "power") {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.type must be 'power', got '" + type_ + "'");
+            }
+
+            if (power_.exponent_source != "index") {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.power.exponent_source must be 'index', got '" +
+                    power_.exponent_source + "'");
+            }
+
+            if (ages_.empty()) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.ages must not be empty when enabled");
+            }
+
+            if (!std::is_sorted(ages_.begin(), ages_.end())) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.ages must be sorted ascending");
+            }
+
+            auto dup_it = std::adjacent_find(ages_.begin(), ages_.end());
+            if (dup_it != ages_.end()) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.ages must be strictly increasing");
+            }
+
+            if (ages_.front() < 0) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.ages must contain non-negative values");
+            }
+
+            if (ages_.front() != 0) {
+                spdlog::warn(
+                    "age_based_probability_of_seeking_treatment.ages starts at {}, not 0",
+                    ages_.front());
+            }
+
+            if (power_.base < 0.0) {
+                throw std::runtime_error(
+                    "age_based_probability_of_seeking_treatment.power.base must be >= 0");
+            }
         }
-        // unknown exponent_source -> treat as no-op
-        return 1.0;
-      }
-      // unknown type -> no-op
-      return 1.0;
-    }
 
-    // Note: is_enabled() above returns the explicit enabled flag
+        double evaluate_for_age(const int age_in) const {
+            if (!enabled_) return 1.0;
 
-  private:
-    std::string type_;
-    PowerConfig power_;
-    std::vector<int> ages_;
-    bool enabled_ = false;  // default disabled when no config node is provided
-  };
+            const int age = std::max(0, age_in);
+
+            if (type_ == "power") {
+                if (ages_.empty()) return 1.0;
+
+                if (power_.exponent_source == "index") {
+                    int idx = 0;
+                    for (size_t i = 0; i < ages_.size(); ++i) {
+                        if (age >= ages_[i]) idx = static_cast<int>(i);
+                        else break;
+                    }
+
+                    return std::pow(power_.base, static_cast<double>(idx));
+                }
+
+                spdlog::warn(
+                    "Unknown exponent_source '{}' for AgeBasedProbabilityOfSeekingTreatment, returning 1.0",
+                    power_.exponent_source
+                );
+                return 1.0;
+            }
+
+            spdlog::warn(
+                "Unknown AgeBasedProbabilityOfSeekingTreatment type '{}', returning 1.0 with no modification",
+                type_
+            );
+            return 1.0;
+        }
+
+    private:
+        std::string type_;
+        PowerConfig power_;
+        std::vector<int> ages_;
+        bool enabled_ = false;
+    };
 
   // Getters and Setters
   [[nodiscard]] int get_number_of_tracking_days() const { return number_of_tracking_days_; }

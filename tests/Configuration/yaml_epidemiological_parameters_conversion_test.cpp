@@ -128,3 +128,38 @@ TEST_F(EpidemiologicalParametersYAMLTest, DecodeEpidemiologicalParametersMissing
     EpidemiologicalParameters decoded_parameters;
     EXPECT_THROW(YAML::convert<EpidemiologicalParameters>::decode(node, decoded_parameters), std::runtime_error);
 }
+
+// Test for AgeBasedProbabilityOfSeekingTreatment: we only support 'power' type now
+TEST_F(EpidemiologicalParametersYAMLTest, AgeBased_Power_EvaluateForAgeBasic) {
+    EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment cfg;
+    cfg.set_enabled(true);
+    cfg.set_type("power");
+    EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment::PowerConfig pc;
+    pc.base = 0.9;
+    pc.exponent_source = "index";
+    cfg.set_power(pc);
+    cfg.set_ages(std::vector<int>{0,5,10,15});
+
+    // Age 2 -> bin idx 0 -> exponent 0 -> multiplier = 0.9^0 = 1.0
+    EXPECT_DOUBLE_EQ(cfg.evaluate_for_age(2), 1.0);
+    // Age 7 -> idx 1 -> exponent 1 -> multiplier = 0.9^1 = 0.9
+    EXPECT_NEAR(cfg.evaluate_for_age(7), 0.9, 1e-12);
+    // Age 12 -> idx 2 -> exponent 2 -> multiplier = 0.9^2 = 0.81
+    EXPECT_NEAR(cfg.evaluate_for_age(12), 0.81, 1e-12);
+}
+
+TEST_F(EpidemiologicalParametersYAMLTest, AgeBased_Disabled_ReturnsOne) {
+    EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment cfg;
+    cfg.set_enabled(false);
+    cfg.set_type("power");
+    EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment::PowerConfig pc;
+    pc.base = 0.9;
+    pc.exponent_source = "index";
+    cfg.set_power(pc);
+    cfg.set_ages(std::vector<int>{0,5,10,15});
+
+    EXPECT_DOUBLE_EQ(cfg.evaluate_for_age(0), 1.0);
+    EXPECT_DOUBLE_EQ(cfg.evaluate_for_age(10), 1.0);
+    EXPECT_DOUBLE_EQ(cfg.evaluate_for_age(100), 1.0);
+}
+
