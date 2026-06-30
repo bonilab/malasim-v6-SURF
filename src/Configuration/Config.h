@@ -7,6 +7,7 @@
 #include "DrugParameters.h"
 #include "EpidemiologicalParameters.h"
 #include "GenotypeParameters.h"
+#include "ImmuneSystemParameterCandidates.h"
 #include "ImmuneSystemParameters.h"
 #include "ModelSettings.h"
 #include "MosquitoParameters.h"
@@ -95,6 +96,13 @@ public:
     immune_system_parameters_ = parameters;
   }
 
+  [[nodiscard]] const ImmuneSystemParameterCandidates &get_immune_system_parameter_candidates() const {
+    return immune_system_parameter_candidates_;
+  }
+  [[nodiscard]] bool has_immune_system_parameter_candidates() const {
+    return has_immune_system_parameter_candidates_;
+  }
+
   [[nodiscard]] GenotypeParameters &get_genotype_parameters() { return genotype_parameters_; }
   [[nodiscard]] const DrugParameters &get_drug_parameters() const { return drug_parameters_; }
   [[nodiscard]] const TherapyParameters &get_therapy_parameters() const {
@@ -143,6 +151,8 @@ private:
   MovementSettings movement_settings_;
   ParasiteParameters parasite_parameters_;
   ImmuneSystemParameters immune_system_parameters_;
+  ImmuneSystemParameterCandidates immune_system_parameter_candidates_;
+  bool has_immune_system_parameter_candidates_ = false;
   GenotypeParameters genotype_parameters_;
   DrugParameters drug_parameters_;
   TherapyParameters therapy_parameters_;

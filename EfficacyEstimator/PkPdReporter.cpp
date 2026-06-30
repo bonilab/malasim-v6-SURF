@@ -42,8 +42,9 @@ void PkPdReporter::begin_time_step() {
   // Fake PfPR for recrudescence study
   Model::get_mdc()->blood_slide_prevalence_by_location()[0] = 0.1;
 
-  if (Model::get_scheduler()->current_time()
-          % Model::get_config()->get_model_settings().get_days_between_stdout_output() == 0) {
+  if ((Model::get_scheduler()->current_time()
+          % Model::get_config()->get_model_settings().get_days_between_stdout_output() == 0)
+          &&(Model::get_scheduler()->current_time() > Model::get_config()->get_simulation_timeframe().get_start_collect_data_day())) {
     auto current_time = Model::get_scheduler()->current_time();
 
     for (int i = 0;

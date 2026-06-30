@@ -56,6 +56,56 @@ bool Config::load(const std::string &filename) {
 
     if (config["rapt_settings"]) { rapt_settings_ = config["rapt_settings"].as<RaptSettings>(); }
 
+    // Parse immune_system_paprameter_candidates if present, then override parameters
+    if (config["immune_system_paprameter_candidates"]) {
+      spdlog::info("Found immune_system_paprameter_candidates section — parsing candidates");
+      immune_system_parameter_candidates_ =
+          config["immune_system_paprameter_candidates"].as<ImmuneSystemParameterCandidates>();
+      has_immune_system_parameter_candidates_ = true;
+      immune_system_parameter_candidates_.log_all();
+
+      if (immune_system_parameter_candidates_.has_selected_candidate()) {
+        const auto &c = immune_system_parameter_candidates_.get_selected_candidate();
+        const int idx = immune_system_parameter_candidates_.get_used_in_simulation();
+
+        spdlog::info("Applying candidate[{}] overrides:", idx);
+        spdlog::info("  p_ci_symp={}  -> allow_new_coinfection_to_cause_symptoms.probability",
+                     c.p_ci_symp);
+        spdlog::info("  z={}          -> immune_system_parameters.immune_effect_on_progression_to_clinical",
+                     c.z);
+        spdlog::info("  kappa={}      -> immune_system_parameters.factor_effect_age_mature_immunity",
+                     c.kappa);
+        spdlog::info("  midpoint={}   -> immune_system_parameters.midpoint", c.midpoint);
+        spdlog::info("  p_seek_base={} -> epidemiological_parameters.age_based_probability_of_seeking_treatment.power.base",
+                     c.p_seek_base);
+
+        // Override immune_system_parameters (z, kappa, midpoint)
+        immune_system_parameters_.set_immune_effect_on_progression_to_clinical(c.z);
+        immune_system_parameters_.set_factor_effect_age_mature_immunity(c.kappa);
+        immune_system_parameters_.set_midpoint(c.midpoint);
+
+        // Override allow_new_coinfection_to_cause_symptoms.probability (p_ci_symp)
+        auto coinfection = epidemiological_parameters_.get_allow_new_coinfection_to_cause_symptoms();
+        coinfection.set_probability(c.p_ci_symp);
+        epidemiological_parameters_.set_allow_new_coinfection_to_cause_symptoms(coinfection);
+
+        // Override age_based_probability_of_seeking_treatment.power.base (p_seek_base)
+        auto age_based = epidemiological_parameters_.get_age_based_probability_of_seeking_treatment();
+        auto power = age_based.get_power();
+        power.base = c.p_seek_base;
+        age_based.set_power(power);
+        epidemiological_parameters_.set_age_based_probability_of_seeking_treatment(age_based);
+
+        spdlog::info("Candidate[{}] overrides applied successfully", idx);
+      } else {
+        spdlog::warn("immune_system_paprameter_candidates: used_in_simulation={} not found in "
+                     "candidates — no overrides applied",
+                     immune_system_parameter_candidates_.get_used_in_simulation());
+      }
+    } else {
+      spdlog::info("No immune_system_paprameter_candidates section found — using default parameters");
+    }
+
     spdlog::info("Configuration file parsed successfully");
 
     // Validate all cross field validations
