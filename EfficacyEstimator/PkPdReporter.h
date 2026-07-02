@@ -1,32 +1,30 @@
-/* 
- * File:   PkPdReporter.h
+/*
+* File:   PkPdReporter.h
  * Author: Merlin
  *
  * Created on October 29, 2014, 12:56 PM
  */
 
 #ifndef PKPDREPORTER_H
-#define PKPDREPORTER_H
+#define    PKPDREPORTER_H
 
 #include "Reporters/Reporter.h"
-#include "Utils/Cli.h"
-#include "Utils/TypeDef.h"
-
 #include <fstream>
-#include <sstream>
+#include "Utils/Cli.h"
+
+namespace utils {
+  class Cli;
+}
 
 class PkPdReporter : public Reporter {
-  DoubleVector yesterday_density;
 
 public:
-  std::stringstream ss;
-  const std::string group_sep = "-1111\t";
-  const std::string sep = ",";
   std::string prefix;
+  std::ofstream parasitaemia_file;
 
-  explicit PkPdReporter(utils::DxGAppInput* appInput = nullptr);
+  PkPdReporter(utils::Cli::DxGAppInput* appInput=nullptr);
 
-  ~PkPdReporter() override;
+  virtual ~PkPdReporter();
 
   void initialize(int job_number, const std::string& path) override;
 
@@ -36,15 +34,12 @@ public:
 
   void begin_time_step() override;
 
-  void after_time_step() override;
+  virtual void after_time_step();
 
   void monthly_report() override;
 
 private:
-  [[nodiscard]] bool is_recurrence_test() const;
-
-  utils::DxGAppInput* appInput{nullptr};
-  std::ofstream outputFStream;
+  utils::Cli::DxGAppInput* appInput{nullptr};
 };
 
-#endif /* PKPDREPORTER_H */
+#endif    /* PKPDREPORTER_H */

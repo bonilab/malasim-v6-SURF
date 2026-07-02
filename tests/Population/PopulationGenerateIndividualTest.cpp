@@ -22,7 +22,7 @@ protected:
     test_fixtures::create_complete_test_environment();
 
     // Set the input path to the generated test config file
-    utils::MaSimAppInput cli_input;
+    utils::Cli::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
 

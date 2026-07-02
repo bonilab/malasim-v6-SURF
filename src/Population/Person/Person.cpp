@@ -390,6 +390,22 @@ double calculate_symptomatic_recrudescence_probability(double pfpr,
 
 void Person::determine_symptomatic_recrudescence(
     ClonalParasitePopulation* clinical_caused_parasite) {
+  // because the current model does not have within host dynamics, so we
+  // assume that the threshold for the parasite density to re-appear in
+  // blood is 100 per uL
+  //
+  // v4 parity: below this threshold, EndClinicalEvent never called this
+  // function at all, so the parasite's state (density, update function,
+  // recurrence status) was left completely untouched. Preserve that by
+  // returning early here instead of falling into the WITHOUT_SYMPTOM branch,
+  // which would otherwise reassign the update function and possibly clamp
+  // the density even for sub-threshold parasites.
+  const bool is_higher_than_recrudescence_threshold =
+      clinical_caused_parasite->last_update_log10_parasite_density() > 2;
+  if (!is_higher_than_recrudescence_threshold) {
+    return;
+  }
+
   // there are 2 methods to calculate the probability to develop symptom
   // One from the papaer, another from the immune system in the simulation.
   //
@@ -402,17 +418,10 @@ void Person::determine_symptomatic_recrudescence(
 
   // const auto probability_develop_symptom = get_probability_progress_to_clinical();
 
-  // because the current model does not have within host dynamics, so we
-  // assume that the threshold for the parasite density to re-appear in
-  // blood is 100 per uL
-  const bool is_higher_than_recrudescence_threshold =
-      clinical_caused_parasite->last_update_log10_parasite_density() > 2;
-
   const auto random_p = Model::get_random()->random_flat(0.0, 1.0);
   auto enable_recrudescence = Model::get_config()->get_model_settings().get_enable_recrudescence();
 
-  if (is_higher_than_recrudescence_threshold && random_p <= probability_develop_symptom
-      && enable_recrudescence) {
+  if (random_p <= probability_develop_symptom && enable_recrudescence) {
     // The last clinical caused parasite is going to relapse
     // regardless whether the induvidual are under treatment or not
     // Set the update function to progress to clinical
@@ -484,14 +493,12 @@ void Person::determine_clinical_or_not(ClonalParasitePopulation* clinical_caused
       // progress to clinical after several days
       clinical_caused_parasite->set_update_function(Model::progress_to_clinical_update_function());
       clinical_caused_parasite->set_last_update_log10_parasite_density(
+        Model::get_random()->random_normal_truncated(
           Model::get_config()
               ->get_parasite_parameters()
               .get_parasite_density_levels()
-              .get_log_parasite_density_asymptomatic());
+              .get_log_parasite_density_asymptomatic(),0.01));
       schedule_progress_to_clinical_event(clinical_caused_parasite);
-      /* Old in V5 below (without recurence, schedule_relapse_event makes FOI match FOI in v5 */
-      // schedule_relapse_event(clinical_caused_parasite,
-      //                        Model::get_config()->get_epidemiological_parameters().get_relapse_duration());
     } else {
       // spdlog::info("Person::determine_clinical_or_not: Person will progress to clearance");
       // progress to clearance

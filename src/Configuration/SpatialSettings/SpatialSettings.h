@@ -226,7 +226,14 @@ struct convert<SpatialSettings::LocationBased> {
     rhs.beta_by_location = std::move(node["beta_by_location"].as<std::vector<double>>());
     rhs.population_size_by_location =
         std::move(node["population_size_by_location"].as<std::vector<int>>());
-    spdlog::info("Location based settings decoded successfully");
+
+    spdlog::info("Location based settings decoded successfully with {} locations", rhs.locations.size());
+    spdlog::info("Total locations: {}", rhs.population_size_by_location.size());
+    for (int loc = 0; loc < rhs.locations.size(); loc++) {
+      spdlog::info("\tLocation {}: id={}, lat={}, lon={}, pop_size={}", loc, rhs.locations[loc].id,
+                   rhs.locations[loc].coordinate.latitude, rhs.locations[loc].coordinate.longitude,
+                   rhs.population_size_by_location[loc]);
+    }
     return true;
   }
 };

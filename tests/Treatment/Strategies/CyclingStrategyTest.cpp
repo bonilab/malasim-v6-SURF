@@ -15,7 +15,7 @@ protected:
   void SetUp() override {
     test_fixtures::setup_test_environment();
     Model::get_instance()->release();
-    utils::MaSimAppInput cli_input;
+    utils::Cli::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     Model::get_instance()->initialize();

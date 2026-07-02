@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <memory>
+#include <algorithm>
 #include <spdlog/spdlog.h>
 
 #include "Simulation/Model.h"
@@ -34,7 +35,7 @@ protected:
         test_fixtures::setup_test_environment();
         
         // Set the input path to the config file
-        utils::MaSimAppInput cli_input;
+        utils::Cli::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
         
@@ -315,10 +316,10 @@ TEST_F(PersonRecrudescenceTest, TreatmentFailureHandling) {
     // Setup
     setupPerson(25, false); // 25 year old, no drugs
     
-    // Set the parasite density to detectable level to trigger treatment failure
-    double detectable_density = Model::get_config()->get_parasite_parameters().get_parasite_density_levels().get_log_parasite_density_detectable() + 1.0;
-    clinical_parasite_->set_last_update_log10_parasite_density(detectable_density);
-    
+    // Ensure density is above recrudescence threshold (> 2.0) to avoid early return.
+    constexpr double recrudescence_trigger_density = 3.0;
+    clinical_parasite_->set_last_update_log10_parasite_density(recrudescence_trigger_density);
+
     // Define a therapy ID to test with
     const int test_therapy_id = 1;
     

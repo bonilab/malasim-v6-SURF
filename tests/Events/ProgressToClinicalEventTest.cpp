@@ -40,7 +40,7 @@ TEST(ProgressToClinicalEventDeterministicTest, ShouldReceiveTreatmentRespectsAge
     });
 
     // Initialize model
-    utils::MaSimAppInput cli_input;
+    utils::Cli::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());
@@ -76,7 +76,7 @@ TEST(ProgressToClinicalEventDeterministicTest, ShouldReceiveTreatmentRespectsAge
         n["ages"] = std::vector<int>{0,5,10,15,20,30,40};
     });
 
-    utils::MaSimAppInput cli_input2;
+    utils::Cli::MaSimAppInput cli_input2;
     cli_input2.input_path = "test_input.yml";
     Model::set_cli_input(cli_input2);
     ASSERT_TRUE(Model::get_instance()->initialize());
