@@ -529,6 +529,7 @@ void Person::update() {
 
   // update drug activity on parasite
   all_clonal_parasite_populations_->update_by_drugs(drugs_in_blood_.get());
+  all_clonal_parasite_populations_->apply_cnv_reversion(drugs_in_blood_.get());
 
   immune_system_->update();
 

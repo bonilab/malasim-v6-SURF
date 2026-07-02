@@ -259,12 +259,14 @@ genotype_parameters:
 
   # Daily probability that a parasite will mutate at a given locus when drug concentration is not zero
   mutation_probability_per_locus: 0.001
+  default_cnv_reversion_multiplier: 0.5
 
   pf_genotype_info:
     - chromosome: 5
       genes:
         - name: "Pfmdr1"
           max_copies: 2
+          cnv_reversion_multiplier: 0.5
           # copy number variation cost of resistances
           cnv_daily_crs: [0, 0.0005]
           cnv_multiplicative_effect_on_EC50:
@@ -446,6 +448,7 @@ genotype_parameters:
       genes:
         - name: "Pfplasmepsin"
           max_copies: 2
+          cnv_reversion_multiplier: 0.5
           cnv_daily_crs: [0, 0.0005]
           cnv_multiplicative_effect_on_EC50:
             - drug_id: 3

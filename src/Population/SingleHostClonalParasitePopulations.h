@@ -78,6 +78,8 @@ public:
 
   void update_by_drugs(DrugsInBlood* drugs_in_blood) const;
 
+  void apply_cnv_reversion(DrugsInBlood* drugs_in_blood) const;
+
   [[nodiscard]] bool has_detectable_parasite(double detectable_threshold) const;
 
   [[nodiscard]] bool is_gametocytaemic() const;

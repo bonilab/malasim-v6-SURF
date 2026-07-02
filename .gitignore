@@ -44,3 +44,5 @@ docs/Doxygen/
 vcpkg_installed
 
 monthly_data_*.db
+
+test_*.asc

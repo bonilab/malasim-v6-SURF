@@ -130,6 +130,13 @@ public:
       cnv_multiplicative_effect_on_EC50_ = value;
     }
 
+    [[nodiscard]] double get_cnv_reversion_multiplier() const {
+      return cnv_reversion_multiplier_;
+    }
+    void set_cnv_reversion_multiplier(const double value) {
+      cnv_reversion_multiplier_ = value;
+    }
+
     [[nodiscard]] const std::vector<AminoAcidPosition> &get_aa_positions() const {
       return aa_positions_;
     }
@@ -162,6 +169,7 @@ public:
     int max_copies_ = -1;
     std::vector<double> cnv_daily_crs_;
     std::vector<MultiplicativeEffectOnEC50> cnv_multiplicative_effect_on_EC50_;
+    double cnv_reversion_multiplier_ = -1.0;
     std::vector<AminoAcidPosition> aa_positions_;
     std::vector<MultiplicativeEffectOnEC50> multiplicative_effect_on_EC50_for_2_or_more_mutations_;
     std::vector<MultiplicativeEffectOnEC50For2OrMoreMutations>
@@ -195,7 +203,29 @@ public:
 
   class PfGenotypeInfo {
   public:
+    struct CnvGeneIndex {
+      int chromosome_index = -1;
+      int gene_index = -1;
+    };
+
     std::vector<ChromosomeInfo> chromosome_infos = std::vector<ChromosomeInfo>(14);
+
+    void refresh_cnv_gene_indices() {
+      cnv_gene_indices_.clear();
+      for (int chromosome_i = 0; chromosome_i < chromosome_infos.size(); ++chromosome_i) {
+        const auto &genes = chromosome_infos[chromosome_i].get_genes();
+        for (int gene_i = 0; gene_i < genes.size(); ++gene_i) {
+          if (genes[gene_i].get_max_copies() > 1) {
+            cnv_gene_indices_.push_back({chromosome_i, gene_i});
+          }
+        }
+      }
+    }
+
+    [[nodiscard]] const std::vector<CnvGeneIndex> &get_cnv_gene_indices() const {
+      return cnv_gene_indices_;
+    }
+
     [[nodiscard]] int calculate_aa_pos(const int chromosome_id, const int gene_id,
                                        const int aa_id) const {
       auto result = 0;
@@ -229,6 +259,9 @@ public:
       for (const auto &chromosome : chromosome_infos) { result += chromosome.to_string() + "\n"; }
       return result;
     }
+
+  private:
+    std::vector<CnvGeneIndex> cnv_gene_indices_;
   };
 
   // Inner class: OverrideEC50Pattern
@@ -304,6 +337,13 @@ public:
     mutation_probability_per_locus_ = value;
   }
 
+  [[nodiscard]] double get_default_cnv_reversion_multiplier() const {
+    return default_cnv_reversion_multiplier_;
+  }
+  void set_default_cnv_reversion_multiplier(const double value) {
+    default_cnv_reversion_multiplier_ = value;
+  }
+
   [[nodiscard]] const std::vector<OverrideEC50Pattern> &get_override_ec50_patterns() const {
     return override_ec50_patterns_;
   }
@@ -325,16 +365,29 @@ public:
     initial_parasite_info_raw_ = value;
   }
 
-  [[nodiscard]] PfGenotypeInfo get_pf_genotype_info() const { return pf_genotype_info_; }
-  void set_pf_genotype_info(const PfGenotypeInfo &value) { pf_genotype_info_ = value; }
+  [[nodiscard]] const PfGenotypeInfo &get_pf_genotype_info() const { return pf_genotype_info_; }
+  void set_pf_genotype_info(const PfGenotypeInfo &value) {
+    pf_genotype_info_ = value;
+    pf_genotype_info_.refresh_cnv_gene_indices();
+  }
 
   void process_config() override {}
 
   void process_config_with_number_of_locations(size_t number_of_locations);
 
+  // Validate the CNV reversion multiplier fields in isolation, without
+  // touching the rest of the configuration. The default multiplier range is
+  // [0, 10] (the upper bound is a guardrail, not a physical limit). Per-gene
+  // multipliers may only be set on genes with max_copies > 1. Throws
+  // std::invalid_argument on any violation. Exposed as a static helper so
+  // unit tests can exercise it without going through Config's full
+  // cross-field validation.
+  static void validate_cnv_reversion_multipliers(const GenotypeParameters &params);
+
 private:
   std::string mutation_mask_;
   double mutation_probability_per_locus_ = 0.001;
+  double default_cnv_reversion_multiplier_ = -1.0;
   PfGenotypeInfo pf_genotype_info_;
   std::vector<OverrideEC50Pattern> override_ec50_patterns_;
   std::vector<InitialParasiteInfo> initial_parasite_info_;
@@ -423,6 +476,14 @@ struct convert<GenotypeParameters::GeneInfo> {
     Node node;
     node["name"] = rhs.get_name();
     node["aa_positions"] = rhs.get_aa_positions();
+    if (rhs.get_max_copies() != -1) { node["max_copies"] = rhs.get_max_copies(); }
+    if (!rhs.get_cnv_daily_crs().empty()) { node["cnv_daily_crs"] = rhs.get_cnv_daily_crs(); }
+    if (!rhs.get_cnv_multiplicative_effect_on_EC50().empty()) {
+      node["cnv_multiplicative_effect_on_EC50"] = rhs.get_cnv_multiplicative_effect_on_EC50();
+    }
+    if (rhs.get_cnv_reversion_multiplier() >= 0) {
+      node["cnv_reversion_multiplier"] = rhs.get_cnv_reversion_multiplier();
+    }
     return node;
   }
 
@@ -446,6 +507,9 @@ struct convert<GenotypeParameters::GeneInfo> {
       rhs.set_cnv_multiplicative_effect_on_EC50(
           node["cnv_multiplicative_effect_on_EC50"]
               .as<std::vector<GenotypeParameters::MultiplicativeEffectOnEC50>>());
+    if (node["cnv_reversion_multiplier"]) {
+      rhs.set_cnv_reversion_multiplier(node["cnv_reversion_multiplier"].as<double>());
+    }
     if (node["average_daily_crs"])
       rhs.set_average_daily_crs(node["average_daily_crs"].as<double>());
     return true;
@@ -562,6 +626,9 @@ struct convert<GenotypeParameters> {
     Node node;
     node["mutation_mask"] = rhs.get_mutation_mask();
     node["mutation_probability_per_locus"] = rhs.get_mutation_probability_per_locus();
+    if (rhs.get_default_cnv_reversion_multiplier() >= 0) {
+      node["default_cnv_reversion_multiplier"] = rhs.get_default_cnv_reversion_multiplier();
+    }
     node["pf_genotype_info"] = rhs.get_pf_genotype_info();
     node["override_ec50_patterns"] = rhs.get_override_ec50_patterns();
     node["initial_parasite_info"] = rhs.get_initial_parasite_info_raw();
@@ -576,6 +643,10 @@ struct convert<GenotypeParameters> {
     }
     rhs.set_mutation_mask(node["mutation_mask"].as<std::string>());
     rhs.set_mutation_probability_per_locus(node["mutation_probability_per_locus"].as<double>());
+    if (node["default_cnv_reversion_multiplier"]) {
+      rhs.set_default_cnv_reversion_multiplier(
+          node["default_cnv_reversion_multiplier"].as<double>());
+    }
     rhs.set_pf_genotype_info(node["pf_genotype_info"].as<GenotypeParameters::PfGenotypeInfo>());
     rhs.set_override_ec50_patterns(
         node["override_ec50_patterns"].as<std::vector<GenotypeParameters::OverrideEC50Pattern>>());
@@ -589,4 +660,3 @@ struct convert<GenotypeParameters> {
 }  // namespace YAML
 
 #endif  // GENOTYPEPARAMETERS_H
-

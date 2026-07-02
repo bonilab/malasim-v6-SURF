@@ -3,6 +3,14 @@
 ## Features
 
 - **Memory Statistics**: Added `--memory-stats` CLI option to print sizeof for key classes (Person, ClonalParasitePopulation, Population) and exit without loading input or running simulation
+- **CNV Reversion**: Added daily copy-number reversion (`n -> n - 1`, clamped at 1) for CNV genes outside the existing forward drug-mutation path
+  - Supports per-gene `cnv_reversion_multiplier` and `genotype_parameters.default_cnv_reversion_multiplier` as a fallback
+  - Both multipliers are validated in `[0, 10]` (the upper bound is a guardrail; reverse rates can exceed the forward rate)
+  - Per-gene multipliers may only be set on genes with `max_copies > 1`
+  - Applies to current CNV examples `Pfmdr1` and `Pfplasmepsin`
+  - Skips reversion when an active drug with concentration > 0 has a CNV EC50 factor that favors copy 2 for the affected gene
+  - Precomputes a CNV gene index in `PfGenotypeInfo` so the daily reversion step only iterates genes with `max_copies > 1`
+  - Successful reversions are recorded through the existing mutation tracking path
 
 ## Bug Fixes
 
@@ -34,6 +42,20 @@
 
 ## Files Changed
 
+- `src/Configuration/GenotypeParameters.h` - Added `cnv_reversion_multiplier` and `default_cnv_reversion_multiplier` config support plus `PfGenotypeInfo::CnvGeneIndex` precomputed index
+- `src/Configuration/GenotypeParameters.cpp` - Added `validate_cnv_reversion_multipliers` static helper
+- `src/Configuration/Config.cpp` - Wire CNV reversion multiplier validation through the new helper
+- `src/Parasites/Genotype.h` - Added CNV reversion helper declaration
+- `src/Parasites/Genotype.cpp` - Added `n -> n - 1` CNV reversion logic with drug-selection checks; refactored forward mutation to use a uniform `proposed = old +/- 1` rule clamped to `[1, max_copies]`
+- `src/Population/SingleHostClonalParasitePopulations.h` - Added separate daily `apply_cnv_reversion()` path
+- `src/Population/SingleHostClonalParasitePopulations.cpp` - Applied CNV reversion and mutation recording
+- `src/Population/Person/Person.cpp` - Invokes daily CNV reversion during host update
+- `tests/Configuration/yaml_genotype_parameters_conversion_test.cpp` - Added coverage for CNV reversion config fields and out-of-bound multiplier validation
+- `tests/Parasites/GenotypeTest.cpp` - Added CNV reversion behavior, fallback, and forward-mutation preservation tests
+- `tests/fixtures/test_input_template.yml` - Added CNV reversion example config
+- `sample_inputs/*.yml` - Added CNV reversion example config to shipped sample inputs
+- `docs/cnv-reversion.md` - Added feature documentation
+- `docs/cnv-reversion-plan.md` - Updated plan to match implemented behavior
 - `src/Utils/Cli.h` - Added `print_memory_stats` field and `--memory-stats` flag
 - `src/malasim/main.cpp` - Added memory stats printing and early exit
 - `tests/Utils/CliTest.cpp` - Added tests for `--memory-stats` flag

@@ -519,6 +519,7 @@ void Config::validate_all_cross_field_validations() {
       || genotype_parameters.get_mutation_probability_per_locus() > 1) {
     throw std::invalid_argument("Mutation rate should be in range [0,1]");
   }
+  GenotypeParameters::validate_cnv_reversion_multipliers(genotype_parameters);
   // Check override_ec50_patterns, each pattern size should match mutation mask size
   for (const auto &override_ec50_pattern : genotype_parameters.get_override_ec50_patterns()) {
     if (override_ec50_pattern.get_pattern().size()
@@ -768,4 +769,3 @@ void Config::validate_all_cross_field_validations() {
 }
 
 void Config::reload() { load(config_file_path_); }
-

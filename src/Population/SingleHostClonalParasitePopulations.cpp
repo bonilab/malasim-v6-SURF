@@ -184,6 +184,20 @@ void SingleHostClonalParasitePopulations::update_by_drugs(DrugsInBlood* drugs_in
   }
 }
 
+void SingleHostClonalParasitePopulations::apply_cnv_reversion(DrugsInBlood* drugs_in_blood) const {
+  if (drugs_in_blood == nullptr) { throw std::invalid_argument("Drugs in blood is nullptr"); }
+
+  for (const auto &blood_parasite : parasites_) {
+    auto* reverted_genotype = blood_parasite->genotype()->perform_cnv_reversion(
+        Model::get_config(), Model::get_random(), drugs_in_blood);
+    if (reverted_genotype == blood_parasite->genotype()) { continue; }
+
+    Model::get_mdc()->record_1_mutation(person_->get_location(), blood_parasite->genotype(),
+                                        reverted_genotype);
+    blood_parasite->set_genotype(reverted_genotype);
+  }
+}
+
 bool SingleHostClonalParasitePopulations::has_detectable_parasite(
     double detectable_threshold) const {
   return std::ranges::any_of(parasites_, [detectable_threshold](const auto &parasite) {

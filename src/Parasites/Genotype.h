@@ -14,6 +14,8 @@ class DrugDatabase;
 
 class DrugType;
 
+class DrugsInBlood;
+
 class Therapy;
 
 class Config;
@@ -67,6 +69,9 @@ public:
   Genotype* perform_mutation_by_drug(Config* p_config, utils::Random* p_random,
                                      DrugType* p_drug_type,
                                      double mutation_probability_by_locus) const;
+
+  Genotype* perform_cnv_reversion(Config* p_config, utils::Random* p_random,
+                                  DrugsInBlood* drugs_in_blood) const;
 
   friend std::ostream &operator<<(std::ostream &os, const Genotype &genotype);
 
