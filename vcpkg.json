@@ -1,6 +1,15 @@
 {
   "dependencies": ["fmt", "gsl", "date", "gtest", "lua", "spdlog", "yaml-cpp", "cli11", "sqlite3"],
+  "overrides": [
+    {
+      "name": "fmt",
+      "version": "11.2.0"
+    },
+    {
+      "name": "spdlog",
+      "version-semver": "1.15.3"
+    }
+  ],
   "version": "1.0",
   "name": "malasim"
 }
-
