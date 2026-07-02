@@ -26,7 +26,9 @@ protected:
     test_fixtures::create_test_raster_2_locations("test_travel.asc", 0.1);
     
     Model::get_instance()->release();
-    utils::Cli::get_instance().set_input_path("test_input.yml");
+    utils::MaSimAppInput cli_input;
+    cli_input.input_path = "test_input.yml";
+    Model::set_cli_input(cli_input);
     Model::get_instance()->initialize();
     
     // Create nested strategy

@@ -61,9 +61,3 @@ TEST_F(YamlDateConversionTest, DecodeNonScalarThrows) {
       { YAML::convert<date::year_month_day>::decode(non_scalar_node, date); },
       std::runtime_error);
 }
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

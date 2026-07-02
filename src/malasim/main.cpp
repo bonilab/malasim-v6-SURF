@@ -4,8 +4,8 @@
 #include "spdlog/spdlog.h"
 #include "version.h"
 
-#include "Population/Person/Person.h"
 #include "Population/ClonalParasitePopulation.h"
+#include "Population/Person/Person.h"
 #include "Population/Population.h"
 
 #include <sys/resource.h>
@@ -14,28 +14,28 @@ double get_memory_kb() {
   struct rusage usage{};
   getrusage(RUSAGE_SELF, &usage);
 #ifdef __APPLE__
-  // macOS: ru_maxrss in bytes
   return usage.ru_maxrss / 1024.0;
 #else
-  // Linux: ru_maxrss in kilobytes
   return usage.ru_maxrss;
 #endif
 }
 
 int main(int argc, char** argv) {
   Logger::initialize(spdlog::level::info);
-  spdlog::info("Malaria Simulation v{}",VERSION);
+  spdlog::info("Malaria Simulation v{}", VERSION);
   spdlog::info("Starting...");
   try {
-    utils::Cli::get_instance().parse(argc, argv);
+    auto cli_input = utils::Cli::parse_args(argc, argv);
+    Model::set_cli_input(std::move(cli_input));
   } catch (...) {
     spdlog::error("Argument parsing failed. Exiting.");
     return 1;
   }
 
-  if (utils::Cli::get_instance().get_print_memory_stats()) {
+  if (Model::get_cli_input().print_memory_stats) {
     std::cout << "sizeof(Person) = " << sizeof(Person) << '\n';
-    std::cout << "sizeof(ClonalParasitePopulation) = " << sizeof(ClonalParasitePopulation) << '\n';
+    std::cout << "sizeof(ClonalParasitePopulation) = " << sizeof(ClonalParasitePopulation)
+              << '\n';
     std::cout << "sizeof(Population) = " << sizeof(Population) << '\n';
     spdlog::drop_all();
     return 0;

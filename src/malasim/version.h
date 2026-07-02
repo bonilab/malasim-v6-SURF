@@ -18,5 +18,5 @@
 #define GIT_COMMIT_HASH "unknown"
 #endif
 
-const char* VERSION = "6.0.1 (branch: " GIT_REPO_INFO "/" GIT_BRANCH_NAME ", commit: " GIT_COMMIT_HASH ")";
+const char* VERSION = "6.1.0 (branch: " GIT_REPO_INFO "/" GIT_BRANCH_NAME ", commit: " GIT_COMMIT_HASH ")";
 

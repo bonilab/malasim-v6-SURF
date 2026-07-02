@@ -42,9 +42,9 @@ private:
  private:
   void remove_without_set_index(Person *p);
 
-  void add(Person *p, const int &location, const int &moving_level);
+  void add(Person *p, core::LocationId location, core::MovingLevel moving_level);
 
-  void change_property(Person *p, const int &location, const int &biting_level);
+  void change_property(Person *p, core::LocationId location, core::MovingLevel moving_level);
 
 };
 

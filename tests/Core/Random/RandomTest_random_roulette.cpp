@@ -2,15 +2,20 @@
 #include <numeric>
 #include "Population/Person/Person.h"
 #include "RandomTestBase.h"
+#include "Simulation/Model.h"
 #include "gtest/gtest.h"
 
 class RouletteTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        Model::get_instance()->release();
         r.set_seed(-1);
         for (int i = 0; i < n_person; ++i) {
             auto p = std::make_unique<Person>();
-            p->set_last_therapy_id(i);
+            // Note: We use set_number_of_times_bitten(i) as a temporary identifier since
+            // TherapyId is now uint8_t (max 255) and cannot hold values > 255. We avoid
+            // set_location() here as it has side effects (updates MDC person days tracking).
+            p->set_number_of_times_bitten(i);
             all_person.push_back(std::move(p));
             all_person_ptr.push_back(all_person.back().get());
             distribution.push_back(r.random_uniform());
@@ -20,6 +25,7 @@ protected:
     void TearDown() override {
         all_person.clear();
         distribution.clear();
+        Model::get_instance()->release();
     }
 
     utils::Random r;
@@ -51,9 +57,9 @@ TEST_F(RouletteTest, Sampling_with_no_sum_distribution) {
         EXPECT_EQ(results.size(), n_sample);
 
         for (int i = 0; i < n_sample; ++i) {
-            std::cout << results[i]->get_last_therapy_id() << "\t";
-            EXPECT_EQ(results[i]->get_last_therapy_id() % 2, 1)
-                                << fmt::format("failed with p_id: {}", results[i]->get_last_therapy_id());
+            std::cout << results[i]->get_number_of_times_bitten() << "\t";
+            EXPECT_EQ(results[i]->get_number_of_times_bitten() % 2, 1)
+                                << fmt::format("failed with p_id: {}", results[i]->get_number_of_times_bitten());
         }
         std::cout << std::endl;
     }
@@ -70,9 +76,9 @@ TEST_F(RouletteTest, Sampling_with_one_in_all) {
         EXPECT_EQ(results.size(), n_sample);
 
         for (int i = 0; i < n_sample; ++i) {
-            std::cout << results[i]->get_last_therapy_id() << "\t";
-            EXPECT_EQ(results[i]->get_last_therapy_id(), n_person - 1)
-                                << fmt::format("failed with p_id: {}", results[i]->get_last_therapy_id());
+            std::cout << results[i]->get_number_of_times_bitten() << "\t";
+            EXPECT_EQ(results[i]->get_number_of_times_bitten(), n_person - 1)
+                                << fmt::format("failed with p_id: {}", results[i]->get_number_of_times_bitten());
         }
         std::cout << std::endl;
     }
@@ -92,10 +98,10 @@ TEST_F(RouletteTest, Sampling_with_2_in_all) {
         EXPECT_EQ(results.size(), n_sample);
 
         for (int i = 0; i < n_sample; ++i) {
-            std::cout << results[i]->get_last_therapy_id() << "\t";
-            EXPECT_TRUE(results[i]->get_last_therapy_id() == (0) || results[i]->get_last_therapy_id() == (n_person - 1))
-                                << fmt::format("failed with p_id: {}", results[i]->get_last_therapy_id());
-            if (results[i]->get_last_therapy_id() == (n_person - 1)) {
+            std::cout << results[i]->get_number_of_times_bitten() << "\t";
+            EXPECT_TRUE(results[i]->get_number_of_times_bitten() == (0) || results[i]->get_number_of_times_bitten() == (n_person - 1))
+                                << fmt::format("failed with p_id: {}", results[i]->get_number_of_times_bitten());
+            if (results[i]->get_number_of_times_bitten() == (n_person - 1)) {
                 count++;
             }
         }
@@ -132,10 +138,10 @@ TEST_F(RouletteTest, Sampling_with_4_in_all) {
         EXPECT_EQ(results.size(), n_sample);
 
         for (int i = 0; i < n_sample; ++i) {
-            EXPECT_TRUE(results[i]->get_last_therapy_id() == 0 || results[i]->get_last_therapy_id() == 100
-                        || results[i]->get_last_therapy_id() == 200 || results[i]->get_last_therapy_id() == 300)
-                                << fmt::format("failed with p_id: {}", results[i]->get_last_therapy_id());
-            count[results[i]->get_last_therapy_id()]++;
+            EXPECT_TRUE(results[i]->get_number_of_times_bitten() == 0 || results[i]->get_number_of_times_bitten() == 100
+                        || results[i]->get_number_of_times_bitten() == 200 || results[i]->get_number_of_times_bitten() == 300)
+                                << fmt::format("failed with p_id: {}", results[i]->get_number_of_times_bitten());
+            count[results[i]->get_number_of_times_bitten()]++;
         }
     }
 
@@ -158,7 +164,9 @@ TEST_F(RouletteTest, compare_with_multi_normial) {
     foi_distribution.reserve(size);
     for (int i = 0; i < size; ++i) {
         auto p = std::make_unique<Person>();
-        p->set_last_therapy_id(i);
+        // Note: We use set_number_of_times_bitten(i) as a temporary identifier to avoid
+        // side effects from set_location() (updates MDC person days tracking).
+        p->set_number_of_times_bitten(i);
         population.push_back(std::move(p));
         population_ptr.push_back(population.back().get());
         foi_distribution.push_back(r.random_uniform());

@@ -8,13 +8,6 @@ find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 option(ENABLE_TRAVEL_TRACKING "Enable tracking of individual travel data and generating travel reports" OFF)
 
-if(ENABLE_TRAVEL_TRACKING)
-  message(STATUS "Travel tracking feature is enabled")
-  # Add definitions or configurations specific to the travel tracking feature
-  # add_definitions(-DENABLE_TRAVEL_TRACKING)
-  target_compile_definitions(MalaSimCore PUBLIC ENABLE_TRAVEL_TRACKING)
-endif()
-
 # include_directories(
 #   ${PROJECT_SOURCE_DIR}/src
 # )
@@ -41,7 +34,16 @@ list(FILTER MALASIM_CORE_SOURCES EXCLUDE REGEX "${PROJECT_SOURCE_DIR}/src/malasi
 add_library(MalaSimCore STATIC
     # Add your source files here
     ${MALASIM_CORE_SOURCES}
+
 )
+
+if(ENABLE_TRAVEL_TRACKING)
+  message(STATUS "Travel tracking feature is enabled")
+  # Add definitions or configurations specific to the travel tracking feature
+  # add_definitions(-DENABLE_TRAVEL_TRACKING)
+  target_compile_definitions(MalaSimCore PUBLIC ENABLE_TRAVEL_TRACKING)
+endif()
+
 target_include_directories(MalaSimCore PUBLIC "${PROJECT_SOURCE_DIR}/src")
 
 # Add coverage flags to MalaSimCore if enabled
@@ -53,7 +55,7 @@ if(ENABLE_COVERAGE)
 endif()
 
 # Link the core library and fmt to the main executable
-target_link_libraries(MalaSimCore PRIVATE
+target_link_libraries(MalaSimCore PUBLIC
   fmt::fmt-header-only
   GSL::gsl GSL::gslcblas
   yaml-cpp::yaml-cpp
@@ -75,17 +77,9 @@ if(NOT ENABLE_COVERAGE)
   add_dependencies(MalaSim MalaSimCore)
 
   # Link the core library and fmt to the main executable
-  target_link_libraries(MalaSim PRIVATE
+  target_link_libraries(MalaSim PUBLIC
     MalaSimCore
-    fmt::fmt-header-only
-    GSL::gsl GSL::gslcblas
-    yaml-cpp::yaml-cpp
-    spdlog::spdlog
-    date::date date::date-tz
-    CLI11::CLI11
-    unofficial::sqlite3::sqlite3
   )
-
   set_property(TARGET MalaSim PROPERTY CXX_STANDARD 20)
 endif()
 

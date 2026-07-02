@@ -402,7 +402,7 @@ void ReporterUtils::output_moi(std::stringstream &ss, PersonIndexByLocationState
 
 void ReporterUtils::initialize_moi_file_logger() {
   // Construct the log file name
-  std::string log_filename = fmt::format("moi_{}.txt", utils::Cli::get_instance().get_job_number());
+  std::string log_filename = fmt::format("moi_{}.txt", Model::get_cli_input().job_number);
 
   // Create a file sink
   auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_filename, true);

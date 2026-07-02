@@ -27,3 +27,13 @@ make build
 make test
 make run
 ```
+
+### Running Tests
+
+By default, test output is concise (warn level). To enable verbose logging:
+
+```sh
+MALASIM_LOG_LEVEL=info ./build/bin/malasim_test
+```
+
+Available levels: `trace`, `debug`, `info`, `warn`, `err`, `critical`

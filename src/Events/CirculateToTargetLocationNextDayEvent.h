@@ -7,6 +7,7 @@
 #define CIRCULATETOTARGETLOCATIONNEXTDAYEVENT_H
 
 // #include "Core/ObjectPool.h"
+#include "Core/types.h"
 #include "Event.h"
 
 class Person;
@@ -26,15 +27,15 @@ public:
   explicit CirculateToTargetLocationNextDayEvent(Person* person) : PersonEvent(person) {}
   ~CirculateToTargetLocationNextDayEvent() override = default;
 
-  [[nodiscard]] int target_location() const { return target_location_; }
-  void set_target_location(int value) { target_location_ = value; }
+  [[nodiscard]] core::LocationId target_location() const { return target_location_; }
+  void set_target_location(core::LocationId value) { target_location_ = value; }
 
   [[nodiscard]] const std::string name() const override {
     return "CirculateToTargetLocationNextDayEvent";
   }
 
 private:
-  int target_location_{0};
+  core::LocationId target_location_{0};
   void do_execute() override;
 };
 

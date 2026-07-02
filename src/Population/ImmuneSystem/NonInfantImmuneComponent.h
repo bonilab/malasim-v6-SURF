@@ -14,11 +14,11 @@ public:
   // NonInfantImmuneComponent(const NonInfantImmuneComponent& orig);
   virtual ~NonInfantImmuneComponent();
 
-  virtual double get_decay_rate(const int &age = 0) const;
+  virtual double get_decay_rate(const int &age = 0) const override;
 
-  virtual double get_acquire_rate(const int &age = 0) const;
+  virtual double get_acquire_rate(const int &age = 0) const override;
 
- private:
+private:
 
 };
 

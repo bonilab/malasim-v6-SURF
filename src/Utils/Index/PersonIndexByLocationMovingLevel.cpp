@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "Configuration/Config.h"
+#include "Core/types.h"
 #include "Simulation/Model.h"
 
 PersonIndexByLocationMovingLevel::PersonIndexByLocationMovingLevel(const int &no_location,
@@ -23,7 +24,9 @@ void PersonIndexByLocationMovingLevel::Initialize(const int &no_location, const 
 }
 
 void PersonIndexByLocationMovingLevel::add(Person* person) {
-  assert(vPerson_.size() > person->get_location() && person->get_location() >= 0);
+  assert(person->get_location() != core::K_INVALID_LOCATION_ID);
+  assert(person->get_moving_level() != core::K_INVALID_MOVING_LEVEL);
+  assert(vPerson_.size() > person->get_location());
   assert(vPerson_[person->get_location()].size() > person->get_moving_level());
   add(person, person->get_location(), person->get_moving_level());
 }
@@ -38,10 +41,10 @@ void PersonIndexByLocationMovingLevel::notify_change(Person* person,
                                                      const void* oldValue, const void* newValue) {
   switch (property) {
     case Person::LOCATION:
-      change_property(person, *(int*)newValue, person->get_moving_level());
+      change_property(person, *(core::LocationId*)newValue, person->get_moving_level());
       break;
     case Person::MOVING_LEVEL:
-      change_property(person, person->get_location(), *(int*)newValue);
+      change_property(person, person->get_location(), *(core::MovingLevel*)newValue);
       break;
     default:
       break;
@@ -59,8 +62,8 @@ std::size_t PersonIndexByLocationMovingLevel::size() const {
 }
 
 
-void PersonIndexByLocationMovingLevel::add(Person* person, const int &location,
-                                           const int &moving_level) {
+void PersonIndexByLocationMovingLevel::add(Person* person, core::LocationId location,
+                                           core::MovingLevel moving_level) {
   vPerson_[location][moving_level].push_back(person);
   person->PersonIndexByLocationMovingLevelHandler::set_index(vPerson_[location][moving_level].size()
                                                              - 1);
@@ -77,8 +80,8 @@ void PersonIndexByLocationMovingLevel::remove_without_set_index(Person* person) 
   vPerson_[person->get_location()][person->get_moving_level()].pop_back();
 }
 
-void PersonIndexByLocationMovingLevel::change_property(Person* person, const int &location,
-                                                       const int &moving_level) {
+void PersonIndexByLocationMovingLevel::change_property(Person* person, core::LocationId location,
+                                                       core::MovingLevel moving_level) {
   // remove from old position
   remove_without_set_index(
       person);  // to save 1 set and improve performance since the index of p will changed when add
