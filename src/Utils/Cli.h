@@ -25,8 +25,8 @@ public:
     bool print_memory_stats{false};
   };
   struct DxGAppInput {
-    std::string input_file{ "input.yml" };
-    std::string output_file{ "" };
+    std::string input_file{"input.yml"};
+    std::string output_file{""};
     std::vector<int> therapies{};
     std::vector<int> therapy_list{};
     std::vector<std::string> genotypes{};
@@ -35,20 +35,19 @@ public:
     double as_iiv = -1.0;
     double as_ec50 = -1.0;
     bool is_ee_calibration = false;
-    int number_of_drugs_in_combination{ 1 };
-    bool is_art{ false };
+    int number_of_drugs_in_combination{1};
+    bool is_art{false};
     std::vector<int> dosing_days{};
     std::vector<double> half_life{};
     std::vector<double> k_max{};
     std::vector<double> EC50{};
     std::vector<double> slope{};
     std::vector<double> mean_drug_absorption{};
-    int population_size{ 10000 };
-    bool is_print_immunity_level{ false };
-    bool is_old_format{ false };
-    bool is_recurrence_test{ false };
+    int population_size{10000};
+    bool is_print_immunity_level{false};
+    bool is_old_format{false};
+    bool is_recurrence_test{false};
   };
-
 
 public:
   // Static method to get the single instance of the class
@@ -58,7 +57,7 @@ public:
   }
 
   static MaSimAppInput parse_args(int argc, char** argv) {
-    auto& instance = get_instance();
+    auto &instance = get_instance();
     instance.parse(argc, argv);
     return instance.cli_input_;
   }
@@ -81,11 +80,10 @@ public:
 
     for (int i = 1; i < argc; ++i) {
       std::string arg = argv[i];
-      if (arg == "--DxG" || arg == "DxG=1" || arg == "DxG=true"
-          || arg == "--recurrence-test") {
+      if (arg == "--DxG" || arg == "DxG=1" || arg == "DxG=true" || arg == "--recurrence-test") {
         isDxG = true;
         break;
-          }
+      }
     }
 
     spdlog::info("Parsing command line arguments");
@@ -106,13 +104,15 @@ public:
         app.parse(argc, argv);
         validate_config(cli_input_);
       }
+      app.parse(argc, argv);
+    } catch (const CLI::CallForHelp &e) {
+      std::cout << app.help();
+      exit(0);
     } catch (const CLI::ParseError &e) {
       spdlog::error("CLI parsing failed: {}", e.what());
       throw;  // or return false if you refactor to use a return value
     }
   }
-
-
 
   // Accessors for parameters
   [[nodiscard]] std::string get_input_path() const { return cli_input_.input_path; }
@@ -133,9 +133,7 @@ public:
   }
   [[nodiscard]] bool get_record_movement() const { return cli_input_.record_movement; }
   [[nodiscard]] bool get_print_memory_stats() const { return cli_input_.print_memory_stats; }
-  [[nodiscard]] DxGAppInput get_dxg_app_input() {
-    return dxg_input_;
-  }
+  [[nodiscard]] DxGAppInput get_dxg_app_input() { return dxg_input_; }
 
   static void create_cli_options(CLI::App &app, MaSimAppInput &input) {
     app.add_option("-i,--input", input.input_path, "Input filename. Default: `input.yml`.");
@@ -160,44 +158,50 @@ public:
 
     app.add_flag("--mc", input.record_cell_movement, "Record the movement between cells.");
 
-    app.add_flag("--md", input.record_district_movement,
-                 "Record the movement between districts.");
+    app.add_flag("--md", input.record_district_movement, "Record the movement between districts.");
 
     app.add_option("--replicate", input.replicate, "Replicate number. Default: 1");
 
     app.add_flag("--memory-stats", input.print_memory_stats,
-                   "Print memory statistics for key classes and exit.");
+                 "Print memory statistics for key classes and exit.");
   }
 
   static void create_dxg_cli_options(CLI::App &app, DxGAppInput &input) {
-      app.add_option("-i,--input", input.input_file, "Input filename for DxG")->check(CLI::ExistingFile);
-      app.add_option("-o,--output", input.output_file, "Output file path");
+    app.add_option("-i,--input", input.input_file, "Input filename for DxG")
+        ->check(CLI::ExistingFile);
+    app.add_option("-o,--output", input.output_file, "Output file path");
 
-      app.add_option("-t,--therapies", input.therapies, "Therapy range (e.g., 0 1 2 ...)")->expected(-1);
-      app.add_option("--tl,--therapy_list", input.therapy_list, "List of therapies (e.g., 0 1 2 ...)")->expected(-1);
-      app.add_option("-g,--genotypes", input.genotypes, "List of genotypes (e.g., WT KEL1 KEL1/PLA1)")->expected(-1);
+    app.add_option("-t,--therapies", input.therapies, "Therapy range (e.g., 0 1 2 ...)")
+        ->expected(-1);
+    app.add_option("--tl,--therapy_list", input.therapy_list, "List of therapies (e.g., 0 1 2 ...)")
+        ->expected(-1);
+    app.add_option("-g,--genotypes", input.genotypes, "List of genotypes (e.g., WT KEL1 KEL1/PLA1)")
+        ->expected(-1);
 
-      app.add_flag("--cc", input.is_crt_calibration, "Enable PfCRT EC50 calibration");
-      app.add_option("--iov", input.as_iov, "AS inter-occasion variability")->default_val(-1.0);
-      app.add_option("--iiv", input.as_iiv, "AS inter-individual variability")->default_val(-1.0);
-      app.add_option("--as_ec50", input.as_ec50, "AS EC50 value (C580)")->default_val(-1.0);
-      app.add_flag("--ee", input.is_ee_calibration, "Enable EE calibration");
+    app.add_flag("--cc", input.is_crt_calibration, "Enable PfCRT EC50 calibration");
+    app.add_option("--iov", input.as_iov, "AS inter-occasion variability")->default_val(-1.0);
+    app.add_option("--iiv", input.as_iiv, "AS inter-individual variability")->default_val(-1.0);
+    app.add_option("--as_ec50", input.as_ec50, "AS EC50 value (C580)")->default_val(-1.0);
+    app.add_flag("--ee", input.is_ee_calibration, "Enable EE calibration");
 
-      app.add_option("--nd", input.number_of_drugs_in_combination, "Number of drugs in combination")->default_val(1);
-      app.add_flag("--art", input.is_art, "Use ART configuration");
+    app.add_option("--nd", input.number_of_drugs_in_combination, "Number of drugs in combination")
+        ->default_val(1);
+    app.add_flag("--art", input.is_art, "Use ART configuration");
 
-      app.add_option("--dose", input.dosing_days, "EE dosing days (e.g., 0 1 2 ...)")->expected(-1);
-      app.add_option("--halflife", input.half_life, "EE half-life values")->expected(-1);
-      app.add_option("--kmax", input.k_max, "EE kmax values")->expected(-1);
-      app.add_option("--EC50", input.EC50, "EE EC50 values")->expected(-1);
-      app.add_option("--slope", input.slope, "EE slope values")->expected(-1);
-      app.add_option("--mda", input.mean_drug_absorption, "EE mean drug absorption values")->expected(-1);
+    app.add_option("--dose", input.dosing_days, "EE dosing days (e.g., 0 1 2 ...)")->expected(-1);
+    app.add_option("--halflife", input.half_life, "EE half-life values")->expected(-1);
+    app.add_option("--kmax", input.k_max, "EE kmax values")->expected(-1);
+    app.add_option("--EC50", input.EC50, "EE EC50 values")->expected(-1);
+    app.add_option("--slope", input.slope, "EE slope values")->expected(-1);
+    app.add_option("--mda", input.mean_drug_absorption, "EE mean drug absorption values")
+        ->expected(-1);
 
-      app.add_option("--popsize", input.population_size, "Population size for EE")->default_val(10000);
+    app.add_option("--popsize", input.population_size, "Population size for EE")
+        ->default_val(10000);
 
-      app.add_flag("--pil", input.is_print_immunity_level, "Print immunity level");
-      app.add_flag("--old_format", input.is_old_format, "Print output in old format");
-      app.add_flag("--recurrence-test", input.is_recurrence_test,
+    app.add_flag("--pil", input.is_print_immunity_level, "Print immunity level");
+    app.add_flag("--old_format", input.is_old_format, "Print output in old format");
+    app.add_flag("--recurrence-test", input.is_recurrence_test,
                  "Run recurrence test mode (TMS-style per-person CSV with recrudescence tracking)");
   }
 
