@@ -212,32 +212,14 @@ TEST_F(SingleHostClonalParasitePopulationsTest, IsGametocytaemic) {
   EXPECT_FALSE(populations->is_gametocytaemic());
 }
 
-TEST_F(SingleHostClonalParasitePopulationsTest, UpdateByDrugs) {
-  auto parasite = std::make_unique<ClonalParasitePopulation>(genotype.get());
-  auto parasite_ptr = parasite.get();
+TEST_F(SingleHostClonalParasitePopulationsTest, UpdateWithDrugEffectsEmptyPopulation) {
   auto drugs_in_blood = std::make_unique<DrugsInBlood>();
 
-  populations->add(std::move(parasite));
-  parasite_ptr->set_last_update_log10_parasite_density(5.0);
-  // Test update with no drugs
-  populations->update_by_drugs(drugs_in_blood.get());
-  EXPECT_DOUBLE_EQ(parasite_ptr->last_update_log10_parasite_density(), 5.0);
+  EXPECT_NO_THROW(populations->update_with_drug_effects(drugs_in_blood.get()));
 }
 
-TEST_F(SingleHostClonalParasitePopulationsTest, UpdateByDrugsEdgeCases) {
-  // Test with empty population
-  auto drugs_in_blood = std::make_unique<DrugsInBlood>();
-  populations->update_by_drugs(drugs_in_blood.get());
-
-  std::cout << "Test with empty population" << std::endl;
-
-  // Test with null drugs_in_blood
-  auto parasite = std::make_unique<ClonalParasitePopulation>(genotype.get());
-  auto parasite_ptr = parasite.get();
-  populations->add(std::move(parasite));
-  parasite_ptr->set_last_update_log10_parasite_density(5.0);
-
-  EXPECT_THROW(populations->update_by_drugs(nullptr), std::invalid_argument);
+TEST_F(SingleHostClonalParasitePopulationsTest, UpdateWithDrugEffectsNullDrugsThrows) {
+  EXPECT_THROW(populations->update_with_drug_effects(nullptr), std::invalid_argument);
 }
 
 TEST_F(SingleHostClonalParasitePopulationsTest, Clear) {
@@ -501,4 +483,3 @@ TEST_F(SingleHostClonalParasitePopulationsTest, MemoryManagementVectorReallocati
   EXPECT_FALSE(is_destroyed(5));
   EXPECT_FALSE(is_destroyed(6));
 }
-

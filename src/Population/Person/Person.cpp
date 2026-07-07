@@ -518,18 +518,11 @@ void Person::update() {
 
   if (latest_update_time_ == Model::get_scheduler()->current_time()) return;
 
-  // update parasites by immune system
-  //    std::cout << "ppu"<< std::endl;
-  // update the density of each blood parasite in parasite population
-  // parasite will be killed by immune system
-  all_clonal_parasite_populations_->update();
-
   // update all drugs concentration
   drugs_in_blood_->update();
 
-  // update drug activity on parasite
-  all_clonal_parasite_populations_->update_by_drugs(drugs_in_blood_.get());
-  all_clonal_parasite_populations_->apply_cnv_reversion(drugs_in_blood_.get());
+  // Update parasite density, drug activity, and CNV reversion in one parasite pass.
+  all_clonal_parasite_populations_->update_with_drug_effects(drugs_in_blood_.get());
 
   immune_system_->update();
 

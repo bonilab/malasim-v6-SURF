@@ -72,13 +72,11 @@ public:
 
   void update();
 
+  void update_with_drug_effects(DrugsInBlood* drugs_in_blood);
+
   void clear_cured_parasites(double cured_threshold);
 
   void clear();
-
-  void update_by_drugs(DrugsInBlood* drugs_in_blood) const;
-
-  void apply_cnv_reversion(DrugsInBlood* drugs_in_blood) const;
 
   [[nodiscard]] bool has_detectable_parasite(double detectable_threshold) const;
 
@@ -98,6 +96,12 @@ public:
   void set_person(Person* value) noexcept { person_ = value; }
 
 private:
+  void apply_drug_effects_to(ClonalParasitePopulation* blood_parasite,
+                             DrugsInBlood* drugs_in_blood) const;
+
+  void apply_cnv_reversion_to(ClonalParasitePopulation* blood_parasite,
+                              DrugsInBlood* drugs_in_blood) const;
+
   Person* person_{nullptr};
   std::vector<std::unique_ptr<ClonalParasitePopulation>> parasites_;
   double log10_total_infectious_density_{DEFAULT_LOG_DENSITY};
