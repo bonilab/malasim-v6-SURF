@@ -2,7 +2,6 @@
 
 #include "Simulation/Model.h"
 
-
 void DrugParameters::process_config() {
   spdlog::info("Processing DrugParameters");
   for (auto drug_id = 0; drug_id < drug_infos_.size(); drug_id++) {
@@ -32,7 +31,7 @@ void DrugParameters::process_config() {
 
     dt->set_k(dt_node.get_k());
 
-    dt->base_EC50 = dt_node.get_base_EC50();
+    dt->set_base_ec50(dt_node.get_base_ec50());
 
     dt->populate_resistant_aa_locations();
 

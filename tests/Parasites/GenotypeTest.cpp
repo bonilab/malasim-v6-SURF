@@ -144,7 +144,7 @@ TEST_F(GenotypeTest, CnvMultiplicativeEffectChangesEC50ForDoubleCopyGene) {
                            .get_genes()[0];
   const auto cnv_factor = pfmdr1.get_cnv_multiplicative_effect_on_EC50()[0].get_factors()[1];
 
-  const auto expected_ec50_power_n = std::pow(drug->base_EC50 * cnv_factor, drug->n());
+  const auto expected_ec50_power_n = std::pow(drug->base_ec50() * cnv_factor, drug->n());
 
   EXPECT_DOUBLE_EQ(genotype->get_EC50_power_n(drug), expected_ec50_power_n);
 }

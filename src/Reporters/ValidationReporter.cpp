@@ -14,7 +14,6 @@
 #include "Simulation/Model.h"
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
-#include "Utils/Cli.h"
 #include "Utils/Constants.h"
 #include "Utils/Index/PersonIndexByLocationStateAgeClass.h"
 #include "Utils/Random.h"
@@ -38,10 +37,9 @@ void ValidationReporter::initialize(int job_number, const std::string &path) {
   fs::remove(gene_db_path);
 
   if (Model::get_config()->get_mosquito_parameters().get_record_recombination_events()) {
-    monthly_mutation_path =
-        fmt::format("{}/validation_monthly_mutation_{}.txt", path, job_number);
+    monthly_mutation_path = fmt::format("{}/validation_monthly_mutation_{}.txt", path, job_number);
     mosquito_res_count_path =
-      fmt::format("{}/validation_mosquito_res_count_{}.txt", path, job_number);
+        fmt::format("{}/validation_mosquito_res_count_{}.txt", path, job_number);
     fs::remove(monthly_mutation_path);
     fs::remove(mosquito_res_count_path);
   }
@@ -52,7 +50,7 @@ void ValidationReporter::initialize(int job_number, const std::string &path) {
   gene_freq_logger = spdlog::basic_logger_mt("validation_gene_freq", gene_freq_path);
   gene_db_logger = spdlog::basic_logger_mt("validation_gene_db", gene_db_path);
 
-  if (Model::get_config()->get_mosquito_parameters().get_record_recombination_events()){
+  if (Model::get_config()->get_mosquito_parameters().get_record_recombination_events()) {
     monthly_mutation_logger =
         spdlog::basic_logger_mt("validation_monthly_mutation", monthly_mutation_path);
     mosquito_res_count_logger =
@@ -90,8 +88,9 @@ void ValidationReporter::before_run() {}
 void ValidationReporter::begin_time_step() {}
 
 void ValidationReporter::monthly_report() {
-      // spdlog::info("monthly_report {} {} {} {} {}",Model::get_scheduler()->current_time(), 0, Model::get_population()->size_at(0),
-      //   Constants::DAYS_IN_YEAR,Model::get_mdc()->person_days_by_location_year()[0]);
+  // spdlog::info("monthly_report {} {} {} {} {}",Model::get_scheduler()->current_time(), 0,
+  // Model::get_population()->size_at(0),
+  //   Constants::DAYS_IN_YEAR,Model::get_mdc()->person_days_by_location_year()[0]);
   std::stringstream ss;
 
   ss << Model::get_scheduler()->current_time() << sep;
@@ -232,7 +231,7 @@ void ValidationReporter::monthly_report() {
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     ss << Model::get_mdc()->monthly_number_of_tf_by_location()[loc] << sep;
     ss << group_sep;  // 345
-  } // 417
+  }  // 417
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << sep;
     ss << group_sep;  // 347
@@ -273,8 +272,7 @@ void ValidationReporter::monthly_report() {
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->total_immune_by_location_age()[loc][age]
-         << sep;
+      ss << Model::get_mdc()->total_immune_by_location_age()[loc][age] << sep;
     }
     ss << group_sep;  /// 756
   }
@@ -289,37 +287,33 @@ void ValidationReporter::monthly_report() {
     double p_success = (n_treaments == 0) ? 0 : n_success * 100.0 / n_treaments;
     ss << n_treaments << sep << n_success << sep << n_fail << sep << p_success << sep;
   }
-  ss << group_sep; // 833
+  ss << group_sep;  // 833
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->cumulative_clinical_episodes_by_location_age()[loc][age]
-         << sep;
+      ss << Model::get_mdc()->cumulative_clinical_episodes_by_location_age()[loc][age] << sep;
     }
     ss << group_sep;  // 914
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].total
-         << sep;
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].total << sep;
     ss << group_sep;  // 916
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].recrudescence
-         << sep;
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].recrudescence << sep;
     ss << group_sep;  // 918
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].new_infection
-         << sep;
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].new_infection << sep;
     ss << group_sep;  // 920
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[loc]
-         << sep;
+    ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[loc] << sep;
     ss << group_sep;  // 922
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-      ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location_age_class()[loc][ac]
+      ss << Model::get_mdc()
+                ->monthly_number_of_recrudescence_treatment_by_location_age_class()[loc][ac]
          << sep;
     }
     ss << group_sep;  /// 938
@@ -332,14 +326,12 @@ void ValidationReporter::monthly_report() {
     ss << group_sep;  /// 1019
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_treatment_failure_by_location()[loc]
-         << sep;
+    ss << Model::get_mdc()->monthly_treatment_failure_by_location()[loc] << sep;
     ss << group_sep;  // 1021
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-      ss << Model::get_mdc()->monthly_treatment_failure_by_location_age_class()[loc][ac]
-        << sep;
+      ss << Model::get_mdc()->monthly_treatment_failure_by_location_age_class()[loc][ac] << sep;
     }
     ss << group_sep;  // 1137
   }
@@ -350,12 +342,16 @@ void ValidationReporter::monthly_report() {
     ss << Model::get_population()->current_force_of_infection_by_location()[loc] << sep;
     ss << group_sep;  // 1142
   }
-  const auto age_index_count = static_cast<int>(Model::get_config()
-      ->get_epidemiological_parameters().get_age_based_probability_of_seeking_treatment()
-      .get_ages().size());
+  const auto age_index_count =
+      static_cast<int>(Model::get_config()
+                           ->get_epidemiological_parameters()
+                           .get_age_based_probability_of_seeking_treatment()
+                           .get_ages()
+                           .size());
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto idx = 0; idx < (age_index_count > 0 ? age_index_count : 1); ++idx) {
-      ss << Model::get_mdc()->monthly_number_of_people_seeking_treatment_by_location_age_index()[loc][idx]
+      ss << Model::get_mdc()
+                ->monthly_number_of_people_seeking_treatment_by_location_age_index()[loc][idx]
          << sep;
     }
     ss << group_sep;  // 1158
@@ -372,10 +368,9 @@ void ValidationReporter::monthly_report() {
   gene_freq_logger->info(gene_freq_ss.str());
   // prmc_freq_logger->info(prmc_freq_ss.str());
 
-
   ss.str("");
 
-  if (Model::get_config()->get_mosquito_parameters().get_record_recombination_events()){
+  if (Model::get_config()->get_mosquito_parameters().get_record_recombination_events()) {
     int sum = 0;
     for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
       sum += static_cast<int>(Model::get_mdc()->mutation_tracker[loc].size());
@@ -406,7 +401,7 @@ void ValidationReporter::monthly_report() {
         ss << std::get<1>(genotype_tracked) << sep;
         ss << std::get<2>(genotype_tracked) << sep;
         ss << std::get<3>(genotype_tracked) << '\n';
-           }
+      }
     }
     if (sum > 0) {
       mosquito_res_count_logger->info(ss.str());
@@ -509,9 +504,9 @@ void ValidationReporter::after_run() {
               genotype->resist_to(Model::get_drug_db()->at(drugs[0]).get()),
               genotype->resist_to(Model::get_drug_db()->at(drugs[1]).get()),
               genotype->EC50_power_n[drugs[0]], genotype->EC50_power_n[drugs[1]],
-              pow(Model::get_drug_db()->at(drugs[0])->base_EC50,
+              pow(Model::get_drug_db()->at(drugs[0])->base_ec50(),
                   Model::get_drug_db()->at(drugs[0])->n()),
-              pow(Model::get_drug_db()->at(drugs[1])->base_EC50,
+              pow(Model::get_drug_db()->at(drugs[1])->base_ec50(),
                   Model::get_drug_db()->at(drugs[1])->n())));
         } else {
           spdlog::debug(fmt::format(
@@ -523,11 +518,11 @@ void ValidationReporter::after_run() {
               genotype->resist_to(Model::get_drug_db()->at(drugs[2]).get()),
               genotype->EC50_power_n[drugs[0]], genotype->EC50_power_n[drugs[1]],
               genotype->EC50_power_n[drugs[2]],
-              pow(Model::get_drug_db()->at(drugs[0])->base_EC50,
+              pow(Model::get_drug_db()->at(drugs[0])->base_ec50(),
                   Model::get_drug_db()->at(drugs[0])->n()),
-              pow(Model::get_drug_db()->at(drugs[1])->base_EC50,
+              pow(Model::get_drug_db()->at(drugs[1])->base_ec50(),
                   Model::get_drug_db()->at(drugs[1])->n()),
-              pow(Model::get_drug_db()->at(drugs[1])->base_EC50,
+              pow(Model::get_drug_db()->at(drugs[1])->base_ec50(),
                   Model::get_drug_db()->at(drugs[2])->n())));
         }
       }

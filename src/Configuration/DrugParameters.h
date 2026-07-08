@@ -48,7 +48,7 @@ public:
     [[nodiscard]] int get_k() const { return k_; }
     void set_k(const int value) { k_ = value; }
 
-    [[nodiscard]] double get_base_EC50() const { return base_EC50_; }
+    [[nodiscard]] double get_base_ec50() const { return base_EC50_; }
     void set_base_EC50(const double value) { base_EC50_ = value; }
 
   private:
@@ -87,7 +87,7 @@ struct convert<DrugParameters::DrugInfo> {
     node["age_specific_drug_concentration_sd"] = rhs.get_age_specific_drug_concentration_sd();
     node["age_specific_drug_absorption"] = rhs.get_age_specific_drug_absorption();
     node["k"] = rhs.get_k();
-    node["base_EC50"] = rhs.get_base_EC50();
+    node["base_EC50"] = rhs.get_base_ec50();
     return node;
   }
 

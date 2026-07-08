@@ -21,8 +21,7 @@ bool Config::load(const std::string &filename) {
   try {
     YAML::Node config = YAML::LoadFile(filename);
 
-    spdlog::info("Configuration file loaded successfully: "
-                 + Model::get_cli_input().input_path);
+    spdlog::info("Configuration file loaded successfully: " + Model::get_cli_input().input_path);
 
     model_settings_ = config["model_settings"].as<ModelSettings>();
     simulation_timeframe_ = config["simulation_timeframe"].as<SimulationTimeframe>();
@@ -65,18 +64,22 @@ bool Config::load(const std::string &filename) {
       if (immune_system_parameter_candidates_.get_random_selection()) {
         const auto &candidates = immune_system_parameter_candidates_.get_candidates();
         if (candidates.empty()) {
-          spdlog::warn("immune_system_paprameter_candidates: random_selection=true but candidates is empty — skipping random selection");
+          spdlog::warn(
+              "immune_system_paprameter_candidates: random_selection=true but candidates is empty "
+              "— skipping random selection");
         } else {
           // Collect actual keys so selection is correct even for non-contiguous maps
           std::vector<int> candidate_keys;
           candidate_keys.reserve(candidates.size());
           for (const auto &[key, val] : candidates) { candidate_keys.push_back(key); }
-          const auto pick =
-              static_cast<std::size_t>(Model::get_random()->random_uniform(static_cast<uint64_t>(candidate_keys.size())));
+          const auto pick = static_cast<std::size_t>(
+              Model::get_random()->random_uniform(static_cast<uint64_t>(candidate_keys.size())));
           const int selected_idx = candidate_keys[pick];
           immune_system_parameter_candidates_.set_used_in_simulation(selected_idx);
-          spdlog::info("immune_system_paprameter_candidates: random_selection=true, num_candidates={}, sampled used_in_simulation={}",
-                       candidate_keys.size(), selected_idx);
+          spdlog::info(
+              "immune_system_paprameter_candidates: random_selection=true, num_candidates={}, "
+              "sampled used_in_simulation={}",
+              candidate_keys.size(), selected_idx);
         }
       }
 
@@ -90,13 +93,17 @@ bool Config::load(const std::string &filename) {
         spdlog::info("Applying candidate[{}] overrides:", idx);
         spdlog::info("  p_ci_symp={}  -> allow_new_coinfection_to_cause_symptoms.probability",
                      c.p_ci_symp);
-        spdlog::info("  z={}          -> immune_system_parameters.immune_effect_on_progression_to_clinical",
-                     c.z);
-        spdlog::info("  kappa={}      -> immune_system_parameters.factor_effect_age_mature_immunity",
-                     c.kappa);
+        spdlog::info(
+            "  z={}          -> immune_system_parameters.immune_effect_on_progression_to_clinical",
+            c.z);
+        spdlog::info(
+            "  kappa={}      -> immune_system_parameters.factor_effect_age_mature_immunity",
+            c.kappa);
         spdlog::info("  midpoint={}   -> immune_system_parameters.midpoint", c.midpoint);
-        spdlog::info("  p_seek_base={} -> epidemiological_parameters.age_based_probability_of_seeking_treatment.power.base",
-                     c.p_seek_base);
+        spdlog::info(
+            "  p_seek_base={} -> "
+            "epidemiological_parameters.age_based_probability_of_seeking_treatment.power.base",
+            c.p_seek_base);
 
         // Override immune_system_parameters (z, kappa, midpoint)
         immune_system_parameters_.set_immune_effect_on_progression_to_clinical(c.z);
@@ -104,12 +111,14 @@ bool Config::load(const std::string &filename) {
         immune_system_parameters_.set_midpoint(c.midpoint);
 
         // Override allow_new_coinfection_to_cause_symptoms.probability (p_ci_symp)
-        auto coinfection = epidemiological_parameters_.get_allow_new_coinfection_to_cause_symptoms();
+        auto coinfection =
+            epidemiological_parameters_.get_allow_new_coinfection_to_cause_symptoms();
         coinfection.set_probability(c.p_ci_symp);
         epidemiological_parameters_.set_allow_new_coinfection_to_cause_symptoms(coinfection);
 
         // Override age_based_probability_of_seeking_treatment.power.base (p_seek_base)
-        auto age_based = epidemiological_parameters_.get_age_based_probability_of_seeking_treatment();
+        auto age_based =
+            epidemiological_parameters_.get_age_based_probability_of_seeking_treatment();
         auto power = age_based.get_power();
         power.base = c.p_seek_base;
         age_based.set_power(power);
@@ -117,12 +126,14 @@ bool Config::load(const std::string &filename) {
 
         spdlog::info("Candidate[{}] overrides applied successfully", idx);
       } else {
-        spdlog::warn("immune_system_paprameter_candidates: used_in_simulation={} not found in "
-                     "candidates — no overrides applied",
-                     immune_system_parameter_candidates_.get_used_in_simulation());
+        spdlog::warn(
+            "immune_system_paprameter_candidates: used_in_simulation={} not found in "
+            "candidates — no overrides applied",
+            immune_system_parameter_candidates_.get_used_in_simulation());
       }
     } else {
-      spdlog::info("No immune_system_paprameter_candidates section found — using default parameters");
+      spdlog::info(
+          "No immune_system_paprameter_candidates section found — using default parameters");
     }
 
     spdlog::info("Configuration file parsed successfully");
@@ -510,9 +521,9 @@ void Config::validate_all_cross_field_validations() {
   Validate genotype parameters
   ----------------------------*/
   GenotypeParameters genotype_parameters = genotype_parameters_;
-  // Check if mask contains 13 "|" characters
-  if (get_pipe_count(genotype_parameters.get_mutation_mask()) != 13) {
-    throw std::invalid_argument("Mutation mask should contain 13 '|' characters");
+  // Mutation mask entries are indexed by genotype aa_sequence character position.
+  if (genotype_parameters.get_mutation_mask().empty()) {
+    throw std::invalid_argument("Mutation mask should not be empty");
   }
   // Check if mutation rate is in mutation_probability_per_locus [0,1]
   if (genotype_parameters.get_mutation_probability_per_locus() < 0
@@ -521,9 +532,9 @@ void Config::validate_all_cross_field_validations() {
   }
   GenotypeParameters::validate_cnv_reversion_multipliers(genotype_parameters);
   // Check override_ec50_patterns, each pattern size should match mutation mask size
+  const auto mutation_mask_size = genotype_parameters.get_mutation_mask().size();
   for (const auto &override_ec50_pattern : genotype_parameters.get_override_ec50_patterns()) {
-    if (override_ec50_pattern.get_pattern().size()
-        != genotype_parameters.get_mutation_mask().size()) {
+    if (override_ec50_pattern.get_pattern().size() != mutation_mask_size) {
       throw std::invalid_argument("Override EC50 pattern size should match mutation mask size");
     }
     // Pattern should contains 13 "|" characters
@@ -539,8 +550,7 @@ void Config::validate_all_cross_field_validations() {
         throw std::invalid_argument(
             "Initial genotype aa sequence should contain 13 '|' characters");
       }
-      if (parasite_info.get_aa_sequence().size()
-          != genotype_parameters.get_mutation_mask().size()) {
+      if (parasite_info.get_aa_sequence().size() != mutation_mask_size) {
         throw std::invalid_argument(
             "Initial genotype aa sequence size should match mutation mask size");
       }
@@ -554,7 +564,7 @@ void Config::validate_all_cross_field_validations() {
   //  DrugParameters drug_parameters = drug_parameters_;
   for (const auto &drug : drug_parameters_.get_drug_db_raw()) {
     if (drug.second.get_half_life() < 0 || drug.second.get_maximum_parasite_killing_rate() < 0
-        || drug.second.get_n() < 0 || drug.second.get_k() < 0 || drug.second.get_base_EC50() < 0) {
+        || drug.second.get_n() < 0 || drug.second.get_k() < 0 || drug.second.get_base_ec50() < 0) {
       throw std::invalid_argument("All drug parameters should be positive numbers");
     }
     // maximum_parasite_killing_rate should be in range [0,1]

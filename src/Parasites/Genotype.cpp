@@ -50,7 +50,7 @@ Genotype::Genotype(const std::string &in_aa_sequence) : aa_sequence{in_aa_sequen
 Genotype::~Genotype() = default;
 
 bool Genotype::resist_to(DrugType* dt) {
-  return EC50_power_n[dt->id()] > pow(dt->base_EC50, dt->n());
+  return EC50_power_n[dt->id()] > pow(dt->base_ec50(), dt->n());
 }
 
 Genotype* Genotype::combine_mutation_to(const int &locus, const int &value) {
@@ -74,7 +74,7 @@ Genotype* Genotype::modify_genotype_allele(const std::vector<std::tuple<int, int
     for (int char_counter = 0; char_counter < new_aa_sequence.size(); char_counter++) {
       if (chromosome_counter == (std::get<0>(allele_info) - 1)) {
         if (locus_counter == (std::get<1>(allele_info) - 1)) {
-          if (p_config->get_genotype_parameters().get_mutation_mask()[char_counter] == '1') {
+          if (p_config->get_genotype_parameters().get_mutation_mask()[char_counter]) {
             if (new_aa_sequence[char_counter] != std::get<2>(allele_info)) {
               // spdlog::trace("{}:{} Changing allele at {} ({} -> {}) new aa_sequence {} mask: {}",
               //   std::get<0>(allele_info),std::get<1>(allele_info),
@@ -217,7 +217,7 @@ void Genotype::calculate_daily_fitness(const GenotypeParameters::PfGenotypeInfo 
 void Genotype::calculate_EC50_power_n(const GenotypeParameters::PfGenotypeInfo &gene_info,
                                       DrugDatabase* drug_db) {
   EC50_power_n.resize(drug_db->size());
-  for (const auto &dt : *drug_db) { EC50_power_n[dt->id()] = dt->base_EC50; }
+  for (const auto &dt : *drug_db) { EC50_power_n[dt->id()] = dt->base_ec50(); }
 
   for (int chromosome_i = 0; chromosome_i < pf_genotype_str.size(); ++chromosome_i) {
     const auto &chromosome_info = gene_info.chromosome_infos[chromosome_i];
@@ -306,12 +306,12 @@ Genotype* Genotype::perform_mutation_by_drug(Config* p_config, utils::Random* p_
                                              DrugType* p_drug_type,
                                              double mutation_probability_by_locus) const {
   std::string new_aa_sequence{aa_sequence};
-  for (const auto &aa_pos : p_drug_type->resistant_aa_locations) {
+  for (const auto &aa_pos : p_drug_type->resistant_aa_locations()) {
     const auto &mutation_mask = p_config->get_genotype_parameters().get_mutation_mask();
 
     assert(aa_pos.aa_index_in_aa_string < mutation_mask.size());
 
-    if (mutation_mask[aa_pos.aa_index_in_aa_string] != '1') { continue; }
+    if (!mutation_mask[aa_pos.aa_index_in_aa_string]) { continue; }
 
     const auto p_mutation = p_random->random_flat(0.0, 1.0);
     // std::cout << "p: " << p << " Mutation probability: " << mutation_probability_by_locus <<

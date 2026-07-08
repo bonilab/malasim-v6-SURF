@@ -828,7 +828,7 @@ std::vector<std::unique_ptr<WorldEvent>> PopulationEventBuilder::build_change_mu
     auto time = (date::sys_days{starting_date}
                  - date::sys_days{config->get_simulation_timeframe().get_starting_date()})
                     .count();
-    auto mutation_mask = event_node["mutation_mask"].as<std::string>();
+    auto mutation_mask = event_node["mutation_mask"].as<std::vector<bool>>();
 
     auto event = std::make_unique<ChangeMutationMaskEvent>(mutation_mask, time);
     events.push_back(std::move(event));

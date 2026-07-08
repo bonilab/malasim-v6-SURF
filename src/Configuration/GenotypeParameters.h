@@ -327,8 +327,8 @@ public:
   };
 
   // Getters and Setters for GenotypeParameters
-  [[nodiscard]] const std::string &get_mutation_mask() const { return mutation_mask_; }
-  void set_mutation_mask(const std::string &value) { mutation_mask_ = value; }
+  [[nodiscard]] const std::vector<bool> &get_mutation_mask() const { return mutation_mask_; }
+  void set_mutation_mask(const std::vector<bool> &value) { mutation_mask_ = value; }
 
   [[nodiscard]] double get_mutation_probability_per_locus() const {
     return mutation_probability_per_locus_;
@@ -385,7 +385,7 @@ public:
   static void validate_cnv_reversion_multipliers(const GenotypeParameters &params);
 
 private:
-  std::string mutation_mask_;
+  std::vector<bool> mutation_mask_;
   double mutation_probability_per_locus_ = 0.001;
   double default_cnv_reversion_multiplier_ = -1.0;
   PfGenotypeInfo pf_genotype_info_;
@@ -624,7 +624,13 @@ template <>
 struct convert<GenotypeParameters> {
   static Node encode(const GenotypeParameters &rhs) {
     Node node;
-    node["mutation_mask"] = rhs.get_mutation_mask();
+    // Encode mutation_mask as string (e.g., "0011101")
+    std::string mask_str;
+    mask_str.reserve(rhs.get_mutation_mask().size());
+    for (const bool is_mutatable : rhs.get_mutation_mask()) {
+      mask_str += is_mutatable ? '1' : '0';
+    }
+    node["mutation_mask"] = mask_str;
     node["mutation_probability_per_locus"] = rhs.get_mutation_probability_per_locus();
     if (rhs.get_default_cnv_reversion_multiplier() >= 0) {
       node["default_cnv_reversion_multiplier"] = rhs.get_default_cnv_reversion_multiplier();
@@ -641,7 +647,21 @@ struct convert<GenotypeParameters> {
         || !node["initial_parasite_info"]) {
       throw std::runtime_error("Missing fields in GenotypeParameters");
     }
-    rhs.set_mutation_mask(node["mutation_mask"].as<std::string>());
+    // mutation_mask: accept string (e.g., "0011101") or sequence of bools
+    std::vector<bool> mutation_mask;
+    if (node["mutation_mask"].IsSequence()) {
+      mutation_mask = node["mutation_mask"].as<std::vector<bool>>();
+    } else if (node["mutation_mask"].IsScalar()) {
+      const auto mask_str = node["mutation_mask"].as<std::string>();
+      mutation_mask.reserve(mask_str.size());
+      for (const char ch : mask_str) {
+        mutation_mask.push_back(ch == '1');  // Only '1' = mutable; '0', '|', ',' etc. = immutable
+      }
+    } else {
+      throw std::runtime_error(
+          "GenotypeParameters::mutation_mask must be a string or sequence of booleans");
+    }
+    rhs.set_mutation_mask(mutation_mask);
     rhs.set_mutation_probability_per_locus(node["mutation_probability_per_locus"].as<double>());
     if (node["default_cnv_reversion_multiplier"]) {
       rhs.set_default_cnv_reversion_multiplier(

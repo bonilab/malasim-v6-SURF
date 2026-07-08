@@ -17,9 +17,9 @@ public:
   void operator=(ChangeMutationMaskEvent&&) = delete;
 
 public:
-  std::string mask_;
+  std::vector<bool> mask_;
 public:
-  explicit ChangeMutationMaskEvent(const std::string &mask, const int &at_time = -1);
+  explicit ChangeMutationMaskEvent(const std::vector<bool> &mask, const int &at_time = -1);
 
   ~ChangeMutationMaskEvent() override = default;
 
