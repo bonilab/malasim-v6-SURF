@@ -227,6 +227,7 @@ void Genotype::calculate_EC50_power_n(const GenotypeParameters::PfGenotypeInfo &
                 // encounter resistant aa
                 number_of_effective_mutations_in_same_genes[dt->id()] += 1;
                 if (number_of_effective_mutations_in_same_genes[dt->id()] > 1) {
+                  // if multiplicative effect can apply to this drug
                   for (auto const &ec50s_2_or_more :
                        res_gene_info.get_multiplicative_effect_on_ec50_for_2_or_more_mutations()) {
                     if (ec50s_2_or_more.get_drug_id() == dt->id()) {
@@ -238,14 +239,14 @@ void Genotype::calculate_EC50_power_n(const GenotypeParameters::PfGenotypeInfo &
                           EC50_power_n[dt->id()], multiplicative_effect_factor,
                           EC50_power_n[dt->id()] * multiplicative_effect_factor);
                     }
-                    spdlog::trace(
-                        "aa_sequence: {} SINGLE MUT drug_id: {} chr: {} gene: {} aa: {} "
-                        "EC50_power_n: {} * multiplicative_effect_factor: {}  = {}",
-                        aa_sequence, dt->id(), chromosome_i + 1, gene_i, aa_i, EC50_power_n[dt->id()],
-                        multiplicative_effect_factor,
-                        EC50_power_n[dt->id()] * multiplicative_effect_factor);
                   }
                 }
+                spdlog::trace(
+                    "aa_sequence: {} SINGLE MUT drug_id: {} chr: {} gene: {} aa: {} "
+                    "EC50_power_n: {} * multiplicative_effect_factor: {}  = {}",
+                    aa_sequence, dt->id(), chromosome_i + 1, gene_i, aa_i, EC50_power_n[dt->id()],
+                    multiplicative_effect_factor,
+                    EC50_power_n[dt->id()] * multiplicative_effect_factor);
               }
               EC50_power_n[dt->id()] *= multiplicative_effect_factor;
             }
@@ -266,6 +267,7 @@ void Genotype::calculate_EC50_power_n(const GenotypeParameters::PfGenotypeInfo &
                     aa_sequence, dt->id(), chromosome_i + 1, gene_i, EC50_power_n[dt->id()],
                     ec50s.get_factors()[copy_number - 1],
                     EC50_power_n[dt->id()] * ec50s.get_factors()[copy_number - 1]);
+                EC50_power_n[dt->id()] *= ec50s.get_factors()[copy_number - 1];
               }
             }
           }
