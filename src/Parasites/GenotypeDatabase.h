@@ -1,8 +1,8 @@
 #ifndef INTPARASITEDATABASE_H
 #define INTPARASITEDATABASE_H
 
-#include <map>
 #include <memory>
+#include <unordered_map>
 
 #include "Utils/TypeDef.h"
 
@@ -45,7 +45,7 @@ public:
   Genotype* at(int id) { return GenotypePtrVector::at(id).get(); }
 
 private:
-  std::map<std::string, Genotype*> aa_sequence_id_map_;
+  std::unordered_map<std::string, Genotype*> aa_sequence_id_map_;
   std::map<int, std::map<std::string, double>> drug_id_ec50_;
 
   unsigned int auto_id_{0};
