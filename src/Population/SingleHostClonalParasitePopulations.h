@@ -54,18 +54,17 @@ public:
     return parasites_[index].get();
   }
 
-  // Mark virtual functions that are meant to be overridden with override in derived classes
-  [[nodiscard]] virtual size_t size() const noexcept { return parasites_.size(); }
+  [[nodiscard]] size_t size() const noexcept { return parasites_.size(); }
 
   [[nodiscard]] bool empty() const noexcept { return parasites_.empty(); }
 
-  virtual void add(std::unique_ptr<ClonalParasitePopulation> blood_parasite);
+  void add(std::unique_ptr<ClonalParasitePopulation> blood_parasite);
 
-  virtual void remove(size_t index);
+  void remove(size_t index);
 
   [[nodiscard]] virtual int latest_update_time() const;
 
-  virtual bool contain(ClonalParasitePopulation* blood_parasite);
+  bool contain(ClonalParasitePopulation* blood_parasite);
 
   void change_all_parasite_update_function(ParasiteDensityUpdateFunction* from,
                                            ParasiteDensityUpdateFunction* to) const;

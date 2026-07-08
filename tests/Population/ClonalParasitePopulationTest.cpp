@@ -16,7 +16,7 @@ public:
 class MockSingleHostClonalParasitePopulations : public SingleHostClonalParasitePopulations {
 public:
   MockSingleHostClonalParasitePopulations() : SingleHostClonalParasitePopulations(nullptr) {}
-  MOCK_METHOD(int, latest_update_time, (), (const, override));
+  MOCK_METHOD(int, latest_update_time, (), (const));
 };
 
 class ClonalParasitePopulationTest : public ::testing::Test {
