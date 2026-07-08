@@ -87,7 +87,12 @@ TEST_F(ImmuneSystemParameterCandidatesTest, HasSelectedCandidateFalseWhenMissing
   YAML::convert<ImmuneSystemParameterCandidates>::decode(node, result);
 
   EXPECT_FALSE(result.has_selected_candidate());
-  EXPECT_THROW(result.get_selected_candidate(), std::runtime_error);
+  EXPECT_THROW(
+      {
+        const auto &selected_candidate = result.get_selected_candidate();
+        (void)selected_candidate;
+      },
+      std::runtime_error);
 }
 
 // Encode round-trips back to decodable YAML
@@ -216,7 +221,10 @@ TEST_F(ImmuneSystemParameterCandidatesTest, RandomSelectionNonSequentialKeys) {
     result.set_used_in_simulation(selectedKey);
     EXPECT_TRUE(result.has_selected_candidate())
         << "pick=" << pick << " -> key=" << selectedKey << " should be a valid candidate";
-    EXPECT_NO_THROW(result.get_selected_candidate());
+    EXPECT_NO_THROW({
+      const auto &selected_candidate = result.get_selected_candidate();
+      (void)selected_candidate;
+    });
   }
 
   // A key NOT in the set must NOT resolve to a valid candidate
