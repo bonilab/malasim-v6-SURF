@@ -266,6 +266,7 @@ void Genotype::calculate_EC50_power_n(const GenotypeParameters::PfGenotypeInfo &
                     aa_sequence, dt->id(), chromosome_i + 1, gene_i, EC50_power_n[dt->id()],
                     ec50s.get_factors()[copy_number - 1],
                     EC50_power_n[dt->id()] * ec50s.get_factors()[copy_number - 1]);
+                EC50_power_n[dt->id()] *= ec50s.get_factors()[copy_number - 1];
               }
             }
           }

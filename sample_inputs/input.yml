@@ -345,7 +345,7 @@ immune_system_parameters:
 # ---------------------------------------------------------------
 genotype_parameters:
   # Mutation mask indicating positions of genetic mutations
-  mutation_mask: "||||111||1000000,0||||||0000000000110|1"
+  mutation_mask: "||||111||1000000,0||||||0000000000100|1"
 
   # Daily probability that a parasite will mutate at a given locus when drug concentration is not zero
   mutation_probability_per_locus: 0.001
