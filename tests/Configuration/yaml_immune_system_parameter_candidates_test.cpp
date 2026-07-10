@@ -4,7 +4,13 @@
 
 class ImmuneSystemParameterCandidatesTest : public ::testing::Test {
 protected:
-  YAML::Node make_candidates_node(int used_in_simulation = 0, bool random_selection = false) {
+  // Builds a standard 3-candidate node (keys 0, 1, 4).
+  // mutation_probability_per_locus is omitted by default (-> decoded as -1).
+  // Pass include_mutation_prob=true to explicitly set it to -1 in the YAML,
+  // or use make_candidates_node_with_mutation_prob() for a custom value.
+  YAML::Node make_candidates_node(int used_in_simulation = 0, bool random_selection = false,
+                                  bool include_mutation_prob = false,
+                                  double mutation_prob = -1.0) {
     YAML::Node node;
     node["used_in_simulation"] = used_in_simulation;
     node["random_selection"] = random_selection;
@@ -16,6 +22,7 @@ protected:
       c["kappa"]       = 0.1;
       c["midpoint"]    = 0.2;
       c["p_seek_base"] = 0.8;
+      if (include_mutation_prob) { c["mutation_probability_per_locus"] = mutation_prob; }
       cmap[0] = c;
     }
     {
@@ -25,6 +32,7 @@ protected:
       c["kappa"]       = 0.1;
       c["midpoint"]    = 0.15;
       c["p_seek_base"] = 0.6;
+      if (include_mutation_prob) { c["mutation_probability_per_locus"] = mutation_prob; }
       cmap[1] = c;
     }
     {
@@ -34,6 +42,7 @@ protected:
       c["kappa"]       = 0.5;
       c["midpoint"]    = 0.1;
       c["p_seek_base"] = 0.65;
+      if (include_mutation_prob) { c["mutation_probability_per_locus"] = mutation_prob; }
       cmap[4] = c;
     }
     node["candidates"] = cmap;
@@ -57,14 +66,18 @@ TEST_F(ImmuneSystemParameterCandidatesTest, DecodesValidCandidates) {
   EXPECT_DOUBLE_EQ(c0.kappa,       0.1);
   EXPECT_DOUBLE_EQ(c0.midpoint,    0.2);
   EXPECT_DOUBLE_EQ(c0.p_seek_base, 0.8);
+  // mutation_probability_per_locus absent in YAML -> defaults to -1
+  EXPECT_DOUBLE_EQ(c0.mutation_probability_per_locus, -1.0);
 
   const auto &c1 = result.get_candidates().at(1);
   EXPECT_DOUBLE_EQ(c1.p_ci_symp,   0.6);
   EXPECT_DOUBLE_EQ(c1.p_seek_base, 0.6);
+  EXPECT_DOUBLE_EQ(c1.mutation_probability_per_locus, -1.0);
 
   const auto &c4 = result.get_candidates().at(4);
   EXPECT_DOUBLE_EQ(c4.p_ci_symp,   1.0);
   EXPECT_DOUBLE_EQ(c4.p_seek_base, 0.65);
+  EXPECT_DOUBLE_EQ(c4.mutation_probability_per_locus, -1.0);
 }
 
 // has_selected_candidate returns true for a present index
@@ -113,6 +126,8 @@ TEST_F(ImmuneSystemParameterCandidatesTest, EncodeDecodeRoundtrip) {
                    original.get_candidates().at(0).p_ci_symp);
   EXPECT_DOUBLE_EQ(decoded.get_candidates().at(4).p_seek_base,
                    original.get_candidates().at(4).p_seek_base);
+  EXPECT_DOUBLE_EQ(decoded.get_candidates().at(0).mutation_probability_per_locus,
+                   original.get_candidates().at(0).mutation_probability_per_locus);
 }
 
 // random_selection is parsed and preserved by encode/decode
@@ -232,9 +247,56 @@ TEST_F(ImmuneSystemParameterCandidatesTest, RandomSelectionNonSequentialKeys) {
   EXPECT_FALSE(result.has_selected_candidate());
 }
 
+// mutation_probability_per_locus: absent in YAML defaults to -1
+TEST_F(ImmuneSystemParameterCandidatesTest, MutationProbDefaultsToMinusOneWhenAbsent) {
+  auto node = make_candidates_node(0);  // no mutation_probability_per_locus in YAML
+  ImmuneSystemParameterCandidates result;
+  YAML::convert<ImmuneSystemParameterCandidates>::decode(node, result);
+
+  for (const auto &[idx, c] : result.get_candidates()) {
+    EXPECT_DOUBLE_EQ(c.mutation_probability_per_locus, -1.0)
+        << "candidate[" << idx << "] should default to -1.0";
+  }
+}
+
+// mutation_probability_per_locus: explicit -1 in YAML is preserved
+TEST_F(ImmuneSystemParameterCandidatesTest, MutationProbExplicitMinusOneIsPreserved) {
+  auto node = make_candidates_node(0, false, /*include_mutation_prob=*/true, /*mutation_prob=*/-1.0);
+  ImmuneSystemParameterCandidates result;
+  YAML::convert<ImmuneSystemParameterCandidates>::decode(node, result);
+
+  for (const auto &[idx, c] : result.get_candidates()) {
+    EXPECT_DOUBLE_EQ(c.mutation_probability_per_locus, -1.0)
+        << "candidate[" << idx << "] explicit -1 should be preserved";
+  }
+}
+
+// mutation_probability_per_locus: positive value is parsed and round-trips
+TEST_F(ImmuneSystemParameterCandidatesTest, MutationProbPositiveValueRoundtrip) {
+  const double inputMutProb = 0.005;
+  auto node = make_candidates_node(0, false, /*include_mutation_prob=*/true, inputMutProb);
+
+  ImmuneSystemParameterCandidates original;
+  YAML::convert<ImmuneSystemParameterCandidates>::decode(node, original);
+
+  for (const auto &[idx, c] : original.get_candidates()) {
+    EXPECT_DOUBLE_EQ(c.mutation_probability_per_locus, inputMutProb)
+        << "candidate[" << idx << "] should have mutation_probability_per_locus=" << inputMutProb;
+  }
+
+  // Encode -> decode round-trip
+  YAML::Node encoded = YAML::convert<ImmuneSystemParameterCandidates>::encode(original);
+  ImmuneSystemParameterCandidates decoded;
+  EXPECT_NO_THROW(YAML::convert<ImmuneSystemParameterCandidates>::decode(encoded, decoded));
+
+  for (const auto &[idx, c] : decoded.get_candidates()) {
+    EXPECT_DOUBLE_EQ(c.mutation_probability_per_locus, inputMutProb)
+        << "round-tripped candidate[" << idx << "] should preserve mutation_probability_per_locus";
+  }
+}
+
 // log_all does not crash (smoke test)
-TEST_F(ImmuneSystemParameterCandidatesTest, LogAllDoesNotCrash) {
-  auto node = make_candidates_node(0);
+TEST_F(ImmuneSystemParameterCandidatesTest, LogAllDoesNotCrash) {  auto node = make_candidates_node(0);
   ImmuneSystemParameterCandidates result;
   YAML::convert<ImmuneSystemParameterCandidates>::decode(node, result);
   EXPECT_NO_THROW(result.log_all());

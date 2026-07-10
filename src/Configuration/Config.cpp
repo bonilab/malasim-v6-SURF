@@ -104,6 +104,9 @@ bool Config::load(const std::string &filename) {
             "  p_seek_base={} -> "
             "epidemiological_parameters.age_based_probability_of_seeking_treatment.power.base",
             c.p_seek_base);
+        spdlog::info(
+            "  mutation_probability_per_locus={} -> genotype_parameters (skipped if -1)",
+            c.mutation_probability_per_locus);
 
         // Override immune_system_parameters (z, kappa, midpoint)
         immune_system_parameters_.set_immune_effect_on_progression_to_clinical(c.z);
@@ -123,6 +126,16 @@ bool Config::load(const std::string &filename) {
         power.base = c.p_seek_base;
         age_based.set_power(power);
         epidemiological_parameters_.set_age_based_probability_of_seeking_treatment(age_based);
+
+        // Override mutation_probability_per_locus if candidate specifies one (not -1)
+        if (c.mutation_probability_per_locus >= 0.0) {
+          genotype_parameters_.set_mutation_probability_per_locus(c.mutation_probability_per_locus);
+          spdlog::info("  mutation_probability_per_locus overridden to {}",
+                       genotype_parameters_.get_mutation_probability_per_locus());
+        } else {
+          spdlog::info("  mutation_probability_per_locus=-1 -> keeping default {}",
+                       genotype_parameters_.get_mutation_probability_per_locus());
+        }
 
         spdlog::info("Candidate[{}] overrides applied successfully", idx);
       } else {

@@ -274,6 +274,11 @@ parasite_parameters:
 #          base: 1.0
 #          exponent_source: index
 #        ages: [0, 5, 10, 15, 20, 30, 40]
+#  4. mutation_probability_per_locus: daily per-locus mutation probability.
+#  If absent or set to -1, the value from genotype_parameters.mutation_probability_per_locus is used unchanged.
+#  Otherwise, overrides genotype_parameters:
+#    genotype_parameters:
+#      mutation_probability_per_locus: 0.001
 # If this section is not present, the simulation will use the default immune system parameters in immune_system_parameters section.
 immune_system_paprameter_candidates:
   used_in_simulation: 0
@@ -287,42 +292,49 @@ immune_system_paprameter_candidates:
       kappa: 0.1
       midpoint: 0.2
       p_seek_base: 0.8
+      mutation_probability_per_locus: 0.00085
     1: #1 in Fig 9 (top-1)
       p_ci_symp: 0.6
       z: 3.0
       kappa: 0.1
       midpoint: 0.15
       p_seek_base: 0.6
+      mutation_probability_per_locus: 0.00095
     2: #1 in Fig 10 (top-1)
       p_ci_symp: 0.7
       z: 1.0
       kappa: 1.0
       midpoint: 0.04
       p_seek_base: 0.6
+      mutation_probability_per_locus: 0.0006
     3: #1 in Fig 11 (top-1)
       p_ci_symp: 0.6
       z: 3.0
       kappa: 0.1
       midpoint: 0.15
       p_seek_base: 0.6
+      mutation_probability_per_locus: 0.00055
     4: #5 in Fig 9 (highest p_ci_symp)
       p_ci_symp: 1.0
       z: 1.5
       kappa: 0.5
       midpoint: 0.1
       p_seek_base: 0.65
+      mutation_probability_per_locus: 0.0009
     5: #2 in Fig 10 (highest p_seek_base)
       p_ci_symp: 0.5
       z: 1.5
       kappa: 0.5
       midpoint: 0.1
       p_seek_base: 0.75
+      mutation_probability_per_locus: 0.00095
     6: #9 in Fig 9/10 (highest incidence)
       p_ci_symp: 0.5
       z: 3.5
       kappa: 7.5
       midpoint: 0.2
       p_seek_base: 0.6
+      mutation_probability_per_locus: 0.00050
 
 immune_system_parameters:
   # Parameters governing the immune response

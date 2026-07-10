@@ -15,6 +15,8 @@ struct ImmuneSystemParameterCandidate {
   double kappa      = 0.3;  // factor_effect_age_mature_immunity (inflection adj.)
   double midpoint   = 0.4;  // midpoint of sigmoidal immunity curve
   double p_seek_base = 1.0; // base for age-based probability of seeking treatment
+  // -1 means use default from genotype_parameters.mutation_probability_per_locus
+  double mutation_probability_per_locus = -1.0;
 };
 
 // Container for all candidates and the index selecting which is used in simulation.
@@ -52,8 +54,9 @@ public:
                  used_in_simulation_, random_selection_);
     for (const auto &[idx, c] : candidates_) {
       spdlog::info(
-          "  candidate[{}]: p_ci_symp={}, z={}, kappa={}, midpoint={}, p_seek_base={}",
-          idx, c.p_ci_symp, c.z, c.kappa, c.midpoint, c.p_seek_base);
+          "  candidate[{}]: p_ci_symp={}, z={}, kappa={}, midpoint={}, p_seek_base={}, mutation_probability_per_locus={}",
+          idx, c.p_ci_symp, c.z, c.kappa, c.midpoint, c.p_seek_base,
+          c.mutation_probability_per_locus);
     }
   }
 
@@ -78,6 +81,7 @@ struct YAML::convert<ImmuneSystemParameterCandidates> {
       cnode["kappa"]       = c.kappa;
       cnode["midpoint"]    = c.midpoint;
       cnode["p_seek_base"] = c.p_seek_base;
+      cnode["mutation_probability_per_locus"] = c.mutation_probability_per_locus;
       candidates_node[idx] = cnode;
     }
     node["candidates"] = candidates_node;
@@ -124,6 +128,10 @@ struct YAML::convert<ImmuneSystemParameterCandidates> {
       c.kappa       = cnode["kappa"].as<double>();
       c.midpoint    = cnode["midpoint"].as<double>();
       c.p_seek_base = cnode["p_seek_base"].as<double>();
+      // Optional: -1 (or absent) means use default from genotype_parameters
+      if (cnode["mutation_probability_per_locus"]) {
+        c.mutation_probability_per_locus = cnode["mutation_probability_per_locus"].as<double>();
+      }
       candidates[idx] = c;
     }
     rhs.set_candidates(candidates);
