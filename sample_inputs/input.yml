@@ -47,8 +47,8 @@ simulation_timeframe:
 transmission_settings:
   # Transmission parameter based on data; adjusts the odds that an individual
   # will be infected when challenged by sporozoites
-  # NOTE: this from Robert's sporozoites challenged, Kien to review this
-  transmission_parameter: 0.55 #from v4, disabled if it is set to 0
+  # NOTE: this from Robert's sporozoites challenged, original is 0.55 but after immunity calibration the value is 0.35
+  transmission_parameter: 0.35 #from v4, disabled if it is set to 0
 
   # Probability that an infectious bite on a human causes a blood-stage malaria infection
   p_infection_from_an_infectious_bite: 0.1
@@ -357,7 +357,7 @@ immune_system_parameters:
 # ---------------------------------------------------------------
 genotype_parameters:
   # Mutation mask indicating positions of genetic mutations
-  mutation_mask: "||||111||1000000,0||||||0000000000100|1"
+  mutation_mask: "||||1101||1111111,0||||||0000000000100|1"
 
   # Daily probability that a parasite will mutate at a given locus when drug concentration is not zero
   mutation_probability_per_locus: 0.001
@@ -398,6 +398,14 @@ genotype_parameters:
                   factors: [1, 1.25] # base*1.25*1.25 0.9375 > 0.8xxx (old value)
                 - drug_id: 2
                   factors: [1.2, 1]
+            - position: 1246 # Placeholder for D1246Y
+              amino_acids: ["D", "Y"]
+              daily_crs: [0, 0.0005]
+              multiplicative_effect_on_EC50:
+                - drug_id: 2
+                  factors: [1, 1]
+                - drug_id: 6
+                  factors: [1, 1]
     - chromosome: 7
       genes:
         - name: "Pfcrt"
@@ -559,85 +567,83 @@ genotype_parameters:
           aa_positions: []
 
   override_ec50_patterns:
-    - pattern: "||||NY1||K......,.||||||.............|."
+    - pattern: "||||NYD1||K......,.||||||.............|."
       drug_id: 1
       ec50: 0.8
-    - pattern: "||||YY1||K......,.||||||.............|."
+    - pattern: "||||YYD1||K......,.||||||.............|."
       drug_id: 1
       ec50: 0.67
-    - pattern: "||||NF1||K......,.||||||.............|."
+    - pattern: "||||NFD1||K......,.||||||.............|."
       drug_id: 1
       ec50: 0.9
-    - pattern: "||||YF1||K......,.||||||.............|."
+    - pattern: "||||YFD1||K......,.||||||.............|."
       drug_id: 1
       ec50: 0.8
-    - pattern: "||||NY2||K......,.||||||.............|."
+    - pattern: "||||NYD2||K......,.||||||.............|."
       drug_id: 1
       ec50: 1.0
-    - pattern: "||||YY2||K......,.||||||.............|."
+    - pattern: "||||YYD2||K......,.||||||.............|."
       drug_id: 1
       ec50: 0.87
-    - pattern: "||||NF2||K......,.||||||.............|."
+    - pattern: "||||NFD2||K......,.||||||.............|."
       drug_id: 1
       ec50: 1.1
-    - pattern: "||||YF2||K......,.||||||.............|."
+    - pattern: "||||YFD2||K......,.||||||.............|."
       drug_id: 1
       ec50: 1.0
-    - pattern: "||||NY1||T......,.||||||.............|."
+    - pattern: "||||NYD1||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.75
-    - pattern: "||||YY1||T......,.||||||.............|."
+    - pattern: "||||YYD1||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.6
-    - pattern: "||||NF1||T......,.||||||.............|."
+    - pattern: "||||NFD1||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.85
-    - pattern: "||||YF1||T......,.||||||.............|."
+    - pattern: "||||YFD1||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.75
-    - pattern: "||||NY2||T......,.||||||.............|."
+    - pattern: "||||NYD2||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.95
-    - pattern: "||||YY2||T......,.||||||.............|."
+    - pattern: "||||YYD2||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.8
-    - pattern: "||||NF2||T......,.||||||.............|."
+    - pattern: "||||NFD2||T......,.||||||.............|."
       drug_id: 1
       ec50: 1.05
-    - pattern: "||||YF2||T......,.||||||.............|."
+    - pattern: "||||YFD2||T......,.||||||.............|."
       drug_id: 1
       ec50: 0.95
-    - pattern: "||||NY.||K......,.||||||.............|."
+    - pattern: "||||NYD.||K......,.||||||.............|."
       drug_id: 2
       ec50: 0.62
-    - pattern: "||||YY.||K......,.||||||.............|."
+    - pattern: "||||YYD.||K......,.||||||.............|."
       drug_id: 2
       ec50: 0.85
-    - pattern: "||||NF.||K......,.||||||.............|."
+    - pattern: "||||NFD.||K......,.||||||.............|."
       drug_id: 2
-      ec50: 0.5
-    - pattern: "||||YF.||K......,.||||||.............|."
+      ec50: 0.5       
+    - pattern: "||||YFD.||K......,.||||||.............|."
       drug_id: 2
       ec50: 0.775
-    - pattern: "||||NY.||T......,.||||||.............|."
+    - pattern: "||||NYD.||T......,.||||||.............|."
       drug_id: 2
       ec50: 0.7
-    - pattern: "||||YY.||T......,.||||||.............|."
+    - pattern: "||||YYD.||T......,.||||||.............|."
       drug_id: 2
       ec50: 0.9
-    - pattern: "||||NF.||T......,.||||||.............|."
+    - pattern: "||||NFD.||T......,.||||||.............|."
       drug_id: 2
       ec50: 0.65
-    - pattern: "||||YF.||T......,.||||||.............|."
+    - pattern: "||||YFD.||T......,.||||||.............|."
       drug_id: 2
       ec50: 0.82
 
   initial_parasite_info:
     - location_id: -1 # -1 indicates all locations
       parasite_info:
-        - aa_sequence: "||||YF1||TTHFIMG,x||||||FNCMYRIPRPCRA|1"
-          prevalence: 0.05
-        - aa_sequence: "||||YF1||TTHFIMG,x||||||FNCMYRIPRPCRA|1"
+        - aa_sequence: "||||NYD1||KTHFIMG,x||||||FNCMYRIPRPCRA|1"
           prevalence: 0.05
 
 # ---------------------------------------------------------------
@@ -1105,4 +1111,4 @@ rapt_settings:
   therapy_id: 1
   compliance: 0.7
   age_start: 18
-  start_date: 2002/08/18
+  start_date: 2000/1/1
