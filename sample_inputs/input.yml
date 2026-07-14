@@ -927,7 +927,7 @@ strategy_parameters:
 
   # Strategy used as second-line treatment for symptomatic recurrence cases.
   # -1 means use the same first-line strategy.
-  second_line_strategy_id: 2
+  second_line_strategy_id: -1
 
   mass_drug_administration:
     # NOTE: This should be set with events to schedule rounds for MDA

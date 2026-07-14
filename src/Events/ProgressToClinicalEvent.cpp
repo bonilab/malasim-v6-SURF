@@ -64,7 +64,7 @@ TreatmentSelection ProgressToClinicalEvent::determine_therapy(Person* person,
   // the public sector.
   auto* second_line_strategy = Model::get_second_line_strategy();
 
-  TreatmentSelection selection{nullptr, TreatmentSector::Public};
+  TreatmentSelection selection{.therapy = nullptr, .sector = TreatmentSector::Public};
   if (auto* strategy = dynamic_cast<PublicPrivateStrategy*>(treatment_strategy);
       strategy != nullptr) {
     selection = strategy->select_treatment(person);
@@ -73,7 +73,8 @@ TreatmentSelection ProgressToClinicalEvent::determine_therapy(Person* person,
     selection = strategy->select_treatment(person);
   } else {
     // Strategies without explicit sector semantics are public-sector strategies.
-    selection = {treatment_strategy->get_therapy(person), TreatmentSector::Public};
+    selection = {.therapy = treatment_strategy->get_therapy(person),
+                 .sector = TreatmentSector::Public};
   }
 
   if (selection.sector == TreatmentSector::Public && is_recurrence
