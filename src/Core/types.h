@@ -35,6 +35,15 @@ using DrugId = std::uint8_t;
 using SimDay = std::int16_t;
 using EventTime = std::int16_t;
 
+// A person's birthday is stored as an offset in days from simulation day 0. For
+// individuals that already exist when the population is initialized this offset
+// is NEGATIVE and can reach -(K_MAX_HUMAN_AGE + 1) * 365.25 ~= -44,200 days,
+// which does NOT fit in SimDay (int16_t bottoms out at -32,768, i.e. ~89 years).
+// Storing it as SimDay silently wraps to a large positive value for anyone aged
+// ~90 or older. Birthdays therefore need 32 bits, even though forward-running
+// simulation time does not.
+using BirthDay = std::int32_t;
+
 // if we simulate for 40 years, and each person can be bitten at most 1 time per day
 // then the max number of bites can be 40 * 365 = 14600, which can fit into 16 bits
 // the same for trip count
@@ -55,6 +64,12 @@ inline constexpr DrugId K_INVALID_DRUG_ID = std::numeric_limits<DrugId>::max();
 
 inline constexpr SimDay K_INVALID_SIM_DAY = -1;
 inline constexpr EventTime K_INVALID_EVENT_TIME = -1;
+
+// NOTE: -1 is actually a legal birthday (someone born the day before day 0), so
+// this is a weak sentinel. It is kept at -1 to preserve the previous default
+// value of Person::birthday_; use std::numeric_limits<BirthDay>::min() instead
+// if a true sentinel is ever needed.
+inline constexpr BirthDay K_INVALID_BIRTHDAY = -1;
 
 // ---------- Domain limits ----------
 

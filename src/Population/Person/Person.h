@@ -124,8 +124,9 @@ public:
   void set_age(const core::Age &value);
   [[nodiscard]] core::Age get_age() const { return age_; }
 
-  [[nodiscard]] core::SimDay get_birthday() const { return birthday_; }
-  void set_birthday(core::SimDay birthday) { birthday_ = birthday; }
+  // Negative for everyone in the initial population (see core::BirthDay).
+  [[nodiscard]] core::BirthDay get_birthday() const { return birthday_; }
+  void set_birthday(core::BirthDay birthday) { birthday_ = birthday; }
 
   [[nodiscard]] virtual core::SimDay get_latest_update_time() const { return latest_update_time_; }
   virtual void set_latest_update_time(core::SimDay lastest_update_time) {
@@ -340,7 +341,7 @@ private:
   core::MovingLevel moving_level_{core::K_INVALID_MOVING_LEVEL};
   core::LocationId residence_location_{core::K_INVALID_LOCATION_ID};
 
-  core::SimDay birthday_{core::K_INVALID_SIM_DAY};
+  core::BirthDay birthday_{core::K_INVALID_BIRTHDAY};
   core::SimDay latest_update_time_{core::K_INVALID_SIM_DAY};
   core::BiteCount number_of_times_bitten_{0};
   core::TripCount number_of_trips_taken_{0};

@@ -118,8 +118,8 @@ date::year_month_day Scheduler::get_ymd_after_months(int months) const {
   return date::year_month_day(calendar_date_) + date::months(months);
 }
 
-core::SimDay Scheduler::get_days_to_ymd(const date::year_month_day &ymd) const {
-  return static_cast<core::SimDay>(TimeHelpers::days_between(calendar_date_, ymd));
+int Scheduler::get_days_to_ymd(const date::year_month_day &ymd) const {
+  return TimeHelpers::days_between(calendar_date_, ymd);
 }
 
 date::year_month_day Scheduler::get_ymd_after_days(int days) const {

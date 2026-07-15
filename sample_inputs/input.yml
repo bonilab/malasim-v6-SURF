@@ -82,8 +82,8 @@ population_demographic:
 # 5. Raster and Geographic Settings
 # ---------------------------------------------------------------
 spatial_settings:
-  mode: "grid_based" # or "location_based"
-  # mode: "location_based" # or "location_based"
+#  mode: "grid_based" # or "location_based"
+  mode: "location_based" # or "location_based"
   grid_based:
     # Approximate national age distribution (to be updated with specific country data)
     age_distribution_by_location: [[0.0423, 0.0423, 0.0423, 0.0423, 0.0349, 0.0349, 0.0349, 0.0349, 0.0349, 0.0317, 0.0317, 0.0317, 0.0317, 0.0317, 0.1743, 0.1132, 0.0832, 0.0601, 0.0341, 0.0331, 0.0]]
