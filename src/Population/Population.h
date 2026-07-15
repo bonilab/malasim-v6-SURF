@@ -82,6 +82,8 @@ public:
    */
   virtual void perform_infection_event();
 
+  void perform_infection_event_at_location(int location, int tracking_index);
+
   void introduce_initial_cases();
   //
   void introduce_parasite(const int &location,
@@ -92,17 +94,29 @@ public:
 
   void persist_current_force_of_infection_to_use_n_days_later();
 
+  void persist_force_of_infection_at_location(int location, int tracking_index);
+
   void perform_birth_event();
+
+  void perform_birth_event_at_location(int location);
 
   void perform_death_event();
 
+  void perform_death_event_at_location(int location);
+
   void generate_individual(int location, int age_class);
 
-  void give_1_birth(const int &location);
+  Person* give_1_birth(const int &location);
 
   void clear_all_dead_state_individual();
 
+  void clear_dead_people_at_location(int location);
+
   void perform_circulation_event();
+
+  [[nodiscard]] IntVector prepare_circulation_context() const;
+
+  void perform_circulation_from_location(int from_location, const IntVector &circulation_context);
 
   void perform_circulation_for_1_location(const int &from_location,
                                           const int &target_location,
@@ -114,6 +128,8 @@ public:
   void initialize_person_indices();
 
   void update_all_individuals();
+
+  void prepare_daily_state_at_location(int location);
 
   void execute_all_individual_events(int up_to_time);
 
@@ -167,6 +183,14 @@ public:
   }
 
 private:
+  void reset_daily_sampling_state(int location);
+
+  void append_daily_sampling_state(int location, Person* person);
+
+  void remove_from_daily_sampling_state(int location, Person* person);
+
+  void update_people_and_append_sampling_state(int location);
+
   /**
    * Calculate the challenge-mode infection probability for one person.
    *

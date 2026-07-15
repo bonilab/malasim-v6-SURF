@@ -291,31 +291,17 @@ void Model::end_time_step() {
 }
 
 void Model::daily_update() {
-  population_->update_all_individuals();
-  // for safety remove all dead by calling perform_death_event
-  population_->perform_death_event();
-  population_->perform_birth_event();
+  const auto tracking_index = scheduler_->current_time() % config_->number_of_tracking_days();
+  const auto circulation_context = population_->prepare_circulation_context();
 
-  // update current foi should be call after perform death, birth event
-  // in order to obtain the right all alive individuals,
-  // infection event will use pre-calculated individual relative biting rate to
-  // infect new infections circulation event will use pre-calculated individual
-  // relative moving rate to migrate individual to new location
-  population_->update_current_foi();
-
-  population_->perform_infection_event();
-  population_->perform_circulation_event();
-
-  // infect new mosquito cohort in prmc must be run after population perform
-  // infection event and update current foi because the prmc at the tracking
-  // index will be overridden with new cohort to use N days later and infection
-  // event used the prmc at the tracking index for the today infection
-  auto tracking_index = scheduler_->current_time() % config_->number_of_tracking_days();
-  mosquito_->infect_new_cohort_in_prmc(config_.get(), random_.get(), population_.get(),
-                                       tracking_index);
-
-  // this function must be called after mosquito infect new cohort in prmc
-  population_->persist_current_force_of_infection_to_use_n_days_later();
+  for (int location = 0; location < config_->number_of_locations(); ++location) {
+    population_->prepare_daily_state_at_location(location);
+    population_->perform_infection_event_at_location(location, tracking_index);
+    population_->perform_circulation_from_location(location, circulation_context);
+    mosquito_->infect_new_cohort_at_location(config_.get(), random_.get(), population_.get(),
+                                             location, tracking_index);
+    population_->persist_force_of_infection_at_location(location, tracking_index);
+  }
 }
 
 void Model::monthly_update() {

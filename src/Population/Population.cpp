@@ -4,6 +4,7 @@
 #include <Utils/Random.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cfloat>
 #include <memory>
 
@@ -239,6 +240,15 @@ void Population::perform_infection_event() {
                                    infected_people);
   }
 
+  finalize_today_infections(infected_people);
+}
+
+void Population::perform_infection_event_at_location(const int location, const int tracking_index) {
+  PersonPtrVector infected_people;
+  const bool use_sporozoite_challenge =
+      Model::get_config()->get_transmission_settings().get_transmission_parameter() > 0.0;
+  process_infections_at_location(location, tracking_index, use_sporozoite_challenge,
+                                 infected_people);
   finalize_today_infections(infected_people);
 }
 
@@ -519,24 +529,27 @@ void Population::setup_initial_infection(Person* person, Genotype* parasite_type
 }
 
 void Population::perform_birth_event() {
-  //    std::cout << "Birth Event" << std::endl;
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    auto poisson_means = Model::get_config()->get_population_demographic().get_birth_rate()
-                         * static_cast<double>(size(loc))
-                         / static_cast<double>(Constants::DAYS_IN_YEAR);
-    const auto number_of_births = Model::get_random()->random_poisson(poisson_means);
-    for (auto i = 0; i < number_of_births; i++) {
-      give_1_birth(loc);
-      // spdlog::info("1 birth");
-      Model::get_mdc()->update_person_days_by_years(
-          loc, Constants::DAYS_IN_YEAR - Model::get_scheduler()->get_current_day_in_year());
-    }
+    perform_birth_event_at_location(loc);
   }
-  //    std::cout << "End Birth Event" << std::endl;
 }
 
-void Population::give_1_birth(const int &location) {
+void Population::perform_birth_event_at_location(const int location) {
+  const auto poisson_mean = Model::get_config()->get_population_demographic().get_birth_rate()
+                            * static_cast<double>(size(location))
+                            / static_cast<double>(Constants::DAYS_IN_YEAR);
+  const auto number_of_births = Model::get_random()->random_poisson(poisson_mean);
+  for (auto i = 0; i < number_of_births; ++i) {
+    auto* newborn = give_1_birth(location);
+    append_daily_sampling_state(location, newborn);
+    Model::get_mdc()->update_person_days_by_years(
+        location, Constants::DAYS_IN_YEAR - Model::get_scheduler()->get_current_day_in_year());
+  }
+}
+
+Person* Population::give_1_birth(const int &location) {
   auto person = std::make_unique<Person>();
+  auto* newborn = person.get();
   person->initialize();
   person->set_age(0);
   person->set_host_state(Person::SUSCEPTIBLE);
@@ -569,45 +582,41 @@ void Population::give_1_birth(const int &location) {
   person->generate_prob_present_at_mda_by_age();
 
   add_person(std::move(person));
+  return newborn;
 }
 
 void Population::perform_death_event() {
-  //    std::cout << "Death Event" << std::endl;
-  // simply change state to dead and release later
+  for (auto location = 0; location < Model::get_config()->number_of_locations(); ++location) {
+    perform_death_event_at_location(location);
+    clear_dead_people_at_location(location);
+  }
+}
+
+void Population::perform_death_event_at_location(const int location) {
   auto* pi = get_person_index<PersonIndexByLocationStateAgeClass>();
-  if (pi == nullptr) return;
+  if (pi == nullptr) { return; }
 
-  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    for (auto hs = 0; hs < Person::NUMBER_OF_STATE - 1; hs++) {
-      if (hs == Person::DEAD) continue;
-      for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-        const int size = static_cast<int>(pi->vPerson()[loc][hs][ac].size());
-        if (size == 0) continue;
-        auto poisson_means =
-            size
-            * Model::get_config()->get_population_demographic().get_death_rate_by_age_class()[ac]
-            / static_cast<double>(Constants::DAYS_IN_YEAR);
-
-        assert(
-            Model::get_config()->get_population_demographic().get_death_rate_by_age_class().size()
-            == Model::get_config()->number_of_age_classes());
-        const auto number_of_deaths = Model::get_random()->random_poisson(poisson_means);
-        if (number_of_deaths == 0) continue;
-
-        //                std::cout << numberOfDeaths << std::endl;
-        for (int i = 0; i < number_of_deaths; i++) {
-          // change state to Death;
-          const int index = static_cast<int>(Model::get_random()->random_uniform(size));
-          //                    std::cout << index << "-" << pi->vPerson()[loc][hs][ac].size() <<
-          //                    std::endl;
-          auto* person = pi->vPerson()[loc][hs][ac][index];
-          person->cancel_all_events_except(nullptr);
-          person->set_host_state(Person::DEAD);
-        }
+  const auto &death_rates =
+      Model::get_config()->get_population_demographic().get_death_rate_by_age_class();
+  assert(death_rates.size() == Model::get_config()->number_of_age_classes());
+  for (auto hs = 0; hs < Person::DEAD; ++hs) {
+    for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ++ac) {
+      const PersonPtrVector candidates = pi->vPerson()[location][hs][ac];
+      const auto candidate_count = static_cast<int>(candidates.size());
+      if (candidate_count == 0) { continue; }
+      const auto poisson_mean =
+          candidate_count * death_rates[ac] / static_cast<double>(Constants::DAYS_IN_YEAR);
+      const auto number_of_deaths = Model::get_random()->random_poisson(poisson_mean);
+      for (auto i = 0; i < number_of_deaths; ++i) {
+        const auto index =
+            static_cast<std::size_t>(Model::get_random()->random_uniform(candidate_count));
+        auto* person = candidates[index];
+        if (person->get_host_state() == Person::DEAD) { continue; }
+        person->cancel_all_events_except(nullptr);
+        person->set_host_state(Person::DEAD);
       }
     }
   }
-  clear_all_dead_state_individual();
 }
 
 void Population::clear_all_dead_state_individual() {
@@ -626,76 +635,81 @@ void Population::clear_all_dead_state_individual() {
   for (Person* person : remove_persons) { remove_dead_person(person); }
 }
 
-void Population::perform_circulation_event() {
-  // for each location
-  //  get number of circulations based on size * circulation_percent
-  //  distributes that number into others location based of other location size
-  //  for each number in that list select an individual, and schedule a movement event on next day
-  // if (Model::get_config()->number_of_locations() == 1) { return; }
-  PersonPtrVector today_circulations;
-
-  std::vector<int> v_number_of_residents_by_location(Model::get_config()->number_of_locations(), 0);
-
-  for (auto location = 0; location < Model::get_config()->number_of_locations(); location++) {
-    //        v_number_of_residents_by_location[target_location] = (size(target_location));
-    v_number_of_residents_by_location[location] =
-        Model::get_mdc()->popsize_residence_by_location()[location];
-    //        std::cout << v_original_pop_size_by_location[target_location] << std::endl;
+void Population::clear_dead_people_at_location(const int location) {
+  auto* pi = get_person_index<PersonIndexByLocationStateAgeClass>();
+  PersonPtrVector dead_people;
+  for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ++ac) {
+    const auto &dead_by_age = pi->vPerson()[location][Person::DEAD][ac];
+    dead_people.insert(dead_people.end(), dead_by_age.begin(), dead_by_age.end());
   }
+  for (auto* person : dead_people) {
+    remove_from_daily_sampling_state(location, person);
+    remove_dead_person(person);
+  }
+}
 
+void Population::perform_circulation_event() {
+  const auto circulation_context = prepare_circulation_context();
   for (int from_location = 0; from_location < Model::get_config()->number_of_locations();
        from_location++) {
-    auto poisson_means = static_cast<double>(size(from_location))
-                         * Model::get_config()
-                               ->get_movement_settings()
-                               .get_circulation_info()
-                               .get_circulation_percent();
-    if (poisson_means == 0) continue;
-    const auto number_of_circulating_from_this_location =
-        Model::get_random()->random_poisson(poisson_means);
-    if (number_of_circulating_from_this_location == 0) continue;
+    perform_circulation_from_location(from_location, circulation_context);
+  }
+}
 
-    DoubleVector v_relative_outmovement_to_destination(Model::get_config()->number_of_locations(),
-                                                       0);
-    v_relative_outmovement_to_destination =
-        Model::get_config()
-            ->get_movement_settings()
-            .get_spatial_model()
-            ->get_v_relative_out_movement_to_destination(
-                from_location, static_cast<int>(Model::get_config()->number_of_locations()),
-                Model::get_config()
-                    ->get_spatial_settings()
-                    .get_spatial_distance_matrix()[from_location],
-                v_number_of_residents_by_location);
+IntVector Population::prepare_circulation_context() const {
+  return Model::get_mdc()->popsize_residence_by_location();
+}
 
-    std::vector<unsigned int> v_num_leavers_to_destination(
-        static_cast<uint64_t>(Model::get_config()->number_of_locations()));
+void Population::perform_circulation_from_location(const int from_location,
+                                                   const IntVector &circulation_context) {
+  PersonPtrVector today_circulations;
+  auto poisson_means = static_cast<double>(size(from_location))
+                       * Model::get_config()
+                             ->get_movement_settings()
+                             .get_circulation_info()
+                             .get_circulation_percent();
+  if (poisson_means == 0) { return; }
+  const auto number_of_circulating_from_this_location =
+      Model::get_random()->random_poisson(poisson_means);
+  if (number_of_circulating_from_this_location == 0) { return; }
 
-    Model::get_random()->random_multinomial(
-        static_cast<int>(v_relative_outmovement_to_destination.size()),
-        static_cast<unsigned int>(number_of_circulating_from_this_location),
-        v_relative_outmovement_to_destination, v_num_leavers_to_destination);
+  DoubleVector v_relative_outmovement_to_destination(Model::get_config()->number_of_locations(), 0);
+  v_relative_outmovement_to_destination =
+      Model::get_config()
+          ->get_movement_settings()
+          .get_spatial_model()
+          ->get_v_relative_out_movement_to_destination(
+              from_location, static_cast<int>(Model::get_config()->number_of_locations()),
+              Model::get_config()
+                  ->get_spatial_settings()
+                  .get_spatial_distance_matrix()[from_location],
+              circulation_context);
 
-    for (int target_location = 0; target_location < Model::get_config()->number_of_locations();
-         target_location++) {
-      // spdlog::info("target_location individual_relative_moving_by_location[{}] size: {} sum:
-      // {}",target_location,
-      //              individual_relative_moving_by_location[target_location].size(),
-      //              sum_relative_moving_by_location[target_location]);
-      // std::cout << "num_leave: " << v_num_leavers_to_destination[target_location] << std::endl;
-      if (v_num_leavers_to_destination[target_location] == 0) continue;
-      // std::cout << " time: " << Model::get_scheduler()->current_time() << "\t from " <<
-      // from_location << "\t to " << target_location <<
-      // "\t" << v_num_leavers_to_destination[target_location] << std::endl;
-      perform_circulation_for_1_location(
-          from_location, target_location,
-          static_cast<int>(v_num_leavers_to_destination[target_location]), today_circulations);
-    }
+  std::vector<unsigned int> v_num_leavers_to_destination(
+      static_cast<uint64_t>(Model::get_config()->number_of_locations()));
+
+  Model::get_random()->random_multinomial(
+      static_cast<int>(v_relative_outmovement_to_destination.size()),
+      static_cast<unsigned int>(number_of_circulating_from_this_location),
+      v_relative_outmovement_to_destination, v_num_leavers_to_destination);
+
+  for (int target_location = 0; target_location < Model::get_config()->number_of_locations();
+       target_location++) {
+    // spdlog::info("target_location individual_relative_moving_by_location[{}] size: {} sum:
+    // {}",target_location,
+    //              individual_relative_moving_by_location[target_location].size(),
+    //              sum_relative_moving_by_location[target_location]);
+    // std::cout << "num_leave: " << v_num_leavers_to_destination[target_location] << std::endl;
+    if (v_num_leavers_to_destination[target_location] == 0) continue;
+    // std::cout << " time: " << Model::get_scheduler()->current_time() << "\t from " <<
+    // from_location << "\t to " << target_location <<
+    // "\t" << v_num_leavers_to_destination[target_location] << std::endl;
+    perform_circulation_for_1_location(
+        from_location, target_location,
+        static_cast<int>(v_num_leavers_to_destination[target_location]), today_circulations);
   }
 
   for (auto* person : today_circulations) { person->randomly_choose_target_location(); }
-
-  today_circulations.clear();
 }
 
 void Population::perform_circulation_for_1_location(const int &from_location,
@@ -798,69 +812,100 @@ void Population::persist_current_force_of_infection_to_use_n_days_later() {
   }
 }
 
+void Population::persist_force_of_infection_at_location(const int location,
+                                                        const int tracking_index) {
+  force_of_infection_for_n_days_by_location_[tracking_index][location] =
+      current_force_of_infection_by_location_[location];
+}
+
+void Population::reset_daily_sampling_state(const int location) {
+  individual_foi_by_location_[location].clear();
+  individual_relative_biting_by_location_[location].clear();
+  individual_relative_moving_by_location_[location].clear();
+  all_alive_persons_by_location_[location].clear();
+  current_force_of_infection_by_location_[location] = 0.0;
+  sum_relative_biting_by_location_[location] = 0.0;
+  sum_relative_moving_by_location_[location] = 0.0;
+}
+
+void Population::append_daily_sampling_state(const int location, Person* person) {
+  const auto log_10_total_infectious_density =
+      person->get_all_clonal_parasite_populations()->log10_total_infectious_density();
+  const auto relative_biting = person->get_current_relative_biting_rate();
+  const auto person_foi =
+      log_10_total_infectious_density == ClonalParasitePopulation::LOG_ZERO_PARASITE_DENSITY
+          ? 0.0
+          : relative_biting * Person::relative_infectivity(log_10_total_infectious_density);
+  const auto relative_moving = Model::get_config()
+                                   ->get_movement_settings()
+                                   .get_v_moving_level_value()[person->get_moving_level()];
+
+  individual_foi_by_location_[location].push_back(person_foi);
+  individual_relative_biting_by_location_[location].push_back(relative_biting);
+  individual_relative_moving_by_location_[location].push_back(relative_moving);
+  all_alive_persons_by_location_[location].push_back(person);
+  current_force_of_infection_by_location_[location] += person_foi;
+  sum_relative_biting_by_location_[location] += relative_biting;
+  sum_relative_moving_by_location_[location] += relative_moving;
+}
+
+void Population::remove_from_daily_sampling_state(const int location, Person* person) {
+  auto &alive_people = all_alive_persons_by_location_[location];
+  const auto person_it = std::find(alive_people.begin(), alive_people.end(), person);
+  if (person_it == alive_people.end()) { return; }
+  const auto index = static_cast<std::size_t>(std::distance(alive_people.begin(), person_it));
+
+  current_force_of_infection_by_location_[location] -= individual_foi_by_location_[location][index];
+  sum_relative_biting_by_location_[location] -=
+      individual_relative_biting_by_location_[location][index];
+  sum_relative_moving_by_location_[location] -=
+      individual_relative_moving_by_location_[location][index];
+  individual_foi_by_location_[location].erase(individual_foi_by_location_[location].begin()
+                                              + index);
+  individual_relative_biting_by_location_[location].erase(
+      individual_relative_biting_by_location_[location].begin() + index);
+  individual_relative_moving_by_location_[location].erase(
+      individual_relative_moving_by_location_[location].begin() + index);
+  alive_people.erase(person_it);
+}
+
+void Population::update_people_and_append_sampling_state(const int location) {
+  auto* pi = get_person_index<PersonIndexByLocationStateAgeClass>();
+  PersonPtrVector people;
+  people.reserve(size(location));
+  for (auto hs = 0; hs < Person::DEAD; ++hs) {
+    for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ++ac) {
+      const auto &people_by_age = pi->vPerson()[location][hs][ac];
+      people.insert(people.end(), people_by_age.begin(), people_by_age.end());
+    }
+  }
+  for (auto* person : people) {
+    person->update();
+    append_daily_sampling_state(location, person);
+  }
+}
+
+void Population::prepare_daily_state_at_location(const int location) {
+  reset_daily_sampling_state(location);
+  update_people_and_append_sampling_state(location);
+  perform_death_event_at_location(location);
+  clear_dead_people_at_location(location);
+  perform_birth_event_at_location(location);
+}
+
 void Population::update_current_foi() {
   auto* pi = get_person_index<PersonIndexByLocationStateAgeClass>();
-  auto* config = Model::get_config();
-  const auto number_of_locations = config->number_of_locations();
-  const auto number_of_age_classes = config->number_of_age_classes();
-  const auto &moving_level_values = config->get_movement_settings().get_v_moving_level_value();
+  const auto number_of_locations = Model::get_config()->number_of_locations();
+  const auto number_of_age_classes = Model::get_config()->number_of_age_classes();
   auto &persons_by_location_state_age = pi->vPerson();
   for (int location = 0; location < number_of_locations; location++) {
-    // spdlog::info("location {} pop {}", location, size(location));
-    // reset force of infection for each location
-    auto location_force_of_infection = 0.0;
-    auto location_sum_relative_biting = 0.0;
-    auto location_sum_relative_moving = 0.0;
-
-    // using clear so as system will not reallocate memory slot for vector
-    auto &individual_foi_values = individual_foi_by_location_[location];
-    auto &individual_relative_biting = individual_relative_biting_by_location_[location];
-    auto &individual_relative_moving = individual_relative_moving_by_location_[location];
-    auto &all_alive_persons = all_alive_persons_by_location_[location];
-    individual_foi_values.clear();
-    individual_relative_biting.clear();
-    individual_relative_moving.clear();
-    all_alive_persons.clear();
-
+    reset_daily_sampling_state(location);
     for (int hs = 0; hs < Person::DEAD; hs++) {
       for (int ac = 0; ac < number_of_age_classes; ac++) {
-        // spdlog::info("There are {} individuals in location {} with host state {} and age class
-        // {}", pi->vPerson()[location][hs][ac].size(), location, hs, ac); for (std::size_t i = 0; i
-        // < pi->vPerson()[location][hs][ac].size(); i++) { Person* person =
-        // pi->vPerson()[location][hs][ac][i];
         for (auto* person : persons_by_location_state_age[location][hs][ac]) {
-          double log_10_total_infectious_density =
-              person->get_all_clonal_parasite_populations()->log10_total_infectious_density();
-          const auto person_relative_biting_rate = person->get_current_relative_biting_rate();
-          const auto person_foi =
-              log_10_total_infectious_density == ClonalParasitePopulation::LOG_ZERO_PARASITE_DENSITY
-                  ? 0.0
-                  : person_relative_biting_rate
-                        * Person::relative_infectivity(log_10_total_infectious_density);
-
-          individual_foi_values.push_back(person_foi);
-          individual_relative_biting.push_back(person_relative_biting_rate);
-          const auto &moving_level_value = moving_level_values[person->get_moving_level()];
-          individual_relative_moving.push_back(moving_level_value);
-
-          location_sum_relative_biting += person_relative_biting_rate;
-          location_sum_relative_moving += moving_level_value;
-          location_force_of_infection += person_foi;
-          all_alive_persons.push_back(person);
-          // spdlog::info("person {} individual_relative_biting_by_location[{}]
-          // {}",person->get_id(), location,
-          //              individual_relative_biting_by_location[location].back());
+          append_daily_sampling_state(location, person);
         }
       }
     }
-    current_force_of_infection_by_location_[location] = location_force_of_infection;
-    sum_relative_biting_by_location_[location] = location_sum_relative_biting;
-    sum_relative_moving_by_location_[location] = location_sum_relative_moving;
-    // spdlog::info("update_current_foi individual_relative_moving_by_location[{}] size: {} sum:
-    // {}",location,
-    //                individual_relative_moving_by_location[location].size(),
-    //                sum_relative_moving_by_location[location]);
-    // spdlog::info("update_current_foi all_alive_persons_by_location[{}] size: {}",location,
-    //                all_alive_persons_by_location[location].size());
   }
 }

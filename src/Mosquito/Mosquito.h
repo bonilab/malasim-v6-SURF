@@ -32,6 +32,12 @@ public:
                                  Population* population,
                                  int tracking_index);
 
+  void infect_new_cohort_at_location(Config* config,
+                                     utils::Random* random,
+                                     Population* population,
+                                     int location,
+                                     int tracking_index);
+
   std::vector<std::vector<std::vector<Genotype*>>> genotypes_table; /* Mosquito table */
 
   [[nodiscard]] static std::vector<unsigned int> build_interrupted_feeding_indices(
