@@ -55,7 +55,7 @@ AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros:
   - __capability
 BinPackArguments: true
-BinPackParameters: true
+BinPackParameters: OnePerLine
 BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel: false

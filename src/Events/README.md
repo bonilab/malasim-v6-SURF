@@ -35,7 +35,7 @@ This module provides the core event system and individual event implementations 
 
 ### Lifecycle Events
 - `BirthdayEvent.h/cpp`: Manages individual aging
-- `SwitchImmuneComponentEvent.h/cpp`: Controls immune system changes
+- `SwitchImmuneSystemModeEvent.h/cpp`: Switches from infant to non-infant immunity
 
 ### Monitoring Events
 - `RaptEvent.h/cpp`: Rapid Assessment of Parasite Treatment event

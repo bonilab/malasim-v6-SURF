@@ -48,12 +48,12 @@ public:
                   const date::year_month_day &ending_date);
 
   void run();
-  void begin_time_step();
-  void end_time_step();
+  static void begin_time_step();
+  static void end_time_step();
   void daily_update();
 
   // Time-related query methods
-  [[nodiscard]] bool can_stop();
+  [[nodiscard]] bool can_stop() const;
   [[nodiscard]] int get_current_day_in_year();
   [[nodiscard]] unsigned int get_current_month_in_year();
   [[nodiscard]] bool is_today_last_day_of_month();
@@ -62,13 +62,13 @@ public:
   [[nodiscard]] bool is_today_last_day_of_year();
   [[nodiscard]] int get_days_to_next_year() const;
   [[nodiscard]] int get_days_to_next_n_year(int n) const;
-  [[nodiscard]] int get_days_in_current_month() const;
+  [[nodiscard]] unsigned get_days_in_current_month() const;
   [[nodiscard]] int get_current_year() const;
   [[nodiscard]] unsigned int get_current_day_of_month() const;
   [[nodiscard]] date::year_month_day get_ymd_after_months(int months) const;
-  [[nodiscard]] int get_days_to_ymd(const date::year_month_day &ymd) const;
+  [[nodiscard]] core::SimDay get_days_to_ymd(const date::year_month_day &ymd) const;
   [[nodiscard]] date::year_month_day get_ymd_after_days(int days) const;
-  [[nodiscard]] int get_unix_time() const;
+  [[nodiscard]] std::time_t get_unix_time() const;
   [[nodiscard]] date::year_month_day get_calendar_date() const;
   [[nodiscard]] std::string get_current_date_string() const {
     return StringHelpers::date_as_string(date::year_month_day{calendar_date_});

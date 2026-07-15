@@ -2,6 +2,7 @@
 
 #include <Configuration/Config.h>
 
+#include "Core/types.h"
 #include "Population/Population.h"
 #include "Simulation/Model.h"
 #include "Utils/Helpers/TimeHelpers.h"
@@ -56,7 +57,7 @@ void Scheduler::end_time_step() {
   if (Model::get_instance() != nullptr) { Model::get_instance()->end_time_step(); }
 }
 
-bool Scheduler::can_stop() {
+bool Scheduler::can_stop() const {
   return current_time_ > Model::get_config()->get_simulation_timeframe().get_total_time();
 }
 
@@ -97,7 +98,7 @@ int Scheduler::get_days_to_next_n_year(int n) const {
   return TimeHelpers::days_between(from_ymd, to_ymd);
 }
 
-int Scheduler::get_days_in_current_month() const {
+unsigned Scheduler::get_days_in_current_month() const {
   auto date = static_cast<date::year_month_day>(calendar_date_);
   return TimeHelpers::days_in_month(static_cast<int>(date.year()),
                                     static_cast<unsigned int>(date.month()));
@@ -117,15 +118,15 @@ date::year_month_day Scheduler::get_ymd_after_months(int months) const {
   return date::year_month_day(calendar_date_) + date::months(months);
 }
 
-int Scheduler::get_days_to_ymd(const date::year_month_day &ymd) const {
-  return TimeHelpers::days_between(calendar_date_, ymd);
+core::SimDay Scheduler::get_days_to_ymd(const date::year_month_day &ymd) const {
+  return static_cast<core::SimDay>(TimeHelpers::days_between(calendar_date_, ymd));
 }
 
 date::year_month_day Scheduler::get_ymd_after_days(int days) const {
   return calendar_date_ + date::days(days);
 }
 
-int Scheduler::get_unix_time() const {
+std::time_t Scheduler::get_unix_time() const {
   return std::chrono::system_clock::to_time_t(calendar_date_);
 }
 

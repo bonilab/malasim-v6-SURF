@@ -85,22 +85,20 @@ protected:
     person_->set_birthday(simulation_time_birthday);
     person_->schedule_birthday_event(days_to_next_birthday);
 
-    // Set immune component at 6 months
+    // Set infant immune mode until six months
     if (simulation_time_birthday + Constants::DAYS_IN_YEAR / 2 >= 0) {
         if (person_->get_age() > 0) { spdlog::error("Error in calculating simulation_time_birthday"); }
-        person_->get_immune_system()->set_component_type(ImmuneComponentType::Infant);
+        person_->get_immune_system()->initialize_as_infant();
         // schedule for switch
-        person_->schedule_switch_immune_component_event(simulation_time_birthday
-                                                     + (Constants::DAYS_IN_YEAR / 2));
-    } else {
-        person_->get_immune_system()->set_component_type(ImmuneComponentType::NonInfant);
+        person_->schedule_switch_immune_system_mode_event(simulation_time_birthday
+                                                          + (Constants::DAYS_IN_YEAR / 2));
     }
 
     // Set immune values
     auto immune_value = Model::get_random()->random_beta(
         Model::get_config()->get_immune_system_parameters().alpha_immune,
         Model::get_config()->get_immune_system_parameters().beta_immune);
-    person_->get_immune_system()->immune_component()->set_latest_value(immune_value);
+    person_->get_immune_system()->set_latest_immune_value(immune_value);
     person_->get_immune_system()->set_increase(false);
 
     // Set biting rate related properties

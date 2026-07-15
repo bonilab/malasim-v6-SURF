@@ -7,20 +7,16 @@
 #ifndef TIMEHELPERS_H
 #define TIMEHELPERS_H
 
-#include <sstream>
-
 #include "date/date.h"
 
-inline std::ostream &operator<<(std::ostream &stream,
-                                const date::sys_days &o_days) {
+inline std::ostream &operator<<(std::ostream &stream, const date::sys_days &o_days) {
   stream << date::year_month_day{o_days};
   return stream;
 }
 
 class TimeHelpers {
 public:
-  static int number_of_days(const date::sys_days &first,
-                            const date::sys_days &last);
+  static int number_of_days(const date::sys_days &first, const date::sys_days &last);
 
   static int number_of_days_to_next_year(const date::sys_days &today);
 
@@ -31,16 +27,17 @@ public:
   static int day_of_year(const date::sys_days &day);
 
   // Return true if the given year is a leap year, false otherwise.
-  static bool is_leap_year(const int year) {
+  static bool is_leap_year(const unsigned year) {
     return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
   }
 
-  static unsigned int days_in_month(const int year, const int month) {
+  static unsigned int days_in_month(const unsigned year, const unsigned month) {
     if (month == 4 || month == 6 || month == 9 || month == 11) {
       // Thirty days has September,
       // April, June, and November,
       return 30;
-    } else if (month != 2) {
+    }
+    if (month != 2) {
       // All the rest have thirty-one,
       return 31;
     }
@@ -53,34 +50,31 @@ public:
     return 29;
   }
 
-  static int days_between(const date::year_month_day& start_date, const date::year_month_day& end_date) {
+  static int days_between(const date::year_month_day &start_date,
+                          const date::year_month_day &end_date) {
     return (date::sys_days{end_date} - date::sys_days{start_date}).count();
   }
 
-  static int month_of_year(const date::sys_days &day) {
+  static unsigned month_of_year(const date::sys_days &day) {
     const date::year_month_day ymd{day};
     return static_cast<unsigned>(ymd.month());
   }
-
 };
 
-inline int TimeHelpers::number_of_days(const date::sys_days &first,
-                                       const date::sys_days &last) {
+inline int TimeHelpers::number_of_days(const date::sys_days &first, const date::sys_days &last) {
   return (last - first).count();
 }
 
-inline int TimeHelpers::number_of_days_to_next_year(
-    const date::sys_days &today) {
+inline int TimeHelpers::number_of_days_to_next_year(const date::sys_days &today) {
   const date::sys_days next_year{date::year_month_day{today} + date::years{1}};
   return number_of_days(today, next_year);
 }
 
-inline int TimeHelpers::get_simulation_time_birthday(
-    const int &days_to_next_birthday, const int &age,
-    const date::sys_days &starting_day) {
+inline int TimeHelpers::get_simulation_time_birthday(const int &days_to_next_birthday,
+                                                     const int &age,
+                                                     const date::sys_days &starting_day) {
   const auto calendar_birthday = date::floor<date::days>(
-      starting_day + date::days{days_to_next_birthday + 1}
-      - date::years{age + 1});
+      starting_day + date::days{days_to_next_birthday + 1} - date::years{age + 1});
 
   return number_of_days(starting_day, calendar_birthday);
 }

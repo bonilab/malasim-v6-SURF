@@ -2,7 +2,6 @@
 #include <spdlog/spdlog.h>
 
 #include <memory>
-#include <ranges>
 
 #include "Events/BirthdayEvent.h"
 #include "Events/CirculateToTargetLocationNextDayEvent.h"
@@ -12,7 +11,7 @@
 #include "Events/ProgressToClinicalEvent.h"
 #include "Events/ReceiveTherapyEvent.h"
 #include "Events/ReturnToResidenceEvent.h"
-#include "Events/SwitchImmuneComponentEvent.h"
+#include "Events/SwitchImmuneSystemModeEvent.h"
 #include "Events/TestTreatmentFailureEvent.h"
 #include "Parasites/Genotype.h"
 #include "Population/ClonalParasitePopulation.h"
@@ -21,7 +20,6 @@
 #include "Population/Person/Person.h"
 #include "Simulation/Model.h"
 #include "Treatment/Therapies/Drug.h"
-#include "Treatment/Therapies/SCTherapy.h"
 #include "Utils/Cli.h"
 #include "Utils/Constants.h"
 #include "fixtures/TestFileGenerators.h"
@@ -58,9 +56,7 @@ protected:
     auto simulation_time_birthday = Model::get_scheduler()->get_days_to_ymd(ymd);
     person_->set_birthday(simulation_time_birthday);
 
-    // Set immune component
-    person_->get_immune_system()->set_component_type(ImmuneComponentType::NonInfant);
-    person_->get_immune_system()->immune_component()->set_latest_value(0.5);
+    person_->get_immune_system()->set_latest_immune_value(0.5);
 
     // Set biting rate and moving level
     person_->set_innate_relative_biting_rate(1.0);
@@ -121,23 +117,21 @@ TEST_F(PersonInternalEventTest, BirthdayEventTest) {
   ASSERT_EQ(person_->get_age(), initial_age + 1);
 }
 
-// Test SwitchImmuneComponentEvent
-TEST_F(PersonInternalEventTest, SwitchImmuneComponentEventTest) {
+// Test SwitchImmuneSystemModeEvent
+TEST_F(PersonInternalEventTest, SwitchImmuneSystemModeEventTest) {
   // Set up infant mode and a value that must survive the transition.
-  person_->get_immune_system()->set_component_type(ImmuneComponentType::Infant);
+  person_->get_immune_system()->initialize_as_infant();
   person_->get_immune_system()->set_latest_immune_value(0.75);
 
-  // Create and schedule a switch immune component event
-  auto event = std::make_unique<SwitchImmuneComponentEvent>(person_.get());
+  auto event = std::make_unique<SwitchImmuneSystemModeEvent>(person_.get());
   event->set_time(calculate_future_time(0));  // Execute immediately
   person_->schedule_basic_event(std::move(event));
 
   // Execute events at current time
   person_->update_events(Model::get_scheduler()->current_time());
 
-  // Verify the mode changed without replacing or resetting the component.
-  EXPECT_EQ(person_->get_immune_system()->immune_component()->type(),
-            ImmuneComponentType::NonInfant);
+  // Verify the mode changed without resetting the immune value.
+  EXPECT_EQ(person_->get_immune_system()->mode(), ImmuneSystemMode::NON_INFANT);
   EXPECT_DOUBLE_EQ(person_->get_immune_system()->get_latest_immune_value(), 0.75);
 }
 

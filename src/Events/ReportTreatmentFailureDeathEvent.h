@@ -33,15 +33,15 @@ public:
 
   [[nodiscard]] core::AgeClass age_class() const { return age_class_; }
   void set_age_class(core::AgeClass value) { age_class_ = value; }
-  [[nodiscard]] int location_id() const { return location_id_; }
-  void set_location_id(int value) { location_id_ = value; }
-  [[nodiscard]] int therapy_id() const { return therapy_id_; }
-  void set_therapy_id(int value) { therapy_id_ = value; }
+  [[nodiscard]] core::LocationId location_id() const { return location_id_; }
+  void set_location_id(core::LocationId value) { location_id_ = value; }
+  [[nodiscard]] core::TherapyId therapy_id() const { return therapy_id_; }
+  void set_therapy_id(core::TherapyId value) { therapy_id_ = value; }
 
 private:
   core::AgeClass age_class_{core::K_INVALID_AGE_CLASS};
-  int location_id_{-1};
-  int therapy_id_{-1};
+  core::LocationId location_id_{core::K_INVALID_LOCATION_ID};
+  core::TherapyId therapy_id_{core::K_INVALID_THERAPY_ID};
   void do_execute() override;
 };
 

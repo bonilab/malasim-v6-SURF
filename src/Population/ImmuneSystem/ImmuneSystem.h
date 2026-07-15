@@ -1,18 +1,18 @@
 #ifndef IMMUNESYSTEM_H
 #define IMMUNESYSTEM_H
 
-#include <vector>
+#include <cstdint>
 
-#include "Population/ImmuneSystem/ImmuneComponent.h"
-#include "Utils/TypeDef.h"
+#include "Core/types.h"
 
 class Model;
 
 class Person;
 
-class Config;
-
-// typedef std::vector<ImmuneComponent*> ImmuneComponentPtrVector;
+enum class ImmuneSystemMode : std::uint8_t {
+  INFANT,
+  NON_INFANT,
+};
 
 class ImmuneSystem {
   // OBJECTPOOL(ImmuneSystem)
@@ -20,6 +20,8 @@ public:
   // Disallow copy
   ImmuneSystem(const ImmuneSystem &) = delete;
   ImmuneSystem &operator=(const ImmuneSystem &) = delete;
+  ImmuneSystem(ImmuneSystem &&) = delete;
+  ImmuneSystem &operator=(ImmuneSystem &&) = delete;
 
   explicit ImmuneSystem(Person* person = nullptr);
 
@@ -28,10 +30,9 @@ public:
   [[nodiscard]] Person* person() const { return person_; }
   void set_person(Person* person) { person_ = person; }
 
-  [[nodiscard]] ImmuneComponent* immune_component() { return &immune_component_; }
-  [[nodiscard]] const ImmuneComponent* immune_component() const { return &immune_component_; }
-  void set_component_type(ImmuneComponentType type) { immune_component_.set_type(type); }
-  void switch_to_non_infant() { immune_component_.switch_to_non_infant(); }
+  [[nodiscard]] ImmuneSystemMode mode() const { return mode_; }
+  void initialize_as_infant() { mode_ = ImmuneSystemMode::INFANT; }
+  void switch_to_non_infant();
 
   [[nodiscard]] bool increase() const { return increase_; }
   void set_increase(bool increase) { increase_ = increase; }
@@ -53,11 +54,15 @@ public:
   [[nodiscard]] virtual double get_clinical_progression_probability() const;
 
 private:
-  Person* person_{nullptr};
-  ImmuneComponent immune_component_;
-  bool increase_{false};
+  [[nodiscard]] double get_decay_rate(core::Age age) const;
+  [[nodiscard]] double get_acquire_rate(core::Age age) const;
+  [[nodiscard]] double get_one_day_decay_factor() const;
+  [[nodiscard]] double get_one_day_acquire_factor(core::Age age) const;
 
-  //    virtual void clear();
+  Person* person_{nullptr};
+  double latest_value_{0.0};
+  ImmuneSystemMode mode_{ImmuneSystemMode::NON_INFANT};
+  bool increase_{false};
 };
 
 #endif /* IMMUNESYSTEM_H */

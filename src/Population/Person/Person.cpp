@@ -22,7 +22,7 @@
 #include "Events/ReceiveTherapyEvent.h"
 #include "Events/ReportTreatmentFailureDeathEvent.h"
 #include "Events/ReturnToResidenceEvent.h"
-#include "Events/SwitchImmuneComponentEvent.h"
+#include "Events/SwitchImmuneSystemModeEvent.h"
 #include "Events/TestTreatmentFailureEvent.h"
 #include "Events/UpdateWhenDrugIsPresentEvent.h"
 #include "MDC/ModelDataCollector.h"
@@ -232,8 +232,10 @@ int Person::complied_dosing_days(const SCTherapy* therapy) {
 // that caused the clinical case. Note that we assume that MACTherapy is going
 // to be fairly rare, but that additional bookkeeping needs to be done in the
 // event of one.
-void Person::receive_therapy(Therapy* therapy, ClonalParasitePopulation* clinical_caused_parasite,
-                             bool is_part_of_mac_therapy, bool is_public_sector) {
+void Person::receive_therapy(Therapy* therapy,
+                             ClonalParasitePopulation* clinical_caused_parasite,
+                             bool is_part_of_mac_therapy,
+                             bool is_public_sector) {
   // Start by checking if this is a simple therapy with a single dosing regime
   auto* sc_therapy = dynamic_cast<SCTherapy*>(therapy);
   if (sc_therapy != nullptr) {
@@ -397,9 +399,7 @@ void Person::determine_symptomatic_recrudescence(
   // the density even for sub-threshold parasites.
   const bool is_higher_than_recrudescence_threshold =
       clinical_caused_parasite->last_update_log10_parasite_density() > 2;
-  if (!is_higher_than_recrudescence_threshold) {
-    return;
-  }
+  if (!is_higher_than_recrudescence_threshold) { return; }
 
   // there are 2 methods to calculate the probability to develop symptom
   // One from the papaer, another from the immune system in the simulation.
@@ -488,11 +488,11 @@ void Person::determine_clinical_or_not(ClonalParasitePopulation* clinical_caused
       // progress to clinical after several days
       clinical_caused_parasite->set_update_function(Model::progress_to_clinical_update_function());
       clinical_caused_parasite->set_last_update_log10_parasite_density(
-        Model::get_random()->random_normal_truncated(
-          Model::get_config()
-              ->get_parasite_parameters()
-              .get_parasite_density_levels()
-              .get_log_parasite_density_asymptomatic(),0.01));
+          Model::get_random()->random_normal_truncated(Model::get_config()
+                                                           ->get_parasite_parameters()
+                                                           .get_parasite_density_levels()
+                                                           .get_log_parasite_density_asymptomatic(),
+                                                       0.01));
       schedule_progress_to_clinical_event(clinical_caused_parasite);
     } else {
       // spdlog::info("Person::determine_clinical_or_not: Person will progress to clearance");
@@ -520,9 +520,9 @@ void Person::update() {
   // Update parasite density, drug activity, CNV reversion, and cured cleanup in one parasite pass.
   all_clonal_parasite_populations_->update_with_drug_effects_and_clear_cured(
       drugs_in_blood_.get(), Model::get_config()
-                                ->get_parasite_parameters()
-                                .get_parasite_density_levels()
-                                .get_log_parasite_density_cured());
+                                 ->get_parasite_parameters()
+                                 .get_parasite_density_levels()
+                                 .get_log_parasite_density_cured());
 
   immune_system_->update();
 
@@ -573,7 +573,7 @@ void Person::randomly_choose_parasite() {
   today_infections_.clear();
 }
 
-void Person::infected_by(const int &parasite_type_id) {
+void Person::infected_by(core::GenotypeId parasite_type_id) {
   // only infect if liver is available :D
   if (liver_parasite_type_ == nullptr) {
     if (host_state_ == SUSCEPTIBLE) { set_host_state(EXPOSED); }
@@ -890,7 +890,8 @@ void Person::schedule_clinical_recurrence_event(ClonalParasitePopulation* parasi
 }
 
 void Person::schedule_test_treatment_failure_event(ClonalParasitePopulation* parasite,
-                                                   int testing_day, int therapy_id) {
+                                                   int testing_day,
+                                                   int therapy_id) {
   auto event = std::make_unique<TestTreatmentFailureEvent>(this);
   event->set_time(calculate_future_time(testing_day));
   event->set_therapy_id(therapy_id);
@@ -920,8 +921,10 @@ void Person::schedule_receive_mda_therapy_event(Therapy* therapy, int days_delay
   schedule_basic_event(std::move(event));
 }
 
-void Person::schedule_receive_therapy_event(ClonalParasitePopulation* parasite, Therapy* therapy,
-                                            int days_delay, bool is_part_of_mac_therapy) {
+void Person::schedule_receive_therapy_event(ClonalParasitePopulation* parasite,
+                                            Therapy* therapy,
+                                            int days_delay,
+                                            bool is_part_of_mac_therapy) {
   auto event = std::make_unique<ReceiveTherapyEvent>(this);
   event->set_time(calculate_future_time(days_delay));
   event->set_clinical_caused_parasite(parasite);
@@ -930,8 +933,8 @@ void Person::schedule_receive_therapy_event(ClonalParasitePopulation* parasite, 
   schedule_basic_event(std::move(event));
 }
 
-void Person::schedule_switch_immune_component_event(int days_delay) {
-  auto event = std::make_unique<SwitchImmuneComponentEvent>(this);
+void Person::schedule_switch_immune_system_mode_event(int days_delay) {
+  auto event = std::make_unique<SwitchImmuneSystemModeEvent>(this);
   event->set_time(calculate_future_time(days_delay));
   schedule_basic_event(std::move(event));
 }

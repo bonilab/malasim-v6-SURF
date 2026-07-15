@@ -11,7 +11,7 @@
 #include "Configuration/Config.h"
 #include "Core/Scheduler/Scheduler.h"
 #include "Events/BirthdayEvent.h"
-#include "Events/SwitchImmuneComponentEvent.h"
+#include "Events/SwitchImmuneSystemModeEvent.h"
 #include "ImmuneSystem/ImmuneSystem.h"
 #include "MDC/ModelDataCollector.h"
 #include "Mosquito/Mosquito.h"
@@ -119,7 +119,7 @@ void Population::initialize() {
 }
 
 void Population::initialize_person_indices() {
-  const int number_of_location = Model::get_config()->number_of_locations();
+  const int number_of_location = static_cast<int>(Model::get_config()->number_of_locations());
   const int number_of_host_states = Person::NUMBER_OF_STATE;
   const int number_of_age_classes = Model::get_config()->number_of_age_classes();
 
@@ -159,8 +159,10 @@ void Population::remove_person(Person* person) {
   all_persons_->remove(person);
 }
 
-void Population::notify_change(Person* person, const Person::Property &property,
-                               const void* old_value, const void* new_value) {
+void Population::notify_change(Person* person,
+                               const Person::Property &property,
+                               const void* old_value,
+                               const void* new_value) {
   for (auto &person_index : *person_index_list_) {
     person_index->notify_change(person, property, old_value, new_value);
   }
@@ -192,7 +194,8 @@ std::size_t Population::size(const int &location, const int &age_class) {
   return temp;
 }
 
-std::size_t Population::size(const int &location, const Person::HostStates &hs,
+std::size_t Population::size(const int &location,
+                             const Person::HostStates &hs,
                              const int &age_class) {
   if (location == -1) { return all_persons_->size(); }
   auto* pi_lsa = get_person_index<PersonIndexByLocationStateAgeClass>();
@@ -360,22 +363,19 @@ void Population::generate_individual(int location, int age_class) {
 
   person->schedule_birthday_event(days_to_next_birthday);
 
-  // set immune component at 6 months
-  if (simulation_time_birthday + Constants::DAYS_IN_YEAR / 2 >= 0) {
+  // Use maternal immunity until six months of age.
+  if (simulation_time_birthday + (Constants::DAYS_IN_YEAR / 2) >= 0) {
     if (person->get_age() > 0) { spdlog::error("Error in calculating simulation_time_birthday"); }
-    person->get_immune_system()->set_component_type(ImmuneComponentType::Infant);
+    person->get_immune_system()->initialize_as_infant();
     // schedule for switch
-    person->schedule_switch_immune_component_event(simulation_time_birthday
-                                                   + (Constants::DAYS_IN_YEAR / 2));
-  } else {
-    // LOG(INFO) << "Adult: " << p->age() << " - " << simulation_time_birthday;
-    person->get_immune_system()->set_component_type(ImmuneComponentType::NonInfant);
+    person->schedule_switch_immune_system_mode_event(simulation_time_birthday
+                                                     + (Constants::DAYS_IN_YEAR / 2));
   }
 
   auto immune_value = Model::get_random()->random_beta(
       Model::get_config()->get_immune_system_parameters().alpha_immune,
       Model::get_config()->get_immune_system_parameters().beta_immune);
-  person->get_immune_system()->immune_component()->set_latest_value(immune_value);
+  person->get_immune_system()->set_latest_immune_value(immune_value);
   person->get_immune_system()->set_increase(false);
 
   person->set_innate_relative_biting_rate(
@@ -439,7 +439,8 @@ void Population::introduce_initial_cases() {
   }
 }
 
-void Population::introduce_parasite(const int &location, Genotype* parasite_type,
+void Population::introduce_parasite(const int &location,
+                                    Genotype* parasite_type,
                                     const int &num_of_infections) {
   if (all_alive_persons_by_location_[location].empty()) {
     // spdlog::debug("introduce_parasite all_alive_persons_by_location location {} is empty",
@@ -511,7 +512,7 @@ void Population::give_1_birth(const int &location) {
   person->set_age_class(0);
   person->set_location(location);
   person->set_residence_location(location);
-  person->get_immune_system()->set_component_type(ImmuneComponentType::Infant);
+  person->get_immune_system()->initialize_as_infant();
   person->get_immune_system()->set_latest_immune_value(1.0);
   person->get_immune_system()->set_increase(false);
 
@@ -532,7 +533,7 @@ void Population::give_1_birth(const int &location) {
   person->schedule_birthday_event(number_of_days_to_next_birthday);
 
   // schedule for switch
-  person->schedule_switch_immune_component_event(Constants::DAYS_IN_YEAR / 2);
+  person->schedule_switch_immune_system_mode_event(Constants::DAYS_IN_YEAR / 2);
 
   person->generate_prob_present_at_mda_by_age();
 
@@ -630,7 +631,7 @@ void Population::perform_circulation_event() {
             ->get_movement_settings()
             .get_spatial_model()
             ->get_v_relative_out_movement_to_destination(
-                from_location, Model::get_config()->number_of_locations(),
+                from_location, static_cast<int>(Model::get_config()->number_of_locations()),
                 Model::get_config()
                     ->get_spatial_settings()
                     .get_spatial_distance_matrix()[from_location],

@@ -14,16 +14,15 @@ The ImmuneSystem module manages:
 ## Components
 
 ### Base System
-- `ImmuneSystem`: Core immunity management
-- `ImmuneComponent`: Concrete immune response calculation, stored by value in `ImmuneSystem`
+- `ImmuneSystem`: Immunity state, mode transitions, and immune response calculations
 - `ImmunityClearanceUpdateFunction`: Immunity-based parasite clearance
 
 ### Age-Specific Modes
-- `ImmuneComponentType::Infant`: Maternal immunity decay until six months of age
-- `ImmuneComponentType::NonInfant`: Configured acquisition and decay after six months
+- `ImmuneSystemMode::Infant`: Maternal immunity decay until six months of age
+- `ImmuneSystemMode::NonInfant`: Configured acquisition and decay after six months
 
-The six-month event changes the component mode in place, preserving the current immune value and
-avoiding heap allocation and virtual dispatch.
+The six-month event changes the immune-system mode in place after the daily person update,
+preserving the current immune value.
 
 ## Key Features
 
@@ -47,7 +46,8 @@ avoiding heap allocation and virtual dispatch.
 ```cpp
 class ImmuneSystem {
     Person* person_;
-    ImmuneComponent immune_component_;
+    double latest_value_;
+    ImmuneSystemMode mode_;
     bool increase_;
 };
 ```

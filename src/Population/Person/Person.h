@@ -217,8 +217,10 @@ public:
   void change_all_parasite_update_function(ParasiteDensityUpdateFunction* from,
                                            ParasiteDensityUpdateFunction* to) const;
 
-  void receive_therapy(Therapy* therapy, ClonalParasitePopulation* clinical_caused_parasite,
-                       bool is_part_of_mac_therapy = false, bool is_public_sector = true);
+  void receive_therapy(Therapy* therapy,
+                       ClonalParasitePopulation* clinical_caused_parasite,
+                       bool is_part_of_mac_therapy = false,
+                       bool is_public_sector = true);
 
   void add_drug_to_blood(DrugType* dt, const int &dosing_days, bool is_part_of_mac_therapy = false);
 
@@ -232,7 +234,7 @@ public:
 
   void randomly_choose_parasite();
 
-  void infected_by(const int &parasite_type_id);
+  void infected_by(core::GenotypeId parasite_type_id);
 
   void randomly_choose_target_location();
 
@@ -273,14 +275,17 @@ public:
   void schedule_end_clinical_event(ClonalParasitePopulation* parasite);
   void schedule_progress_to_clinical_event(ClonalParasitePopulation* parasite);
   void schedule_clinical_recurrence_event(ClonalParasitePopulation* parasite);
-  void schedule_test_treatment_failure_event(ClonalParasitePopulation* parasite, int testing_day,
+  void schedule_test_treatment_failure_event(ClonalParasitePopulation* parasite,
+                                             int testing_day,
                                              int therapy_id = 0);
   void schedule_report_treatment_failure_death_event(int therapy_id, int testing_day);
   void schedule_rapt_event(int days_delay);
   void schedule_receive_mda_therapy_event(Therapy* therapy, int days_delay);
-  void schedule_receive_therapy_event(ClonalParasitePopulation* parasite, Therapy* therapy,
-                                      int days_delay, bool is_part_of_mac_therapy = false);
-  void schedule_switch_immune_component_event(int days_delay);
+  void schedule_receive_therapy_event(ClonalParasitePopulation* parasite,
+                                      Therapy* therapy,
+                                      int days_delay,
+                                      bool is_part_of_mac_therapy = false);
+  void schedule_switch_immune_system_mode_event(int days_delay);
 
   // Group 2: Parasite Event Scheduling
   void schedule_move_parasite_to_blood(Genotype* genotype, int days_delay);
@@ -358,4 +363,3 @@ public:
 };
 
 #endif  // PERSON_H
-

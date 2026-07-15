@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 
+#include "Core/types.h"
 #include "Utils/TypeDef.h"
 
 class Genotype;
@@ -14,12 +15,12 @@ using GenotypePtrVector = std::vector<std::unique_ptr<Genotype>>;
 class GenotypeDatabase : public GenotypePtrVector {
 public:
   // Disallow copy
-  GenotypeDatabase(const GenotypeDatabase&) = delete;
-  GenotypeDatabase& operator=(const GenotypeDatabase&) = delete;
+  GenotypeDatabase(const GenotypeDatabase &) = delete;
+  GenotypeDatabase &operator=(const GenotypeDatabase &) = delete;
 
   // Disallow move
-  GenotypeDatabase(GenotypeDatabase&&) = delete;
-  GenotypeDatabase& operator=(GenotypeDatabase&&) = delete;
+  GenotypeDatabase(GenotypeDatabase &&) = delete;
+  GenotypeDatabase &operator=(GenotypeDatabase &&) = delete;
 
   GenotypeDatabase();
 
@@ -42,7 +43,7 @@ public:
   void set_weight(const std::vector<int> &value) { weight_ = value; }
 
   // override at
-  Genotype* at(int id) { return GenotypePtrVector::at(id).get(); }
+  Genotype* at(core::GenotypeId id) { return GenotypePtrVector::at(id).get(); }
 
 private:
   std::unordered_map<std::string, Genotype*> aa_sequence_id_map_;

@@ -1,24 +1,69 @@
 #include "ImmuneSystem.h"
 
+#include <algorithm>
+#include <cassert>
 #include <cmath>
+#include <cstddef>
 
-#include "Configuration//Config.h"
+#include "Configuration/Config.h"
+#include "Core/Scheduler/Scheduler.h"
+#include "Population/ImmuneSystem/ImmuneSystemConstants.h"
 #include "Population/Person/Person.h"
 #include "Simulation/Model.h"
+#include "Utils/Random.h"
 
-ImmuneSystem::ImmuneSystem(Person* person) : person_(person), immune_component_(this) {}
+namespace {
 
-ImmuneSystem::~ImmuneSystem() { person_ = nullptr; }
-
-void ImmuneSystem::draw_random_immune() { immune_component_.draw_random_immune(); }
-
-double ImmuneSystem::get_latest_immune_value() const { return immune_component_.latest_value(); }
-
-void ImmuneSystem::set_latest_immune_value(double value) {
-  immune_component_.set_latest_value(value);
+std::size_t age_index(core::Age age) {
+  return static_cast<std::size_t>(std::min(age, immune::K_MAX_IMMUNE_AGE_INDEX));
 }
 
-double ImmuneSystem::get_current_value() const { return immune_component_.get_current_value(); }
+}  // namespace
+
+ImmuneSystem::ImmuneSystem(Person* person) : person_(person) {}
+
+ImmuneSystem::~ImmuneSystem() = default;
+
+void ImmuneSystem::draw_random_immune() {
+  const auto &parameters = Model::get_config()->get_immune_system_parameters();
+  latest_value_ = Model::get_random()->random_beta(parameters.alpha_immune, parameters.beta_immune);
+}
+
+double ImmuneSystem::get_latest_immune_value() const { return latest_value_; }
+
+void ImmuneSystem::set_latest_immune_value(double value) { latest_value_ = value; }
+
+double ImmuneSystem::get_current_value() const {
+  if (person_ == nullptr) { return 0.0; }
+
+  const auto duration = Model::get_scheduler()->current_time() - person_->get_latest_update_time();
+  if (duration == 0) { return latest_value_; }
+
+  if (mode_ == ImmuneSystemMode::INFANT) {
+    const auto factor = duration == 1 ? immune::K_ONE_DAY_INFANT_DECAY_FACTOR
+                                      : std::exp(-immune::K_INFANT_IMMUNE_DECAY_RATE * duration);
+    return latest_value_ * factor;
+  }
+
+  const auto age = person_->get_age();
+  if (increase_) {
+    const auto factor = duration == 1 ? get_one_day_acquire_factor(age)
+                                      : std::exp(-get_acquire_rate(age) * duration);
+    return 1 - ((1 - latest_value_) * factor);
+  }
+
+  const auto factor =
+      duration == 1 ? get_one_day_decay_factor() : std::exp(-get_decay_rate(age) * duration);
+  const auto value = latest_value_ * factor;
+  return value < immune::K_IMMUNE_VALUE_CUTOFF ? 0.0 : value;
+}
+
+void ImmuneSystem::switch_to_non_infant() {
+  if (mode_ == ImmuneSystemMode::NON_INFANT) { return; }
+  assert(person_ == nullptr
+         || person_->get_latest_update_time() == Model::get_scheduler()->current_time());
+  mode_ = ImmuneSystemMode::NON_INFANT;
+}
 
 double ImmuneSystem::get_parasite_size_after_t_days(const int &duration,
                                                     const double &original_size,
@@ -61,4 +106,26 @@ double ImmuneSystem::get_clinical_progression_probability() const {
   return p_clinical;
 }
 
-void ImmuneSystem::update() { immune_component_.update(); }
+void ImmuneSystem::update() { latest_value_ = get_current_value(); }
+
+double ImmuneSystem::get_one_day_decay_factor() const {
+  if (mode_ == ImmuneSystemMode::INFANT) { return immune::K_ONE_DAY_INFANT_DECAY_FACTOR; }
+  return Model::get_config()->get_immune_system_parameters().decay_rate_one_day_factor;
+}
+
+double ImmuneSystem::get_one_day_acquire_factor(core::Age age) const {
+  if (mode_ == ImmuneSystemMode::INFANT) { return 1.0; }
+  const auto &parameters = Model::get_config()->get_immune_system_parameters();
+  return parameters.acquire_rate_by_age_one_day_factor[age_index(age)];
+}
+
+double ImmuneSystem::get_decay_rate(core::Age) const {
+  if (mode_ == ImmuneSystemMode::INFANT) { return immune::K_INFANT_IMMUNE_DECAY_RATE; }
+  return Model::get_config()->get_immune_system_parameters().decay_rate;
+}
+
+double ImmuneSystem::get_acquire_rate(core::Age age) const {
+  if (mode_ == ImmuneSystemMode::INFANT) { return 0.0; }
+  const auto &parameters = Model::get_config()->get_immune_system_parameters();
+  return parameters.acquire_rate_by_age[age_index(age)];
+}

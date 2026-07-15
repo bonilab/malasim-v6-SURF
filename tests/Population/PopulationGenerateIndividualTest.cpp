@@ -77,18 +77,16 @@ TEST_F(PersonGenerateIndividualTest, InitializePersonLikePopulationGenerateIndiv
   // 6. Schedule birthday event
   person_->schedule_birthday_event(days_to_next_birthday);
 
-  // 7. Set immune component based on age
+  // 7. Set immune mode based on age
   if (simulation_time_birthday + Constants::DAYS_IN_YEAR / 2 >= 0) {
-    person_->get_immune_system()->set_component_type(ImmuneComponentType::Infant);
-    person_->schedule_switch_immune_component_event(simulation_time_birthday
-                                                    + (Constants::DAYS_IN_YEAR / 2));
-  } else {
-    person_->get_immune_system()->set_component_type(ImmuneComponentType::NonInfant);
+    person_->get_immune_system()->initialize_as_infant();
+    person_->schedule_switch_immune_system_mode_event(simulation_time_birthday
+                                                      + (Constants::DAYS_IN_YEAR / 2));
   }
 
   // 8. Set immune value (using a fixed value for test)
   double immune_value = 0.7;
-  person_->get_immune_system()->immune_component()->set_latest_value(immune_value);
+  person_->get_immune_system()->set_latest_immune_value(immune_value);
   person_->get_immune_system()->set_increase(false);
 
   // 9. Set biting rate
@@ -142,9 +140,7 @@ TEST_F(PersonGenerateIndividualTest, InitializePersonLikePopulationGenerateIndiv
   ASSERT_EQ(person_->get_host_state(), Person::SUSCEPTIBLE);
   ASSERT_EQ(person_->get_age(), static_cast<uint>(age));
   ASSERT_NE(person_->get_immune_system(), nullptr);
-  ASSERT_NE(person_->get_immune_system()->immune_component(), nullptr);
-  ASSERT_DOUBLE_EQ(person_->get_immune_system()->immune_component()->get_current_value(),
-                   immune_value);
+  ASSERT_DOUBLE_EQ(person_->get_immune_system()->get_current_value(), immune_value);
   ASSERT_GT(person_->get_innate_relative_biting_rate(), 0.0);
   ASSERT_GT(person_->get_current_relative_biting_rate(), 0.0);
   ASSERT_GE(person_->get_moving_level(), 0);
