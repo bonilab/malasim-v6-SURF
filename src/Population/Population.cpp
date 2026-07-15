@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <memory>
+#include <stdexcept>
 
 #include "ClinicalUpdateFunction.h"
 #include "Configuration/Config.h"
@@ -383,7 +384,11 @@ void Population::generate_individual(int location, int age_class) {
   person->set_birthday(simulation_time_birthday);
 
   if (simulation_time_birthday > 0) {
-    spdlog::error("simulation_time_birthday have to be <= 0 when initializing population");
+    spdlog::error(
+        "simulation_time_birthday have to be <= 0 when initializing population "
+        "(age: {}, days_to_next_birthday: {}, simulation_time_birthday: {})",
+        person->get_age(), days_to_next_birthday, simulation_time_birthday);
+    throw std::runtime_error("simulation_time_birthday must be <= 0 when initializing population");
   }
 
   person->schedule_birthday_event(days_to_next_birthday);

@@ -66,7 +66,10 @@ public:
   [[nodiscard]] int get_current_year() const;
   [[nodiscard]] unsigned int get_current_day_of_month() const;
   [[nodiscard]] date::year_month_day get_ymd_after_months(int months) const;
-  [[nodiscard]] core::SimDay get_days_to_ymd(const date::year_month_day &ymd) const;
+  // Returns the signed number of days between the current calendar date and
+  // `ymd`. This is a raw calendar difference, not a simulation day: it is used
+  // to place birthdays up to ~120 years in the past, so it must stay 32-bit.
+  [[nodiscard]] int get_days_to_ymd(const date::year_month_day &ymd) const;
   [[nodiscard]] date::year_month_day get_ymd_after_days(int days) const;
   [[nodiscard]] std::time_t get_unix_time() const;
   [[nodiscard]] date::year_month_day get_calendar_date() const;
