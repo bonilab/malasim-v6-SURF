@@ -11,10 +11,10 @@
  * cell, and SpatialData::generate_locations() stores that cell's (row, col)
  * directly into Location::coordinate. The Euclidean distance between two
  * locations therefore depends only on (|dRow|, |dCol|), so the full n*n matrix
- * collapses to an (nRows x nCols) lookup table with *bit-identical* values.
+ * collapses to an (nRows x nCols) lookup table with bit-identical values.
  *
- * For a 277x308 raster with 50,745 valid cells that is 20.6 GB -> ~635 KB, and
- * the table then fits in cache instead of missing on every access.
+ * For a 277x308 raster with 50,745 valid cells, the distance values shrink from
+ * about 20.6 GB to about 683 KB. The location-to-grid mappings add about 406 KB.
  *
  * Location-based configurations use arbitrary lat/lon with a haversine distance
  * (Coordinate::calculate_distance_in_km), which does not quantize onto a grid.
@@ -27,13 +27,72 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
+#include <sstream>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "Spatial/Location/Location.h"
 
 class LocationPairTable {
 public:
+  /*
+   * Lightweight, non-owning access to one source row.
+   *
+   * In grid mode this stores the source cell once, then computes only the
+   * destination offset for operator[]. This avoids materialising a temporary
+   * N-element row and then reading it again in the movement model.
+   *
+   * A RowView remains valid while its LocationPairTable remains alive and is not
+   * modified. It owns no memory and is safe for the current serial circulation
+   * loop.
+   */
+  class RowView {
+  public:
+    RowView() = default;
+
+    [[nodiscard]] double operator[](size_t to) const noexcept {
+      // Discriminates on the mode, not on dense_row_ != nullptr: a dense row of
+      // length zero yields data() == nullptr, which would silently divert to the
+      // grid branch and dereference a null lut_.
+      if (!grid_) { return dense_row_[to]; }
+
+      const int32_t d_row = std::abs(from_row_ - grid_row_[to]);
+      const int32_t d_col = std::abs(from_col_ - grid_col_[to]);
+      return lut_[(static_cast<size_t>(d_row) * lut_cols_) + d_col];
+    }
+
+    [[nodiscard]] size_t size() const noexcept { return size_; }
+
+  private:
+    friend class LocationPairTable;
+
+    RowView(const double* lut, const int32_t* grid_row, const int32_t* grid_col,
+            int32_t lut_cols, int32_t from_row, int32_t from_col, size_t size)
+        : lut_(lut),
+          grid_row_(grid_row),
+          grid_col_(grid_col),
+          lut_cols_(lut_cols),
+          from_row_(from_row),
+          from_col_(from_col),
+          size_(size),
+          grid_(true) {}
+
+    RowView(const double* dense_row, size_t size) : dense_row_(dense_row), size_(size) {}
+
+    const double* lut_{nullptr};
+    const int32_t* grid_row_{nullptr};
+    const int32_t* grid_col_{nullptr};
+    const double* dense_row_{nullptr};
+    int32_t lut_cols_{0};
+    int32_t from_row_{0};
+    int32_t from_col_{0};
+    size_t size_{0};
+    bool grid_{false};
+  };
+
   LocationPairTable() = default;
 
   /*
@@ -44,7 +103,7 @@ public:
    * cell_size and of the coordinate delta, so results are bit-identical and RNG
    * streams are unaffected.
    */
-  static LocationPairTable make_grid_distances(const std::vector<Spatial::Location> &location_db,
+  static LocationPairTable make_grid_distances(const std::vector<Spatial::Location>& location_db,
                                                float cell_size) {
     LocationPairTable table;
     table.grid_mode_ = true;
@@ -89,8 +148,7 @@ public:
 
   /*
    * Derive a second table whose values are func(distance), preserving the
-   * compact representation. Used for the Marshall / BurkinaFaso kernels, which
-   * are pure functions of distance and so collapse identically.
+   * compact representation. Used to precompute movement-model distance terms.
    */
   template <typename Func>
   [[nodiscard]] LocationPairTable map(Func func) const {
@@ -114,50 +172,93 @@ public:
     return table;
   }
 
+  /*
+   * Derive func(distance) with every zero-distance pair forced to exactly 0.0,
+   * so a movement model can use `NumberHelpers::is_zero(value)` as its skip test
+   * and never touch the distance row at all.
+   *
+   * The sentinel is only sound while no pair at a genuinely non-zero distance
+   * maps to a value that is_zero() would also catch. If that ever happened the
+   * model would silently drop a destination the unpatched code kept, feeding
+   * random_multinomial a different weight vector and desynchronising the RNG
+   * stream from that day on -- a divergence that would surface as unexplained
+   * trajectory differences, not as a crash. So check it here, once, at startup,
+   * and refuse to run rather than corrupt the stream.
+   *
+   * The check is conservative in grid mode: it covers every (dRow, dCol) the
+   * table can express, including deltas no actual pair of locations realises.
+   */
+  template <typename Func>
+  [[nodiscard]] LocationPairTable map_with_zero_sentinel(Func func,
+                                                         const std::string &context) const {
+    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+    const auto reads_as_zero = [](double value) { return std::fabs(value) < kEpsilon; };
+
+    LocationPairTable table = map([&](double distance) -> double {
+      if (reads_as_zero(distance)) { return 0.0; }
+      return func(distance);
+    });
+
+    const auto verify = [&](double distance, double value) {
+      if (reads_as_zero(distance) || !reads_as_zero(value)) { return; }
+      std::ostringstream message;
+      message << context << ": the zero sentinel is ambiguous. A pair at distance " << distance
+              << " maps to " << value
+              << ", which is_zero() cannot distinguish from the zero-distance sentinel (epsilon "
+              << kEpsilon
+              << "). The movement model would silently drop that destination and desynchronise "
+                 "the RNG stream. Check the model parameters against the raster extent.";
+      throw std::runtime_error(message.str());
+    };
+
+    if (grid_mode_) {
+      for (size_t i = 0; i < lut_.size(); ++i) { verify(lut_[i], table.lut_[i]); }
+    } else {
+      for (size_t i = 0; i < dense_.size(); ++i) {
+        for (size_t j = 0; j < dense_[i].size(); ++j) { verify(dense_[i][j], table.dense_[i][j]); }
+      }
+    }
+    return table;
+  }
+
   [[nodiscard]] bool empty() const { return size_ == 0; }
   [[nodiscard]] size_t size() const { return size_; }
   [[nodiscard]] bool is_grid() const { return grid_mode_; }
 
-  [[nodiscard]] double at(int from, int to) const {
+  [[nodiscard]] RowView row_view(int from) const noexcept {
     if (grid_mode_) {
-      const int32_t d_row = std::abs(grid_row_[from] - grid_row_[to]);
-      const int32_t d_col = std::abs(grid_col_[from] - grid_col_[to]);
-      return lut_[(static_cast<size_t>(d_row) * lut_cols_) + d_col];
+      return RowView(lut_.data(), grid_row_.data(), grid_col_.data(), lut_cols_, grid_row_[from],
+                     grid_col_[from], size_);
     }
-    return dense_[from][to];
+    return RowView(dense_[from].data(), dense_[from].size());
+  }
+
+  [[nodiscard]] double at(int from, int to) const noexcept {
+    return row_view(from)[static_cast<size_t>(to)];
   }
 
   /*
-   * Materialise row `from`.
+   * Materialise row `from` for compatibility and testing.
    *
-   * WARNING: in grid mode the returned reference points at an internal scratch
-   * buffer and is invalidated by the next call to row() on this object. Callers
-   * only ever need one row at a time (Model::daily_update drives circulation
-   * location-by-location, serially), but do not retain the reference. Not
-   * thread-safe; if circulation is ever parallelised, give each worker its own
-   * buffer.
+   * Performance-sensitive movement code should use row_view(), which avoids the
+   * extra full-row generation, write, and reread.
    */
-  [[nodiscard]] const std::vector<double> &row(int from) const {
+  [[nodiscard]] const std::vector<double>& row(int from) const {
     if (!grid_mode_) { return dense_[from]; }
     row_buffer_.resize(size_);
-    const int32_t from_row = grid_row_[from];
-    const int32_t from_col = grid_col_[from];
-    for (size_t to = 0; to < size_; ++to) {
-      const int32_t d_row = std::abs(from_row - grid_row_[to]);
-      const int32_t d_col = std::abs(from_col - grid_col_[to]);
-      row_buffer_[to] = lut_[(static_cast<size_t>(d_row) * lut_cols_) + d_col];
-    }
+    const auto view = row_view(from);
+    for (size_t to = 0; to < size_; ++to) { row_buffer_[to] = view[to]; }
     return row_buffer_;
   }
 
-  // Resident footprint, excluding the scratch row buffer.
+  // Resident footprint, excluding the compatibility scratch row buffer.
   [[nodiscard]] size_t memory_bytes() const {
     if (grid_mode_) {
       return (lut_.size() * sizeof(double)) + (grid_row_.size() * sizeof(int32_t))
              + (grid_col_.size() * sizeof(int32_t));
     }
     size_t bytes = 0;
-    for (const auto &row : dense_) { bytes += row.size() * sizeof(double); }
+    for (const auto& row : dense_) { bytes += row.size() * sizeof(double); }
     return bytes;
   }
 

@@ -339,21 +339,22 @@ public:
       spatial_model_ = std::make_unique<Spatial::BarabasiSM>(
           spatial_model_settings_.get_barabasi_sm().get_r_g_0(),
           spatial_model_settings_.get_barabasi_sm().get_beta_r(),
-          spatial_model_settings_.get_barabasi_sm().get_kappa());
+          spatial_model_settings_.get_barabasi_sm().get_kappa(), &spatial_distance);
     } else if (spatial_model_settings_.get_name() == "Wesolowski") {
       spdlog::info("Processing WesolowskiSM");
       spatial_model_ = std::make_unique<Spatial::WesolowskiSM>(
           spatial_model_settings_.get_wesolowski_sm().get_kappa(),
           spatial_model_settings_.get_wesolowski_sm().get_alpha(),
           spatial_model_settings_.get_wesolowski_sm().get_beta(),
-          spatial_model_settings_.get_wesolowski_sm().get_gamma());
+          spatial_model_settings_.get_wesolowski_sm().get_gamma(), &spatial_distance);
     } else if (spatial_model_settings_.get_name() == "WesolowskiSurface") {
       spdlog::info("Processing WesolowskiSurfaceSM");
       spatial_model_ = std::make_unique<Spatial::WesolowskiSurfaceSM>(
           spatial_model_settings_.get_wesolowski_surface_sm().get_kappa(),
           spatial_model_settings_.get_wesolowski_surface_sm().get_alpha(),
           spatial_model_settings_.get_wesolowski_surface_sm().get_beta(),
-          spatial_model_settings_.get_wesolowski_surface_sm().get_gamma(), number_of_locations);
+          spatial_model_settings_.get_wesolowski_surface_sm().get_gamma(), number_of_locations,
+          &spatial_distance);
     } else if (spatial_model_settings_.get_name() == "Marshall") {
       spdlog::info("Processing MarshallSM");
       spatial_model_ = std::make_unique<Spatial::MarshallSM>(

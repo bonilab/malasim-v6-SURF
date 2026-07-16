@@ -3,10 +3,10 @@
 #include "Simulation/Model.h"
 
 void Spatial::BurkinaFasoSM::prepare() {
-  // Allow the work to be done
   prepare_kernel();
   spdlog::info("Kernel prepared for BurkinaFasoSM, {} locations, {:.1f} MB", kernel_.size(),
                kernel_.memory_bytes() / 1048576.0);
+
   travel_.clear();
   if (Model::get_spatial_data() != nullptr) {
     AscFile* travel_raster =
@@ -21,60 +21,81 @@ void Spatial::BurkinaFasoSM::prepare() {
   } else {
     spdlog::warn("BurkinaFasoSM: no spatial data found, surface travel not prepared.");
   }
+
+  prepare_districts();
 }
 
 void Spatial::BurkinaFasoSM::prepare_kernel() {
-  // Prepare the kernel object
-  spdlog::info("Preparing kernel for BurkinaFasoSM, number of locations: {}", number_of_locations_);
+  if (spatial_distance_ == nullptr) {
+    throw std::runtime_error(fmt::format("{} called without spatial distances", __FUNCTION__));
+  }
+
+  spdlog::info("Preparing kernel for BurkinaFasoSM, number of locations: {}",
+               number_of_locations_);
   const double rho = rho_;
   const double alpha = alpha_;
-  kernel_ = spatial_distance_->map(
-      [rho, alpha](double distance) { return std::pow(1 + (distance / rho), (-alpha)); });
+  kernel_ = spatial_distance_->map_with_zero_sentinel(
+      [rho, alpha](double distance) { return std::pow(1.0 + (distance / rho), -alpha); },
+      "BurkinaFasoSM kernel");
 }
 
-// TODO: review this as it seems to be not efficient
+void Spatial::BurkinaFasoSM::prepare_districts() {
+  // The destination loop used to call get_admin_unit("district", destination),
+  // which hashes a std::string and looks it up in a map, once per destination.
+  // The mapping is fixed for the whole run, so resolve it here instead.
+  has_district_level_ = false;
+  district_by_location_.clear();
+
+  if (Model::get_spatial_data() == nullptr
+      || !Model::get_spatial_data()->has_admin_level("district")) {
+    spdlog::info("BurkinaFasoSM: no district admin level, capital penalty will not be applied.");
+    return;
+  }
+
+  district_by_location_.resize(number_of_locations_);
+  for (uint64_t location = 0; location < number_of_locations_; location++) {
+    district_by_location_[location] =
+        Model::get_spatial_data()->get_admin_unit("district", static_cast<int>(location));
+  }
+  has_district_level_ = true;
+  spdlog::info("BurkinaFasoSM: cached district for {} locations.", number_of_locations_);
+}
+
 DoubleVector Spatial::BurkinaFasoSM::get_v_relative_out_movement_to_destination(
-    const int &from_location, const int &number_of_locations,
-    const DoubleVector &relative_distance_vector,
-    const IntVector &v_number_of_residents_by_location) const {
-  // Dependent objects should have been created already, so throw an exception
-  // if they are not
+    const int& from_location, const int& number_of_locations,
+    const IntVector& v_number_of_residents_by_location) const {
   if (kernel_.empty()) {
     throw std::runtime_error(fmt::format("{} called without kernel prepared", __FUNCTION__));
   }
 
-  // Note the population size
-  auto population = v_number_of_residents_by_location[from_location];
+  const double source_population_power =
+      std::pow(v_number_of_residents_by_location[from_location], tau_);
+  const auto kernel_row = kernel_.row_view(from_location);
+  const bool use_travel = travel_.size() == static_cast<size_t>(number_of_locations);
+  const double source_travel = use_travel ? travel_[from_location] : 0.0;
 
-  // Prepare the vector for results
-  std::vector<double> results(number_of_locations, 0.0);
-  for (auto destination = 0; destination < number_of_locations; destination++) {
-    // Continue if there is nothing to do
-    if (NumberHelpers::is_zero(relative_distance_vector[destination])) { continue; }
+  // If the source is not in the capital the penalty can never fire, so the
+  // per-destination district read is not needed at all.
+  const bool source_in_capital =
+      has_district_level_ && (district_by_location_[from_location] == capital_);
 
-    // Calculate the proportional probability
-    double probability = std::pow(population, tau_) * kernel_.at(from_location, destination);
+  DoubleVector results(number_of_locations, 0.0);
+  for (int destination = 0; destination < number_of_locations; ++destination) {
+    const double kernel_value = kernel_row[static_cast<size_t>(destination)];
+    if (NumberHelpers::is_zero(kernel_value)) { continue; }
 
-    // Adjust the probability by the friction surface
-    if (travel_.size() == number_of_locations) {
-      probability = probability / (1 + travel_[from_location] + travel_[destination]);
+    double probability = source_population_power * kernel_value;
+
+    if (use_travel) {
+      probability /= 1.0 + source_travel + travel_[destination];
     }
 
-    if (Model::get_spatial_data()->has_admin_level("district")) {
-      // Note the source district
-      auto source_district = Model::get_spatial_data()->get_admin_unit("district", from_location);
-      // If the source and the destination are both in the capital district,
-      // penalize the travel by 50%
-      if (source_district == capital_
-          && Model::get_spatial_data()->get_admin_unit("district", destination) == capital_) {
-        probability /= penalty_;
-      }
+    if (source_in_capital && district_by_location_[destination] == capital_) {
+      probability /= penalty_;
     }
 
     results[destination] = probability;
   }
 
-  // Done, return the results
   return results;
 }
-

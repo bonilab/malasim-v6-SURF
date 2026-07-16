@@ -77,11 +77,10 @@ TEST_F(BurkinaFasoSMTest, PrepareMethodWorks) {
 TEST_F(BurkinaFasoSMTest, CalculateMovementToSameLocation) {
   // Test that movement to same location is zero
   const int from_location = 0;
-  const std::vector<double> relative_distance_vector = {0.0, 10.0, 20.0};
   const std::vector<int> residents_by_location = {1000, 2000, 3000};
 
   auto movement = model->get_v_relative_out_movement_to_destination(
-      from_location, number_of_locations, relative_distance_vector, residents_by_location);
+      from_location, number_of_locations, residents_by_location);
 
   // Movement to same location should be 0
   EXPECT_DOUBLE_EQ(movement[0], 0.0);
@@ -90,11 +89,10 @@ TEST_F(BurkinaFasoSMTest, CalculateMovementToSameLocation) {
 TEST_F(BurkinaFasoSMTest, CalculateMovementPattern) {
   // Test the movement pattern calculation
   const int from_location = 0;
-  const std::vector<double> relative_distance_vector = {0.0, 10.0, 20.0};
   const std::vector<int> residents_by_location = {1000, 2000, 3000};
 
   auto movement = model->get_v_relative_out_movement_to_destination(
-      from_location, number_of_locations, relative_distance_vector, residents_by_location);
+      from_location, number_of_locations, residents_by_location);
 
   // Movement vector should have correct size
   EXPECT_EQ(movement.size(), number_of_locations);
