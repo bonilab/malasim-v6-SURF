@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Configuration/IConfigData.h"
+#include "Spatial/GIS/LocationPairTable.h"
 #include "Spatial/GIS/SpatialData.h"
 #include "Spatial/Location/Location.h"
 
@@ -49,12 +50,9 @@ public:
   [[nodiscard]] const std::string &get_mode() const { return mode_; }
   void set_mode(const std::string &value) { mode_ = value; }
 
-  [[nodiscard]] std::vector<std::vector<double>> &get_spatial_distance_matrix() {
-    return spatial_distance_matrix_;
-  }
-  void set_spatial_distance_matrix(const std::vector<std::vector<double>> &value) {
-    spatial_distance_matrix_ = value;
-  }
+  [[nodiscard]] LocationPairTable &get_spatial_distance() { return spatial_distance_; }
+  [[nodiscard]] const LocationPairTable &get_spatial_distance() const { return spatial_distance_; }
+  void set_spatial_distance(LocationPairTable value) { spatial_distance_ = std::move(value); }
 
   [[nodiscard]] size_t get_number_of_locations() const { return number_of_location_; }
   void set_number_of_locations(const size_t value) { number_of_location_ = value; }
@@ -81,7 +79,7 @@ private:
   // and combine with other data in the model to populate the right data
   YAML::Node node_;
 
-  std::vector<std::vector<double>> spatial_distance_matrix_;
+  LocationPairTable spatial_distance_;
   size_t number_of_location_{0};
   std::vector<Spatial::Location> location_db_;
   std::unique_ptr<SpatialData> spatial_data_{nullptr};

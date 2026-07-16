@@ -154,20 +154,19 @@ bool SpatialData::check_catalog(std::string &errors) {
 void SpatialData::generate_distances() const {
   // both db and distances belongs to spatial_settings
   auto &db = spatial_settings_->location_db();
-  auto &distances = spatial_settings_->get_spatial_distance_matrix();
 
-  auto locations = db.size();
-  distances.resize(static_cast<uint64_t>(locations));
-  for (std::size_t from = 0; from < locations; from++) {
-    distances[from].resize(static_cast<uint64_t>(locations));
-    for (std::size_t to = 0; to < locations; to++) {
-      distances[from][to] = std::sqrt(
-          std::pow(cell_size_ * (db[from].coordinate.latitude - db[to].coordinate.latitude), 2)
-          + std::pow(cell_size_ * (db[from].coordinate.longitude - db[to].coordinate.longitude),
-                     2));
-    }
-  }
-  spdlog::debug("Updated Euclidean distances using raster provided");
+  // Locations are one-per-raster-cell and their coordinates are the cell's
+  // (row, col), so every pairwise distance is a function of (|dRow|, |dCol|).
+  // LocationPairTable stores it as a lookup table over those deltas rather than
+  // as an n*n matrix; the values are bit-identical to the previous dense build.
+  spatial_settings_->set_spatial_distance(
+      LocationPairTable::make_grid_distances(db, cell_size_));
+
+  const auto locations = db.size();
+  const auto dense_bytes = locations * locations * sizeof(double);
+  const auto actual_bytes = spatial_settings_->get_spatial_distance().memory_bytes();
+  spdlog::info("Euclidean distances for {} locations stored in {:.1f} MB (dense would be {:.1f} GB)",
+               locations, actual_bytes / 1048576.0, dense_bytes / 1073741824.0);
 }
 
 void SpatialData::generate_locations(AscFile* reference) {

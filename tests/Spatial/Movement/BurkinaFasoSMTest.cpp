@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Simulation/Model.h"
+#include "Spatial/GIS/LocationPairTable.h"
 #include "Spatial/Movement/BurkinaFasoSM.h"
 #include "Utils/Cli.h"
 #include "Utils/TypeDef.h"
@@ -28,12 +29,15 @@ protected:
     penalty = 0.6;
     number_of_locations = 3;
 
-    // Create a simple distance matrix for testing
-    spatial_distance_matrix = {{0.0, 10.0, 20.0}, {10.0, 0.0, 15.0}, {20.0, 15.0, 0.0}};
+    // Create a simple distance matrix for testing. Location-based distances do
+    // not lie on a raster grid, so this uses the dense representation.
+    spatial_distance = LocationPairTable::make_dense(
+        {{0.0, 10.0, 20.0}, {10.0, 0.0, 15.0}, {20.0, 15.0, 0.0}});
 
-    // Create the model
+    // Create the model. The model borrows the table, which must outlive it;
+    // spatial_distance is declared before model, so it is destroyed after it.
     model = std::make_unique<Spatial::BurkinaFasoSM>(tau, alpha, rho, capital, penalty,
-                                                     number_of_locations, spatial_distance_matrix);
+                                                     number_of_locations, &spatial_distance);
 
     // Prepare the model
     model->prepare();
@@ -52,7 +56,7 @@ protected:
   double capital;
   double penalty;
   int number_of_locations;
-  std::vector<std::vector<double>> spatial_distance_matrix;
+  LocationPairTable spatial_distance;
   std::unique_ptr<Spatial::BurkinaFasoSM> model;
 };
 

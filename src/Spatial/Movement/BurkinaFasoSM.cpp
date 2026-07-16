@@ -5,8 +5,8 @@
 void Spatial::BurkinaFasoSM::prepare() {
   // Allow the work to be done
   prepare_kernel();
-  spdlog::info("Kernel prepared for BurkinaFasoSM, kernel size x,y: {} - {}", kernel_.size(),
-               kernel_[0].size());
+  spdlog::info("Kernel prepared for BurkinaFasoSM, {} locations, {:.1f} MB", kernel_.size(),
+               kernel_.memory_bytes() / 1048576.0);
   travel_.clear();
   if (Model::get_spatial_data() != nullptr) {
     AscFile* travel_raster =
@@ -26,19 +26,10 @@ void Spatial::BurkinaFasoSM::prepare() {
 void Spatial::BurkinaFasoSM::prepare_kernel() {
   // Prepare the kernel object
   spdlog::info("Preparing kernel for BurkinaFasoSM, number of locations: {}", number_of_locations_);
-  kernel_.resize(number_of_locations_);
-
-  // Iterate through all the locations and calculate the kernel
-  for (auto source = 0; source < number_of_locations_; source++) {
-    kernel_[source].resize(number_of_locations_);
-    for (auto destination = 0; destination < number_of_locations_; destination++) {
-      // spdlog::info(
-      //     "Calculating kernel for source {} and destination {} spatial_distance {}",
-      //     source, destination, spatial_distance_matrix_[source][destination]);
-      kernel_[source][destination] =
-          std::pow(1 + (spatial_distance_matrix_[source][destination] / rho_), (-alpha_));
-    }
-  }
+  const double rho = rho_;
+  const double alpha = alpha_;
+  kernel_ = spatial_distance_->map(
+      [rho, alpha](double distance) { return std::pow(1 + (distance / rho), (-alpha)); });
 }
 
 // TODO: review this as it seems to be not efficient
@@ -62,7 +53,7 @@ DoubleVector Spatial::BurkinaFasoSM::get_v_relative_out_movement_to_destination(
     if (NumberHelpers::is_zero(relative_distance_vector[destination])) { continue; }
 
     // Calculate the proportional probability
-    double probability = std::pow(population, tau_) * kernel_[from_location][destination];
+    double probability = std::pow(population, tau_) * kernel_.at(from_location, destination);
 
     // Adjust the probability by the friction surface
     if (travel_.size() == number_of_locations) {

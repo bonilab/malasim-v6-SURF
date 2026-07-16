@@ -12,6 +12,7 @@
 
 #include <utility>
 
+#include "Spatial/GIS/LocationPairTable.h"
 #include "Spatial/SpatialModel.hxx"
 #include "Utils/TypeDef.h"
 
@@ -45,26 +46,30 @@ private:
   double capital_;
   double penalty_;
   uint64_t number_of_locations_;
-  std::vector<std::vector<double>> spatial_distance_matrix_;
+
+  // Borrowed, owned by SpatialSettings and outlives this object. Previously this
+  // was a by-value copy of the whole n*n matrix.
+  const LocationPairTable* spatial_distance_{nullptr};
 
   // These variables will be computed when the prepare method is called
   std::vector<double> travel_;
-  std::vector<std::vector<double>> kernel_;
+  // The kernel is a pure function of distance, so it shares the compact
+  // representation of the distance table instead of being a second n*n array.
+  LocationPairTable kernel_;
 
   // Precompute the kernel function for the movement model
   void prepare_kernel();
 
 public:
   explicit BurkinaFasoSM(double tau, double alpha, double rho, double capital, double penalty,
-                         int number_of_locations,
-                         std::vector<std::vector<double>> spatial_distance_matrix)
+                         int number_of_locations, const LocationPairTable* spatial_distance)
       : tau_(tau),
         alpha_(alpha),
         rho_(rho),
         capital_(capital),
         penalty_(penalty),
         number_of_locations_(number_of_locations),
-        spatial_distance_matrix_(std::move(spatial_distance_matrix)) {}
+        spatial_distance_(spatial_distance) {}
 
   // Destructor can be removed or simplified since vectors handle cleanup automatically
   ~BurkinaFasoSM() override = default;

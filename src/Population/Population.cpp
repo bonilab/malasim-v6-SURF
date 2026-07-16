@@ -631,9 +631,8 @@ void Population::perform_circulation_from_location(const int from_location,
           .get_spatial_model()
           ->get_v_relative_out_movement_to_destination(
               from_location, static_cast<int>(Model::get_config()->number_of_locations()),
-              Model::get_config()
-                  ->get_spatial_settings()
-                  .get_spatial_distance_matrix()[from_location],
+              Model::get_config()->get_spatial_settings().get_spatial_distance().row(
+                  from_location),
               circulation_context);
 
   std::vector<unsigned int> v_num_leavers_to_destination(

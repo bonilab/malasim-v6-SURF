@@ -8,6 +8,7 @@
 #ifndef MARSHALLSM_HXX
 #define MARSHALLSM_HXX
 
+#include "Spatial/GIS/LocationPairTable.h"
 #include "Spatial/SpatialModel.hxx"
 #include "Utils/Helpers/NumberHelpers.h"
 #include "Utils/TypeDef.h"
@@ -36,45 +37,32 @@ public:
   double alpha_;
   double log_rho_;
   int number_of_locations_;
-  std::vector<std::vector<double>> spatial_distance_matrix_;
 
-  // Pointer to the kernel object since it only needs to be computed once
-  double** kernel = nullptr;
+  // Borrowed, owned by SpatialSettings and outlives this object. Previously this
+  // was a by-value copy of the whole n*n matrix.
+  const LocationPairTable* spatial_distance_{nullptr};
+
+  // The kernel is a pure function of distance, so it shares the compact
+  // representation of the distance table instead of being a second n*n array.
+  LocationPairTable kernel_;
 
   // Precompute the kernel function for the movement model
   void prepare_kernel() {
-    // Allocate the memory
-    kernel = new double*[number_of_locations_];
-
-    // Iterate through all  the locations and calculate the kernel
-    for (auto source = 0; source < number_of_locations_; source++) {
-      kernel[source] = new double[number_of_locations_];
-      for (auto destination = 0; destination < number_of_locations_;
-           destination++) {
-        kernel[source][destination] = std::pow(
-            1 + (spatial_distance_matrix_[source][destination] / log_rho_),
-            (-alpha_));
-      }
-    }
+    const double log_rho = log_rho_;
+    const double alpha = alpha_;
+    kernel_ = spatial_distance_->map(
+        [log_rho, alpha](double distance) { return std::pow(1 + (distance / log_rho), (-alpha)); });
   }
 
-  explicit MarshallSM(double tau, double alpha, double log_rho,
-                      int number_of_locations,
-                      std::vector<std::vector<double>> spatial_distance_matrix)
+  explicit MarshallSM(double tau, double alpha, double log_rho, int number_of_locations,
+                      const LocationPairTable* spatial_distance)
       : tau_(tau),
         alpha_(alpha),
         log_rho_(log_rho),
         number_of_locations_(number_of_locations),
-        spatial_distance_matrix_(spatial_distance_matrix) {}
+        spatial_distance_(spatial_distance) {}
 
-  ~MarshallSM() override {
-    if (kernel != nullptr) {
-      for (auto ndx = 0; ndx < number_of_locations_; ndx++) {
-        delete kernel[ndx];
-      }
-      delete kernel;
-    }
-  }
+  ~MarshallSM() override = default;
 
   void prepare() override { prepare_kernel(); }
 
@@ -96,8 +84,7 @@ public:
       }
 
       // Calculate the proportional probability
-      double probability =
-          std::pow(population, tau_) * kernel[from_location][destination];
+      double probability = std::pow(population, tau_) * kernel_.at(from_location, destination);
       results[destination] = probability;
     }
 

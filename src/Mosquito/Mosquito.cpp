@@ -46,8 +46,8 @@ void Mosquito::infect_new_cohort_at_location(Config* config,
   const auto loc = location;
   if (population->all_alive_persons_by_location()[loc].empty()) { return; }
 
-  spdlog::trace("Day {} ifr = {}", Model::get_scheduler()->current_time(),
-                location_db[loc].mosquito_ifr);
+  // spdlog::trace("Day {} ifr = {}", Model::get_scheduler()->current_time(),
+  //               location_db[loc].mosquito_ifr);
   if (population->current_force_of_infection_by_location()[loc] <= 0) {
     for (int i = 0; i < location_db[loc].mosquito_size; ++i) {
       genotypes_table[tracking_index][loc][i] = nullptr;

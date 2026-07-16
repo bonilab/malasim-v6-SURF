@@ -66,7 +66,11 @@ void LocationBasedProcessor::process_config() {
 
   // assign back to spatial settings
   get_spatial_settings()->set_location_db(location_db);
-  get_spatial_settings()->set_spatial_distance_matrix(spatial_distance_matrix);
+  // Location-based coordinates are arbitrary lat/lon measured with haversine, so
+  // they do not quantize onto a grid; keep the dense representation here. These
+  // configurations have few locations, so the n*n cost is not a concern.
+  get_spatial_settings()->set_spatial_distance(
+      LocationPairTable::make_dense(std::move(spatial_distance_matrix)));
   get_spatial_settings()->set_number_of_locations(number_of_location);
 
   // ensure spatial_data and its admin_level_manager are prepared
