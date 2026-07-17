@@ -45,6 +45,12 @@ public:
   }
 
   [[nodiscard]] double get_kappa() const { return kappa_; }
+  void set_kappa(const double &value) {
+    kappa_ = value;
+#ifdef USE_DISTANCE_LUT
+    movement_weight_ = LocationPairTable{};
+#endif
+  }
 
   explicit BarabasiSM(double r_g_0, double beta_r, double kappa)
       : r_g_0_(r_g_0), beta_r_(beta_r), kappa_(kappa) {}

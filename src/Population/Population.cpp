@@ -635,8 +635,7 @@ void Population::perform_circulation_from_location(const int from_location,
       Model::get_config()->get_spatial_settings().get_spatial_distance_matrix()[from_location];
 #endif
 
-  DoubleVector v_relative_outmovement_to_destination(Model::get_config()->number_of_locations(), 0);
-  v_relative_outmovement_to_destination =
+  auto v_relative_outmovement_to_destination =
       Model::get_config()
           ->get_movement_settings()
           .get_spatial_model()

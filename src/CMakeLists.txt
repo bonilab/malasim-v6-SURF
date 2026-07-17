@@ -7,7 +7,7 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 option(ENABLE_TRAVEL_TRACKING "Enable tracking of individual travel data and generating travel reports" OFF)
-option(USE_DISTANCE_LUT "Use compact grid-distance lookup tables and precomputed movement kernels" OFF)
+option(USE_DISTANCE_LUT "Use compact grid-distance lookup tables and precomputed movement kernels" ON)
 
 # include_directories(
 #   ${PROJECT_SOURCE_DIR}/src
