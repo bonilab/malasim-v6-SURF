@@ -11,6 +11,9 @@
 
 #include <cmath>
 
+#ifdef USE_DISTANCE_LUT
+#include "Spatial/GIS/LocationPairTable.h"
+#endif
 #include "Spatial/SpatialModel.hxx"
 #include "Utils/Helpers/NumberHelpers.h"
 #include "Utils/TypeDef.h"
@@ -18,13 +21,13 @@
 namespace Spatial {
 class WesolowskiSurfaceSM : public SpatialModel {
 public:
-    // Disallow copy
-    WesolowskiSurfaceSM(const WesolowskiSurfaceSM&) = delete;
-    WesolowskiSurfaceSM& operator=(const WesolowskiSurfaceSM&) = delete;
+  // Disallow copy
+  WesolowskiSurfaceSM(const WesolowskiSurfaceSM&) = delete;
+  WesolowskiSurfaceSM& operator=(const WesolowskiSurfaceSM&) = delete;
 
-    // Disallow move
-    WesolowskiSurfaceSM(WesolowskiSurfaceSM&&) = delete;
-    WesolowskiSurfaceSM& operator=(WesolowskiSurfaceSM&&) = delete;
+  // Disallow move
+  WesolowskiSurfaceSM(WesolowskiSurfaceSM&&) = delete;
+  WesolowskiSurfaceSM& operator=(WesolowskiSurfaceSM&&) = delete;
 
   double kappa_;
   double alpha_;
@@ -44,7 +47,12 @@ public:
   void set_beta(const double &value) { beta_ = value; }
 
   [[nodiscard]] double get_gamma() const { return gamma_; }
-  void set_gamma(const double &value) { gamma_ = value; }
+  void set_gamma(const double &value) {
+    gamma_ = value;
+#ifdef USE_DISTANCE_LUT
+    distance_power_ = LocationPairTable{};
+#endif
+  }
 
   explicit WesolowskiSurfaceSM(double kappa, double alpha, double beta, double gamma,
                                int number_of_locations)
@@ -58,33 +66,16 @@ public:
 
   void prepare() override;
 
+  // Public API intentionally remains identical to 500054a in both build modes.
   [[nodiscard]] DoubleVector get_v_relative_out_movement_to_destination(
       const int &from_location, const int &number_of_locations,
       const DoubleVector &relative_distance_vector,
-      const IntVector &v_number_of_residents_by_location) const override {
-    // Check if travel surface is prepared
-    if (travel.empty()) {
-      throw std::runtime_error(
-          fmt::format("{} called without travel surface prepared", __FUNCTION__));
-    }
-    std::vector<double> results(number_of_locations, 0);
-    for (int destination = 0; destination < number_of_locations; destination++) {
-      if (NumberHelpers::is_zero(relative_distance_vector[destination])) {
-        results[destination] = 0;
-      } else {
-        // Gravity model:
-        // N_{ij}=\frac{pop^\alpha_ipop^\beta_j}{d(i,j)^\gamma}\kappa
-        auto probability = kappa_
-                           * (pow(v_number_of_residents_by_location[from_location], alpha_)
-                              * pow(v_number_of_residents_by_location[destination], beta_))
-                           / (pow(relative_distance_vector[destination], gamma_));
+      const IntVector &v_number_of_residents_by_location) const override;
 
-        // Travel penalty: Pr(j|i)' = Pr(j|i) / (1 + t_i + t_j)
-        results[destination] = probability / (1 + travel[from_location] + travel[destination]);
-      }
-    }
-    return results;
-  }
+private:
+#ifdef USE_DISTANCE_LUT
+  LocationPairTable distance_power_;
+#endif
 };
 }  // namespace Spatial
 

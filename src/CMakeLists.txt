@@ -7,6 +7,7 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 option(ENABLE_TRAVEL_TRACKING "Enable tracking of individual travel data and generating travel reports" OFF)
+option(USE_DISTANCE_LUT "Use compact grid-distance lookup tables and precomputed movement kernels" OFF)
 
 # include_directories(
 #   ${PROJECT_SOURCE_DIR}/src
@@ -36,6 +37,11 @@ add_library(MalaSimCore STATIC
     ${MALASIM_CORE_SOURCES}
 
 )
+
+if(USE_DISTANCE_LUT)
+  message(STATUS "Distance lookup-table feature is enabled")
+  target_compile_definitions(MalaSimCore PUBLIC USE_DISTANCE_LUT)
+endif()
 
 if(ENABLE_TRAVEL_TRACKING)
   message(STATUS "Travel tracking feature is enabled")

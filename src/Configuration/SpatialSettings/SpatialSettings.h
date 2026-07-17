@@ -7,9 +7,13 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Configuration/IConfigData.h"
+#ifdef USE_DISTANCE_LUT
+#include "Spatial/GIS/LocationPairTable.h"
+#endif
 #include "Spatial/GIS/SpatialData.h"
 #include "Spatial/Location/Location.h"
 
@@ -52,9 +56,22 @@ public:
   [[nodiscard]] std::vector<std::vector<double>> &get_spatial_distance_matrix() {
     return spatial_distance_matrix_;
   }
+  [[nodiscard]] const std::vector<std::vector<double>> &get_spatial_distance_matrix() const {
+    return spatial_distance_matrix_;
+  }
   void set_spatial_distance_matrix(const std::vector<std::vector<double>> &value) {
     spatial_distance_matrix_ = value;
   }
+
+#ifdef USE_DISTANCE_LUT
+  [[nodiscard]] LocationPairTable &get_spatial_distance_lut() { return spatial_distance_lut_; }
+  [[nodiscard]] const LocationPairTable &get_spatial_distance_lut() const {
+    return spatial_distance_lut_;
+  }
+  void set_spatial_distance_lut(LocationPairTable value) {
+    spatial_distance_lut_ = std::move(value);
+  }
+#endif
 
   [[nodiscard]] size_t get_number_of_locations() const { return number_of_location_; }
   void set_number_of_locations(const size_t value) { number_of_location_ = value; }
@@ -81,7 +98,12 @@ private:
   // and combine with other data in the model to populate the right data
   YAML::Node node_;
 
+  // Retained unchanged for source/API compatibility. In USE_DISTANCE_LUT grid mode this
+  // remains empty; location-based configurations still populate it because they are small.
   std::vector<std::vector<double>> spatial_distance_matrix_;
+#ifdef USE_DISTANCE_LUT
+  LocationPairTable spatial_distance_lut_;
+#endif
   size_t number_of_location_{0};
   std::vector<Spatial::Location> location_db_;
   std::unique_ptr<SpatialData> spatial_data_{nullptr};

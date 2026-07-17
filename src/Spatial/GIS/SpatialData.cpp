@@ -152,10 +152,25 @@ bool SpatialData::check_catalog(std::string &errors) {
 }
 
 void SpatialData::generate_distances() const {
-  // both db and distances belongs to spatial_settings
+  // Both the location database and distance storage belong to SpatialSettings.
   auto &db = spatial_settings_->location_db();
-  auto &distances = spatial_settings_->get_spatial_distance_matrix();
 
+#ifdef USE_DISTANCE_LUT
+  // Grid locations store raster (row, column) coordinates. Distance therefore
+  // depends only on (abs(delta_row), abs(delta_column)), allowing an O(rows*cols)
+  // lookup table instead of an O(locations^2) dense matrix.
+  spatial_settings_->get_spatial_distance_matrix().clear();
+  spatial_settings_->set_spatial_distance_lut(
+      LocationPairTable::make_grid_distances(db, cell_size_));
+
+  const auto locations = db.size();
+  const auto dense_bytes = locations * locations * sizeof(double);
+  const auto lut_bytes = spatial_settings_->get_spatial_distance_lut().memory_bytes();
+  spdlog::info(
+      "Euclidean distances for {} locations stored in {:.1f} MB (dense would be {:.1f} GB)",
+      locations, lut_bytes / 1048576.0, dense_bytes / 1073741824.0);
+#else
+  auto &distances = spatial_settings_->get_spatial_distance_matrix();
   auto locations = db.size();
   distances.resize(static_cast<uint64_t>(locations));
   for (std::size_t from = 0; from < locations; from++) {
@@ -168,6 +183,7 @@ void SpatialData::generate_distances() const {
     }
   }
   spdlog::debug("Updated Euclidean distances using raster provided");
+#endif
 }
 
 void SpatialData::generate_locations(AscFile* reference) {
