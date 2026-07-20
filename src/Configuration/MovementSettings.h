@@ -238,8 +238,8 @@ public:
       if (value >= 2) {
         number_of_moving_levels_ = value;
       } else {
-        throw std::runtime_error(
-            "number_of_moving_levels must be at least 2 (got " + std::to_string(value) + ")");
+        throw std::runtime_error("number_of_moving_levels must be at least 2 (got "
+                                 + std::to_string(value) + ")");
       }
     }
 
@@ -330,9 +330,7 @@ public:
 
   void process_config() override {}
 
-  void process_config_using_spatial_settings(
-      const std::vector<std::vector<double>> &spatial_distance_matrix,
-      const size_t number_of_locations) {
+  void process_config_using_spatial_settings(const size_t number_of_locations) {
     spdlog::info("Processing MovementSettings");
     if (spatial_model_settings_.get_name() == "Barabasi") {
       spdlog::info("Processing BarabasiSM");
@@ -359,8 +357,7 @@ public:
       spatial_model_ = std::make_unique<Spatial::MarshallSM>(
           spatial_model_settings_.get_marshall_sm().get_tau(),
           spatial_model_settings_.get_marshall_sm().get_alpha(),
-          spatial_model_settings_.get_marshall_sm().get_log_rho(), number_of_locations,
-          spatial_distance_matrix);
+          spatial_model_settings_.get_marshall_sm().get_log_rho(), number_of_locations);
     } else if (spatial_model_settings_.get_name() == "BurkinaFaso") {
       spdlog::info("Processing BurkinaFasoSM");
       spatial_model_ = std::make_unique<Spatial::BurkinaFasoSM>(
@@ -368,8 +365,7 @@ public:
           spatial_model_settings_.get_burkina_faso_sm().get_alpha(),
           spatial_model_settings_.get_burkina_faso_sm().get_log_rho(),
           spatial_model_settings_.get_burkina_faso_sm().get_capital(),
-          spatial_model_settings_.get_burkina_faso_sm().get_penalty(), number_of_locations,
-          spatial_distance_matrix);
+          spatial_model_settings_.get_burkina_faso_sm().get_penalty(), number_of_locations);
     }
     // Circulation Info
     // calculate density and level value here

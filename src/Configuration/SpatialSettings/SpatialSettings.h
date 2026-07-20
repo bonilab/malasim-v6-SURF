@@ -7,9 +7,11 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Configuration/IConfigData.h"
+#include "Spatial/GIS/DistanceProvider.h"
 #include "Spatial/GIS/SpatialData.h"
 #include "Spatial/Location/Location.h"
 
@@ -49,11 +51,14 @@ public:
   [[nodiscard]] const std::string &get_mode() const { return mode_; }
   void set_mode(const std::string &value) { mode_ = value; }
 
-  [[nodiscard]] std::vector<std::vector<double>> &get_spatial_distance_matrix() {
-    return spatial_distance_matrix_;
+  [[nodiscard]] DistanceProvider* get_distance_provider() noexcept {
+    return distance_provider_.get();
   }
-  void set_spatial_distance_matrix(const std::vector<std::vector<double>> &value) {
-    spatial_distance_matrix_ = value;
+  [[nodiscard]] const DistanceProvider* get_distance_provider() const noexcept {
+    return distance_provider_.get();
+  }
+  void set_distance_provider(std::unique_ptr<DistanceProvider> value) {
+    distance_provider_ = std::move(value);
   }
 
   [[nodiscard]] size_t get_number_of_locations() const { return number_of_location_; }
@@ -81,7 +86,7 @@ private:
   // and combine with other data in the model to populate the right data
   YAML::Node node_;
 
-  std::vector<std::vector<double>> spatial_distance_matrix_;
+  std::unique_ptr<DistanceProvider> distance_provider_;
   size_t number_of_location_{0};
   std::vector<Spatial::Location> location_db_;
   std::unique_ptr<SpatialData> spatial_data_{nullptr};
@@ -227,7 +232,8 @@ struct convert<SpatialSettings::LocationBased> {
     rhs.population_size_by_location =
         std::move(node["population_size_by_location"].as<std::vector<int>>());
 
-    spdlog::info("Location based settings decoded successfully with {} locations", rhs.locations.size());
+    spdlog::info("Location based settings decoded successfully with {} locations",
+                 rhs.locations.size());
     spdlog::info("Total locations: {}", rhs.population_size_by_location.size());
     for (int loc = 0; loc < rhs.locations.size(); loc++) {
       spdlog::info("\tLocation {}: id={}, lat={}, lon={}, pop_size={}", loc, rhs.locations[loc].id,

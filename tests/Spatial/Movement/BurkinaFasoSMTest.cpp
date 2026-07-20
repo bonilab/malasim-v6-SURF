@@ -28,12 +28,9 @@ protected:
     penalty = 0.6;
     number_of_locations = 3;
 
-    // Create a simple distance matrix for testing
-    spatial_distance_matrix = {{0.0, 10.0, 20.0}, {10.0, 0.0, 15.0}, {20.0, 15.0, 0.0}};
-
     // Create the model
     model = std::make_unique<Spatial::BurkinaFasoSM>(tau, alpha, rho, capital, penalty,
-                                                     number_of_locations, spatial_distance_matrix);
+                                                     number_of_locations);
 
     // Prepare the model
     model->prepare();
@@ -52,7 +49,6 @@ protected:
   double capital;
   double penalty;
   int number_of_locations;
-  std::vector<std::vector<double>> spatial_distance_matrix;
   std::unique_ptr<Spatial::BurkinaFasoSM> model;
 };
 

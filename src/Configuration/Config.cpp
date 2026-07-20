@@ -268,7 +268,6 @@ void Config::process_configuration(const YAML::Node &config) {
   seasonality_settings_.process_config_using_number_of_locations(
       Model::get_spatial_data(), get_spatial_settings().get_number_of_locations());
   movement_settings_.process_config_using_spatial_settings(
-      get_spatial_settings().get_spatial_distance_matrix(),
       get_spatial_settings().get_number_of_locations());
   parasite_parameters_.process_config();
   immune_system_parameters_.process_config_with_parasite_density(

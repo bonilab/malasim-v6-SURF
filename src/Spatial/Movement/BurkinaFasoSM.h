@@ -12,7 +12,9 @@
 
 #include <utility>
 
+#include "Spatial/GIS/GridPairTable.h"
 #include "Spatial/SpatialModel.hxx"
+#include "Utils/Helpers/NumberHelpers.h"
 #include "Utils/TypeDef.h"
 
 namespace Spatial {
@@ -27,10 +29,16 @@ public:
   void set_tau(const double &value) { tau_ = value; }
 
   [[nodiscard]] double get_alpha() const { return alpha_; }
-  void set_alpha(const double &value) { alpha_ = value; }
+  void set_alpha(const double &value) {
+    alpha_ = value;
+    kernel_lut_ = GridPairTable{};
+  }
 
   [[nodiscard]] double get_rho() const { return rho_; }
-  void set_rho(const double &value) { rho_ = value; }
+  void set_rho(const double &value) {
+    rho_ = value;
+    kernel_lut_ = GridPairTable{};
+  }
 
   [[nodiscard]] double get_capital() const { return capital_; }
   void set_capital(const double &value) { capital_ = value; }
@@ -45,34 +53,32 @@ private:
   double capital_;
   double penalty_;
   uint64_t number_of_locations_;
-  std::vector<std::vector<double>> spatial_distance_matrix_;
 
-  // These variables will be computed when the prepare method is called
+  // These variables are computed when prepare() is called.
   std::vector<double> travel_;
-  std::vector<std::vector<double>> kernel_;
+  GridPairTable kernel_lut_;
+  bool has_district_level_{false};
+  std::vector<int> district_by_location_;
 
-  // Precompute the kernel function for the movement model
   void prepare_kernel();
+  void prepare_districts();
 
 public:
-  explicit BurkinaFasoSM(double tau, double alpha, double rho, double capital, double penalty,
-                         int number_of_locations,
-                         std::vector<std::vector<double>> spatial_distance_matrix)
-      : tau_(tau),
-        alpha_(alpha),
-        rho_(rho),
-        capital_(capital),
-        penalty_(penalty),
-        number_of_locations_(number_of_locations),
-        spatial_distance_matrix_(std::move(spatial_distance_matrix)) {}
+  explicit BurkinaFasoSM(double tau,
+                         double alpha,
+                         double rho,
+                         double capital,
+                         double penalty,
+                         int number_of_locations);
 
-  // Destructor can be removed or simplified since vectors handle cleanup automatically
   ~BurkinaFasoSM() override = default;
 
   void prepare() override;
 
+  // Public API intentionally remains identical to 500054a in both build modes.
   [[nodiscard]] DoubleVector get_v_relative_out_movement_to_destination(
-      const int &from_location, const int &number_of_locations,
+      const int &from_location,
+      const int &number_of_locations,
       const DoubleVector &relative_distance_vector,
       const IntVector &v_number_of_residents_by_location) const override;
 };

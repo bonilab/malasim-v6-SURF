@@ -624,17 +624,24 @@ void Population::perform_circulation_from_location(const int from_location,
       Model::get_random()->random_poisson(poisson_means);
   if (number_of_circulating_from_this_location == 0) { return; }
 
-  DoubleVector v_relative_outmovement_to_destination(Model::get_config()->number_of_locations(), 0);
-  v_relative_outmovement_to_destination =
+  // Location-based providers expose their existing dense row. Raster LUT
+  // providers return no dense row because movement models use their prepared
+  // compact kernels instead.
+  static const DoubleVector empty_relative_distance_vector;
+  const auto* distance_provider =
+      Model::get_config()->get_spatial_settings().get_distance_provider();
+  const auto* dense_row =
+      distance_provider == nullptr ? nullptr : distance_provider->dense_row(from_location);
+  const DoubleVector &relative_distance_vector =
+      dense_row == nullptr ? empty_relative_distance_vector : *dense_row;
+
+  auto v_relative_outmovement_to_destination =
       Model::get_config()
           ->get_movement_settings()
           .get_spatial_model()
           ->get_v_relative_out_movement_to_destination(
               from_location, static_cast<int>(Model::get_config()->number_of_locations()),
-              Model::get_config()
-                  ->get_spatial_settings()
-                  .get_spatial_distance_matrix()[from_location],
-              circulation_context);
+              relative_distance_vector, circulation_context);
 
   std::vector<unsigned int> v_num_leavers_to_destination(
       static_cast<uint64_t>(Model::get_config()->number_of_locations()));

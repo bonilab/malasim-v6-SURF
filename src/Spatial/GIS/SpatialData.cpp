@@ -152,22 +152,34 @@ bool SpatialData::check_catalog(std::string &errors) {
 }
 
 void SpatialData::generate_distances() const {
-  // both db and distances belongs to spatial_settings
+  // Both the location database and distance storage belong to SpatialSettings.
   auto &db = spatial_settings_->location_db();
-  auto &distances = spatial_settings_->get_spatial_distance_matrix();
 
-  auto locations = db.size();
-  distances.resize(static_cast<uint64_t>(locations));
-  for (std::size_t from = 0; from < locations; from++) {
-    distances[from].resize(static_cast<uint64_t>(locations));
-    for (std::size_t to = 0; to < locations; to++) {
-      distances[from][to] = std::sqrt(
-          std::pow(cell_size_ * (db[from].coordinate.latitude - db[to].coordinate.latitude), 2)
-          + std::pow(cell_size_ * (db[from].coordinate.longitude - db[to].coordinate.longitude),
-                     2));
+  auto provider = make_grid_distance_provider(db, cell_size_);
+  const auto locations = provider->size();
+
+  if (GRID_DISTANCE_BACKEND == GridDistanceBackend::Lut) {
+    const auto* lut = dynamic_cast<const GridLutDistanceProvider*>(provider.get());
+    if (lut == nullptr) {
+      throw std::logic_error(
+          "Raster-grid distance factory did not create the selected LUT backend");
     }
+
+    const auto dense_bytes = locations * locations * sizeof(double);
+    spdlog::info(
+        "Euclidean distances for {} raster locations stored in {:.1f} MB (dense would be {:.1f} "
+        "GB)",
+        locations, lut->memory_bytes() / 1048576.0, dense_bytes / 1073741824.0);
+  } else {
+    const auto* dense = dynamic_cast<const DenseGridDistanceProvider*>(provider.get());
+    if (dense == nullptr) {
+      throw std::logic_error(
+          "Raster-grid distance factory did not create the selected dense backend");
+    }
+    spdlog::debug("Updated Euclidean raster distances using the dense provider");
   }
-  spdlog::debug("Updated Euclidean distances using raster provided");
+
+  spatial_settings_->set_distance_provider(std::move(provider));
 }
 
 void SpatialData::generate_locations(AscFile* reference) {
@@ -487,4 +499,3 @@ void SpatialData::parse_complete() {
   // Clean up the temporary admin rasters map as it's no longer needed
   admin_rasters_.clear();
 }
-
