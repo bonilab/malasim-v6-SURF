@@ -28,7 +28,7 @@ namespace ImmuneSystemOverridePaths {
 }  // namespace ImmuneSystemOverridePaths
 
 // A single override set: a map from full config-path key to the override value.
-struct ImmuneSystemParameterCandidate {
+struct ImmuneSystemParametercalibration_id {
   std::map<std::string, double> overrides;
 
   [[nodiscard]] bool has(const std::string &path) const {
@@ -41,50 +41,50 @@ struct ImmuneSystemParameterCandidate {
   }
 };
 
-// Container for all override candidates and the index selecting which is used in simulation.
+// Container for all override calibration_ids and the index selecting which is used in simulation.
 class ImmuneSystemParameterOverrides {
 public:
-  [[nodiscard]] int get_used_in_simulation() const { return used_in_simulation_; }
-  void set_used_in_simulation(const int value) { used_in_simulation_ = value; }
+  [[nodiscard]] int get_chosen_calibration_id() const { return chosen_calibration_id_; }
+  void set_chosen_calibration_id(const int value) { chosen_calibration_id_ = value; }
 
   [[nodiscard]] bool get_random_selection() const { return random_selection_; }
   void set_random_selection(const bool value) { random_selection_ = value; }
 
-  [[nodiscard]] const std::map<int, ImmuneSystemParameterCandidate> &get_candidates() const {
-    return candidates_;
+  [[nodiscard]] const std::map<int, ImmuneSystemParametercalibration_id> &get_calibration_ids() const {
+    return calibration_ids_;
   }
-  void set_candidates(const std::map<int, ImmuneSystemParameterCandidate> &value) {
-    candidates_ = value;
-  }
-
-  [[nodiscard]] bool has_selected_candidate() const {
-    return candidates_.count(used_in_simulation_) > 0;
+  void set_calibration_ids(const std::map<int, ImmuneSystemParametercalibration_id> &value) {
+    calibration_ids_ = value;
   }
 
-  [[nodiscard]] const ImmuneSystemParameterCandidate &get_selected_candidate() const {
-    auto it = candidates_.find(used_in_simulation_);
-    if (it == candidates_.end()) {
+  [[nodiscard]] bool has_selected_calibration_id() const {
+    return calibration_ids_.count(chosen_calibration_id_) > 0;
+  }
+
+  [[nodiscard]] const ImmuneSystemParametercalibration_id &get_selected_calibration_id() const {
+    auto it = calibration_ids_.find(chosen_calibration_id_);
+    if (it == calibration_ids_.end()) {
       throw std::runtime_error(
-          fmt::format("immune_system_parameter_overrides: used_in_simulation={} not found in candidates",
-                      used_in_simulation_));
+          fmt::format("version6_pfpr_incidence_calibrations: chosen_calibration_id={} not found in calibration_ids",
+                      chosen_calibration_id_));
     }
     return it->second;
   }
 
   void log_all() const {
-    spdlog::info("ImmuneSystemParameterOverrides: used_in_simulation={}, random_selection={}",
-                 used_in_simulation_, random_selection_);
-    for (const auto &[idx, c] : candidates_) {
+    spdlog::info("ImmuneSystemParameterOverrides: chosen_calibration_id={}, random_selection={}",
+                 chosen_calibration_id_, random_selection_);
+    for (const auto &[idx, c] : calibration_ids_) {
       for (const auto &[path, val] : c.overrides) {
-        spdlog::info("  candidate[{}]: {}={}", idx, path, val);
+        spdlog::info("  calibration_id[{}]: {}={}", idx, path, val);
       }
     }
   }
 
 private:
-  int used_in_simulation_ = 0;
+  int chosen_calibration_id_ = 0;
   bool random_selection_ = false;
-  std::map<int, ImmuneSystemParameterCandidate> candidates_;
+  std::map<int, ImmuneSystemParametercalibration_id> calibration_ids_;
 };
 
 // YAML conversion for ImmuneSystemParameterOverrides
@@ -92,48 +92,48 @@ template <>
 struct YAML::convert<ImmuneSystemParameterOverrides> {
   static Node encode(const ImmuneSystemParameterOverrides &rhs) {
     Node node;
-    node["used_in_simulation"] = rhs.get_used_in_simulation();
+    node["chosen_calibration_id"] = rhs.get_chosen_calibration_id();
     node["random_selection"] = rhs.get_random_selection();
-    Node candidates_node;
-    for (const auto &[idx, c] : rhs.get_candidates()) {
+    Node calibration_ids_node;
+    for (const auto &[idx, c] : rhs.get_calibration_ids()) {
       Node cnode;
       for (const auto &[path, val] : c.overrides) {
         cnode[path] = val;
       }
-      candidates_node[idx] = cnode;
+      calibration_ids_node[idx] = cnode;
     }
-    node["candidates"] = candidates_node;
+    node["calibration_ids"] = calibration_ids_node;
     return node;
   }
 
   static bool decode(const Node &node, ImmuneSystemParameterOverrides &rhs) {
-    if (!node["used_in_simulation"]) {
+    if (!node["chosen_calibration_id"]) {
       throw std::runtime_error(
-          "immune_system_parameter_overrides: missing 'used_in_simulation'");
+          "version6_pfpr_incidence_calibrations: missing 'chosen_calibration_id'");
     }
-    if (!node["candidates"]) {
+    if (!node["calibration_ids"]) {
       throw std::runtime_error(
-          "immune_system_parameter_overrides: missing 'candidates'");
+          "version6_pfpr_incidence_calibrations: missing 'calibration_ids'");
     }
 
-    rhs.set_used_in_simulation(node["used_in_simulation"].as<int>());
+    rhs.set_chosen_calibration_id(node["chosen_calibration_id"].as<int>());
     if (node["random_selection"]) {
       rhs.set_random_selection(node["random_selection"].as<bool>());
     }
 
-    std::map<int, ImmuneSystemParameterCandidate> candidates;
-    YAML::Node cmap = node["candidates"];
+    std::map<int, ImmuneSystemParametercalibration_id> calibration_ids;
+    YAML::Node cmap = node["calibration_ids"];
     for (auto it = cmap.begin(); it != cmap.end(); ++it) {
       const int idx = it->first.as<int>();
       YAML::Node cnode = it->second;
 
-      ImmuneSystemParameterCandidate c;
+      ImmuneSystemParametercalibration_id c;
       for (auto kv = cnode.begin(); kv != cnode.end(); ++kv) {
         c.overrides[kv->first.as<std::string>()] = kv->second.as<double>();
       }
-      candidates[idx] = c;
+      calibration_ids[idx] = c;
     }
-    rhs.set_candidates(candidates);
+    rhs.set_calibration_ids(calibration_ids);
     return true;
   }
 };

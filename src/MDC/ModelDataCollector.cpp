@@ -823,7 +823,7 @@ void ModelDataCollector::yearly_update() {
                  / static_cast<double>(person_days))
                 * Constants::DAYS_IN_YEAR;
         } else {
-            spdlog::warn(
+            spdlog::trace(
                 "ModelDataCollector::yearly_update: zero or negative "
                 "person-days at day={}, location={}, population={}, "
                 "bites={}, person_days={}; yearly EIR set to 0.",
@@ -834,7 +834,7 @@ void ModelDataCollector::yearly_update() {
                 person_days);
         }
         if (!std::isfinite(eir)) {
-            spdlog::warn(
+            spdlog::trace(
                 "ModelDataCollector::yearly_update: non-finite EIR "
                 "at day={}, location={}, population={}, bites={}, "
                 "person_days={}, eir={}; yearly EIR set to 0.",

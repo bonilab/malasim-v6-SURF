@@ -31,7 +31,7 @@ bool Config::load(const std::string &filename) {
     reset_load_state();
     spdlog::info("Configuration file loaded successfully: " + Model::get_cli_input().input_path);
     parse_configuration(config);
-    parse_immune_system_parameter_overrides(config);
+    parse_version6_pfpr_incidence_calibrations(config);
 
     spdlog::info("Configuration file parsed successfully");
 
@@ -54,8 +54,8 @@ bool Config::load(const std::string &filename) {
 
 void Config::reset_load_state() {
   rapt_settings_ = RaptSettings{};
-  immune_system_parameter_overrides_ = ImmuneSystemParameterOverrides{};
-  has_immune_system_parameter_overrides_ = false;
+  version6_pfpr_incidence_calibrations_ = ImmuneSystemParameterOverrides{};
+  has_version6_pfpr_incidence_calibrations_ = false;
   population_events_ = PopulationEvents{};
 }
 
@@ -84,89 +84,89 @@ void Config::parse_configuration(const YAML::Node &config) {
   if (config["rapt_settings"]) { rapt_settings_ = config["rapt_settings"].as<RaptSettings>(); }
 }
 
-void Config::parse_immune_system_parameter_overrides(const YAML::Node &config) {
-  const auto candidates_node = config["immune_system_parameter_overrides"];
-  if (!candidates_node) {
-    spdlog::info("No immune_system_parameter_overrides section found — using default parameters");
+void Config::parse_version6_pfpr_incidence_calibrations(const YAML::Node &config) {
+  const auto calibration_ids_node = config["version6_pfpr_incidence_calibrations"];
+  if (!calibration_ids_node) {
+    spdlog::info("No version6_pfpr_incidence_calibrations section found — using default parameters");
     return;
   }
 
-  spdlog::info("Found immune_system_parameter_overrides section — parsing overrides");
-  immune_system_parameter_overrides_ = candidates_node.as<ImmuneSystemParameterOverrides>();
-  if (immune_system_parameter_overrides_.get_random_selection()) {
-    select_random_immune_system_parameter_candidate();
+  spdlog::info("Found version6_pfpr_incidence_calibrations section — parsing overrides");
+  version6_pfpr_incidence_calibrations_ = calibration_ids_node.as<ImmuneSystemParameterOverrides>();
+  if (version6_pfpr_incidence_calibrations_.get_random_selection()) {
+    select_random_immune_system_parameter_calibration_id();
   }
 
-  has_immune_system_parameter_overrides_ = true;
-  immune_system_parameter_overrides_.log_all();
-  apply_selected_immune_system_parameter_candidate();
+  has_version6_pfpr_incidence_calibrations_ = true;
+  version6_pfpr_incidence_calibrations_.log_all();
+  apply_selected_immune_system_parameter_calibration_id();
 }
 
-void Config::select_random_immune_system_parameter_candidate() {
-  const auto &candidates = immune_system_parameter_overrides_.get_candidates();
-  if (candidates.empty()) {
+void Config::select_random_immune_system_parameter_calibration_id() {
+  const auto &calibration_ids = version6_pfpr_incidence_calibrations_.get_calibration_ids();
+  if (calibration_ids.empty()) {
     spdlog::warn(
-        "immune_system_parameter_overrides: random_selection=true but candidates is empty "
+        "version6_pfpr_incidence_calibrations: random_selection=true but calibration_ids is empty "
         "— skipping random selection");
     return;
   }
 
-  std::vector<int> candidate_keys;
-  candidate_keys.reserve(candidates.size());
-  for (const auto &candidate : candidates) { candidate_keys.push_back(candidate.first); }
+  std::vector<int> calibration_id_keys;
+  calibration_id_keys.reserve(calibration_ids.size());
+  for (const auto &calibration_id : calibration_ids) { calibration_id_keys.push_back(calibration_id.first); }
 
   const auto pick = static_cast<std::size_t>(
-      Model::get_random()->random_uniform(static_cast<uint64_t>(candidate_keys.size())));
-  const int selected_idx = candidate_keys[pick];
-  immune_system_parameter_overrides_.set_used_in_simulation(selected_idx);
+      Model::get_random()->random_uniform(static_cast<uint64_t>(calibration_id_keys.size())));
+  const int selected_idx = calibration_id_keys[pick];
+  version6_pfpr_incidence_calibrations_.set_chosen_calibration_id(selected_idx);
   spdlog::info(
-      "immune_system_parameter_overrides: random_selection=true, num_candidates={}, "
-      "sampled used_in_simulation={}",
-      candidate_keys.size(), selected_idx);
+      "version6_pfpr_incidence_calibrations: random_selection=true, num_calibration_ids={}, "
+      "sampled chosen_calibration_id={}",
+      calibration_id_keys.size(), selected_idx);
 }
 
-void Config::apply_selected_immune_system_parameter_candidate() {
+void Config::apply_selected_immune_system_parameter_calibration_id() {
   namespace P = ImmuneSystemOverridePaths;
 
-  if (!immune_system_parameter_overrides_.has_selected_candidate()) {
+  if (!version6_pfpr_incidence_calibrations_.has_selected_calibration_id()) {
     spdlog::warn(
-        "immune_system_parameter_overrides: used_in_simulation={} not found in "
-        "candidates — no overrides applied",
-        immune_system_parameter_overrides_.get_used_in_simulation());
+        "version6_pfpr_incidence_calibrations: chosen_calibration_id={} not found in "
+        "calibration_ids — no overrides applied",
+        version6_pfpr_incidence_calibrations_.get_chosen_calibration_id());
     return;
   }
 
-  const auto &candidate = immune_system_parameter_overrides_.get_selected_candidate();
-  const int candidate_id = immune_system_parameter_overrides_.get_used_in_simulation();
-  spdlog::info("Applying candidate[{}] overrides:", candidate_id);
+  const auto &calibration_id = version6_pfpr_incidence_calibrations_.get_selected_calibration_id();
+  const int calibration_id_id = version6_pfpr_incidence_calibrations_.get_chosen_calibration_id();
+  spdlog::info("Applying calibration_id[{}] overrides:", calibration_id_id);
 
   // immune_system_parameters overrides
-  if (candidate.has(P::K_Z)) {
-    const double immune_slope = candidate.get(P::K_Z, 0.0);
+  if (calibration_id.has(P::K_Z)) {
+    const double immune_slope = calibration_id.get(P::K_Z, 0.0);
     spdlog::info("  {}={}", P::K_Z, immune_slope);
     immune_system_parameters_.set_immune_effect_on_progression_to_clinical(immune_slope);
   }
-  if (candidate.has(P::K_KAPPA)) {
-    const double kappa = candidate.get(P::K_KAPPA, 0.0);
+  if (calibration_id.has(P::K_KAPPA)) {
+    const double kappa = calibration_id.get(P::K_KAPPA, 0.0);
     spdlog::info("  {}={}", P::K_KAPPA, kappa);
     immune_system_parameters_.set_factor_effect_age_mature_immunity(kappa);
   }
-  if (candidate.has(P::K_MIDPOINT)) {
-    const double midpoint = candidate.get(P::K_MIDPOINT, 0.0);
+  if (calibration_id.has(P::K_MIDPOINT)) {
+    const double midpoint = calibration_id.get(P::K_MIDPOINT, 0.0);
     spdlog::info("  {}={}", P::K_MIDPOINT, midpoint);
     immune_system_parameters_.set_midpoint(midpoint);
   }
 
   // epidemiological_parameters overrides
-  if (candidate.has(P::K_P_CI_SYMP)) {
-    const double p_ci_symp = candidate.get(P::K_P_CI_SYMP, 0.0);
+  if (calibration_id.has(P::K_P_CI_SYMP)) {
+    const double p_ci_symp = calibration_id.get(P::K_P_CI_SYMP, 0.0);
     spdlog::info("  {}={}", P::K_P_CI_SYMP, p_ci_symp);
     auto coinfection = epidemiological_parameters_.get_allow_new_coinfection_to_cause_symptoms();
     coinfection.set_probability(p_ci_symp);
     epidemiological_parameters_.set_allow_new_coinfection_to_cause_symptoms(coinfection);
   }
-  if (candidate.has(P::K_P_SEEK_BASE)) {
-    const double p_seek_base = candidate.get(P::K_P_SEEK_BASE, 0.0);
+  if (calibration_id.has(P::K_P_SEEK_BASE)) {
+    const double p_seek_base = calibration_id.get(P::K_P_SEEK_BASE, 0.0);
     spdlog::info("  {}={}", P::K_P_SEEK_BASE, p_seek_base);
     auto age_based = epidemiological_parameters_.get_age_based_probability_of_seeking_treatment();
     auto power = age_based.get_power();
@@ -176,8 +176,8 @@ void Config::apply_selected_immune_system_parameter_candidate() {
   }
 
   // genotype_parameters override (skipped if value < 0)
-  if (candidate.has(P::K_MUTATION_PROB)) {
-    const double mutation_prob = candidate.get(P::K_MUTATION_PROB, -1.0);
+  if (calibration_id.has(P::K_MUTATION_PROB)) {
+    const double mutation_prob = calibration_id.get(P::K_MUTATION_PROB, -1.0);
     if (mutation_prob >= 0.0) {
       genotype_parameters_.set_mutation_probability_per_locus(mutation_prob);
       spdlog::info("  {} overridden to {}", P::K_MUTATION_PROB,
@@ -188,8 +188,8 @@ void Config::apply_selected_immune_system_parameter_candidate() {
     }
   }
 
-  if (candidate.has(P::K_DEFAULT_CNV_REVERSION_MULTIPLIER)) {
-    const double cnv_mult = candidate.get(P::K_DEFAULT_CNV_REVERSION_MULTIPLIER, -1.0);
+  if (calibration_id.has(P::K_DEFAULT_CNV_REVERSION_MULTIPLIER)) {
+    const double cnv_mult = calibration_id.get(P::K_DEFAULT_CNV_REVERSION_MULTIPLIER, -1.0);
     if (cnv_mult >= 0.0) {
       genotype_parameters_.set_default_cnv_reversion_multiplier(cnv_mult);
       spdlog::info("  {} overridden to {}", P::K_DEFAULT_CNV_REVERSION_MULTIPLIER,
@@ -200,7 +200,7 @@ void Config::apply_selected_immune_system_parameter_candidate() {
     }
   }
 
-  spdlog::info("Candidate[{}] overrides applied successfully", candidate_id);
+  spdlog::info("calibration_id[{}] overrides applied successfully", calibration_id_id);
 }
 
 void Config::log_genotype_configuration() const {

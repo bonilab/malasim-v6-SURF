@@ -96,12 +96,12 @@ public:
     immune_system_parameters_ = parameters;
   }
 
-  [[nodiscard]] const ImmuneSystemParameterOverrides &get_immune_system_parameter_overrides()
+  [[nodiscard]] const ImmuneSystemParameterOverrides &get_version6_pfpr_incidence_calibrations()
       const {
-    return immune_system_parameter_overrides_;
+    return version6_pfpr_incidence_calibrations_;
   }
-  [[nodiscard]] bool has_immune_system_parameter_overrides() const {
-    return has_immune_system_parameter_overrides_;
+  [[nodiscard]] bool has_version6_pfpr_incidence_calibrations() const {
+    return has_version6_pfpr_incidence_calibrations_;
   }
 
   [[nodiscard]] GenotypeParameters &get_genotype_parameters() { return genotype_parameters_; }
@@ -129,9 +129,9 @@ public:
 private:
   void reset_load_state();
   void parse_configuration(const YAML::Node &config);
-  void parse_immune_system_parameter_overrides(const YAML::Node &config);
-  void select_random_immune_system_parameter_candidate();
-  void apply_selected_immune_system_parameter_candidate();
+  void parse_version6_pfpr_incidence_calibrations(const YAML::Node &config);
+  void select_random_immune_system_parameter_calibration_id();
+  void apply_selected_immune_system_parameter_calibration_id();
   void log_genotype_configuration() const;
   static void log_chromosome_configuration(const GenotypeParameters::ChromosomeInfo &chromosome);
   static void log_gene_configuration(const GenotypeParameters::GeneInfo &gene);
@@ -185,8 +185,8 @@ private:
   MovementSettings movement_settings_;
   ParasiteParameters parasite_parameters_;
   ImmuneSystemParameters immune_system_parameters_;
-  ImmuneSystemParameterOverrides immune_system_parameter_overrides_;
-  bool has_immune_system_parameter_overrides_ = false;
+  ImmuneSystemParameterOverrides version6_pfpr_incidence_calibrations_;
+  bool has_version6_pfpr_incidence_calibrations_ = false;
   GenotypeParameters genotype_parameters_;
   DrugParameters drug_parameters_;
   TherapyParameters therapy_parameters_;

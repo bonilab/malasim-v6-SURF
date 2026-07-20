@@ -253,9 +253,9 @@ parasite_parameters:
 # genotype_parameters) unchanged.
 #
 # Selection:
-#   used_in_simulation: <int>   — index of the candidate to apply.
+#   chosen_calibration_id: <int>   — index of the candidate to apply.
 #   random_selection: true/false — if true, a candidate is picked uniformly
-#       at random at startup (overrides used_in_simulation).
+#       at random at startup (overrides chosen_calibration_id).
 #
 # Candidate format:
 #   Each candidate is a map of "config-path": value entries.
@@ -292,12 +292,12 @@ parasite_parameters:
 #
 # Any override key that is absent from a candidate leaves the corresponding
 # parameter at its config-file default — partial override sets are valid.
-immune_system_parameter_overrides:
-  used_in_simulation: 0
-  # random_selection will override used_in_simulation, if true,
+version6_pfpr_incidence_calibrations:
+  chosen_calibration_id: 0
+  # random_selection will override chosen_calibration_id, if true,
   # the simulation will randomly select one of the candidates to use in the simulation.
   random_selection: false
-  candidates:
+  calibration_ids:
     0: #5 in Fig 12 (highest p_seek_base)
       "epidemiological_parameters:allow_new_coinfection_to_cause_symptoms:probability": 0.5
       "immune_system_parameters:immune_effect_on_progression_to_clinical": 3.0

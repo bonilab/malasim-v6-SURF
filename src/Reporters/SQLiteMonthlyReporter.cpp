@@ -48,10 +48,10 @@ void SQLiteMonthlyReporter::initialize(int job_number, const std::string &path) 
   monthly_genome_data_by_level.resize(admin_level_count + 1);
   CELL_LEVEL_ID = admin_level_count;
 
-  // Persist the immune_system_parameter_overrides values that are actually in
+  // Persist the version6_pfpr_incidence_calibrations values that are actually in
   // effect. At this point the config has been fully parsed and the selected
-  // candidate has already been applied (Config::apply_selected_immune_system_
-  // parameter_candidate runs during config load), and the simulation has not
+  // calibration_id has already been applied (Config::apply_selected_immune_system_
+  // parameter_calibration_id runs during config load), and the simulation has not
   // started yet, so this captures exactly what the run will use.
   create_and_populate_configuration_table();
 }
@@ -76,8 +76,8 @@ void SQLiteMonthlyReporter::create_and_populate_configuration_table() {
     // Start clean in case an existing db is being reused.
     db->execute("DELETE FROM configuration;");
 
-    const std::string section = "immune_system_parameter_overrides";
-    const auto &candidates = Model::get_config()->get_immune_system_parameter_overrides();
+    const std::string section = "version6_pfpr_incidence_calibrations";
+    const auto &calibration_ids = Model::get_config()->get_version6_pfpr_incidence_calibrations();
 
     std::vector<std::string> rows;
 
@@ -92,14 +92,14 @@ void SQLiteMonthlyReporter::create_and_populate_configuration_table() {
 
     // Record whether the overrides section was present at all.
     add_row("section_present",
-            Model::get_config()->has_immune_system_parameter_overrides() ? "true" : "false");
-    // Metadata: which candidate was selected and whether it was random.
-    add_row("used_in_simulation", std::to_string(candidates.get_used_in_simulation()));
-    add_row("random_selection", candidates.get_random_selection() ? "true" : "false");
+            Model::get_config()->has_version6_pfpr_incidence_calibrations() ? "true" : "false");
+    // Metadata: which calibration_id was selected and whether it was random.
+    add_row("chosen_calibration_id", std::to_string(calibration_ids.get_chosen_calibration_id()));
+    add_row("random_selection", calibration_ids.get_random_selection() ? "true" : "false");
 
-    // The actual override key/value pairs of the selected candidate.
-    if (candidates.has_selected_candidate()) {
-      const auto &selected = candidates.get_selected_candidate();
+    // The actual override key/value pairs of the selected calibration_id.
+    if (calibration_ids.has_selected_calibration_id()) {
+      const auto &selected = calibration_ids.get_selected_calibration_id();
       for (const auto &[path, val] : selected.overrides) {
         // fmt's default float formatting emits the shortest round-trippable
         // representation (e.g. 0.00085 rather than 0.00085000000000000004).
@@ -107,9 +107,9 @@ void SQLiteMonthlyReporter::create_and_populate_configuration_table() {
       }
     } else {
       spdlog::info(
-          "SQLiteMonthlyReporter: no selected immune_system_parameter_overrides candidate "
-          "(used_in_simulation={}); recording metadata only.",
-          candidates.get_used_in_simulation());
+          "SQLiteMonthlyReporter: no selected version6_pfpr_incidence_calibrations calibration_id "
+          "(chosen_calibration_id={}); recording metadata only.",
+          calibration_ids.get_chosen_calibration_id());
     }
 
     const std::string query_prefix =
@@ -175,7 +175,7 @@ void SQLiteMonthlyReporter::calculate_and_build_up_site_data_insert_values(int m
       }
 
       if (!std::isfinite(calculated_eir)) {
-          spdlog::warn(
+          spdlog::trace(
               "SQLiteMonthlyReporter: non-finite aggregated EIR for "
               "month_id={}, level_id={}, unit_id={}, accumulated_eir={}, "
               "population={}; using 0 for reporting.",
@@ -426,7 +426,7 @@ void SQLiteMonthlyReporter::collect_site_data_for_location(int location_id, int 
       // monthly_report_site_data() calls this function once for every reporting
       // level. Log only for the first level to avoid duplicate warnings.
       if (level_id == 0) {
-          spdlog::warn(
+          spdlog::trace(
               "SQLiteMonthlyReporter: non-finite EIR at location_id={}, "
               "unit_id={}, population={}, EIR={}; using 0 for reporting.",
               location_id,

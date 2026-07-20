@@ -166,7 +166,7 @@ void Model::before_run() {
 
   // --------------------------------------------------------------------------
   // Verification dump: print every value that was overridden through
-  // immune_system_parameter_overrides for the selected candidate, and compare
+  // version6_pfpr_incidence_calibrations for the selected calibration_id, and compare
   // each one against the value that is actually live in the config right now,
   // so we can confirm all overrides were applied correctly before the run.
   // --------------------------------------------------------------------------
@@ -174,21 +174,21 @@ void Model::before_run() {
     namespace isop = ImmuneSystemOverridePaths;
 
     // NOTE: adjust these two accessor names if your Config exposes the object
-    // under a different name (e.g. get_immune_system_parameter_overrides() /
-    // has_immune_system_parameter_candidates()).
-    const bool section_present = config_->has_immune_system_parameter_overrides();
-    const auto &overrides = config_->get_immune_system_parameter_overrides();
+    // under a different name (e.g. get_version6_pfpr_incidence_calibrations() /
+    // has_immune_system_parameter_calibration_ids()).
+    const bool section_present = config_->has_version6_pfpr_incidence_calibrations();
+    const auto &overrides = config_->get_version6_pfpr_incidence_calibrations();
 
-    spdlog::info("===== immune_system_parameter_overrides (before_run verification) =====");
+    spdlog::info("===== version6_pfpr_incidence_calibrations (before_run verification) =====");
     spdlog::info("  section_present    = {}", section_present);
     spdlog::info("  random_selection   = {}", overrides.get_random_selection());
-    spdlog::info("  used_in_simulation = {}", overrides.get_used_in_simulation());
+    spdlog::info("  chosen_calibration_id = {}", overrides.get_chosen_calibration_id());
 
     if (!section_present) {
       spdlog::info("  No overrides section -> running with default immune-system parameters.");
-    } else if (!overrides.has_selected_candidate()) {
-      spdlog::warn("  used_in_simulation={} not found among candidates -> NO overrides applied!",
-                   overrides.get_used_in_simulation());
+    } else if (!overrides.has_selected_calibration_id()) {
+      spdlog::warn("  chosen_calibration_id={} not found among calibration_ids -> NO overrides applied!",
+                   overrides.get_chosen_calibration_id());
     } else {
       // Resolve the value currently live in the config for a given override path.
       // Returns NaN for a path with no corresponding live field.
@@ -223,11 +223,11 @@ void Model::before_run() {
         return std::numeric_limits<double>::quiet_NaN();
       };
 
-      const auto &candidate = overrides.get_selected_candidate();
-      spdlog::info("  selected candidate[{}] has {} override(s):",
-                   overrides.get_used_in_simulation(), candidate.overrides.size());
+      const auto &calibration_id = overrides.get_selected_calibration_id();
+      spdlog::info("  selected calibration_id[{}] has {} override(s):",
+                   overrides.get_chosen_calibration_id(), calibration_id.overrides.size());
 
-      for (const auto &[path, override_val] : candidate.overrides) {
+      for (const auto &[path, override_val] : calibration_id.overrides) {
         const double effective = effective_value(path);
 
         if (std::isnan(effective)) {
@@ -238,7 +238,7 @@ void Model::before_run() {
 
         // mutation_probability_per_locus and default_cnv_reversion_multiplier use
         // a <0 sentinel meaning "keep the existing default" (see
-        // Config::apply_selected_immune_system_parameter_candidate), so a negative
+        // Config::apply_selected_immune_system_parameter_calibration_id), so a negative
         // override is intentionally NOT applied.
         const bool sentinel_keep_default =
             ((path == isop::K_MUTATION_PROB) || (path == isop::K_DEFAULT_CNV_REVERSION_MULTIPLIER))

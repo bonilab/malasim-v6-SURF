@@ -44,8 +44,20 @@ int main(int argc, char** argv) {
   if (Model::get_instance()->initialize()) {
     Model::get_instance()->run();
 
-    double memory_kb = get_memory_kb();
-    std::cout << "Memory Usage: " << memory_kb << " KB" << '\n';
+    const double memory_kb = get_memory_kb();
+
+    std::cout << std::fixed << std::setprecision(2);
+
+    if (memory_kb >= 1024.0 * 1024.0) {
+      const double memory_gb = memory_kb / (1024.0 * 1024.0);
+      std::cout << "Memory Usage: " << memory_gb << " GB\n";
+    } else if (memory_kb >= 1024.0) {
+      const double memory_mb = memory_kb / 1024.0;
+      std::cout << "Memory Usage: " << memory_mb << " MB\n";
+    } else {
+      std::cout << "Memory Usage: " << memory_kb << " KB\n";
+    }
+
     Model::get_instance()->release();
   } else {
     spdlog::get("default_logger")->error("Model initialization failed.");
