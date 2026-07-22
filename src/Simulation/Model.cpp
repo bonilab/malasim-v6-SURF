@@ -57,10 +57,10 @@ bool Model::initialize() {
 
     // add reporter here
     if (cli_input_.reporter.empty()) {
-      add_reporter(Reporter::MakeReport(Reporter::SQLITE_MONTHLY_REPORTER));
+      add_reporter(Reporter::make_report(Reporter::ReportType::SQLITE_MONTHLY_REPORTER));
     } else {
-      if (Reporter::ReportTypeMap.contains(cli_input_.reporter)) {
-        add_reporter(Reporter::MakeReport(Reporter::ReportTypeMap[cli_input_.reporter]));
+      if (Reporter::report_type_map.contains(cli_input_.reporter)) {
+        add_reporter(Reporter::make_report(Reporter::report_type_map[cli_input_.reporter]));
       }
     }
 
@@ -116,7 +116,7 @@ bool Model::initialize() {
 
     if (cli_input_.record_movement) {
       // Generate a movement reporter
-      auto reporter = Reporter::MakeReport(Reporter::ReportType::MOVEMENT_REPORTER);
+      auto reporter = Reporter::make_report(Reporter::ReportType::MOVEMENT_REPORTER);
       reporter->initialize(cli_input_.job_number, cli_input_.output_path);
       add_reporter(std::move(reporter));
     }
@@ -187,8 +187,9 @@ void Model::before_run() {
     if (!section_present) {
       spdlog::info("  No overrides section -> running with default immune-system parameters.");
     } else if (!overrides.has_selected_calibration_id()) {
-      spdlog::warn("  chosen_calibration_id={} not found among calibration_ids -> NO overrides applied!",
-                   overrides.get_chosen_calibration_id());
+      spdlog::warn(
+          "  chosen_calibration_id={} not found among calibration_ids -> NO overrides applied!",
+          overrides.get_chosen_calibration_id());
     } else {
       // Resolve the value currently live in the config for a given override path.
       // Returns NaN for a path with no corresponding live field.

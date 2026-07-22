@@ -2,19 +2,18 @@
 #define POMS_SRC_REPORTERS_NOVELDRUGREPORTER_H
 
 #include <sstream>
+
 #include "Reporter.h"
 
 class PersonIndexByLocationStateAgeClass;
 
 class NovelDrugReporter : public Reporter {
 public:
-  //disallow copy, assign and move
+  // disallow copy, assign and move
   NovelDrugReporter(const NovelDrugReporter &) = delete;
-  NovelDrugReporter& operator=(const NovelDrugReporter &) = delete;
+  NovelDrugReporter &operator=(const NovelDrugReporter &) = delete;
   NovelDrugReporter(NovelDrugReporter &&) = delete;
-  NovelDrugReporter& operator=(NovelDrugReporter &&) = delete;
-
-public:
+  NovelDrugReporter &operator=(NovelDrugReporter &&) = delete;
 
   NovelDrugReporter() = default;
 
@@ -30,17 +29,15 @@ public:
 
   void monthly_report() override;
 
-private:
-  void output_genotype_frequency_3(const int& number_of_genotypes, PersonIndexByLocationStateAgeClass* pi);
-
-public:
   std::stringstream ss;
   const std::string group_sep = "-1111\t";
   const std::string sep = "\t";
 
-  long cumulative_number_of_mutation_events_last_month = 0;
+  uint64_t cumulative_number_of_mutation_events_last_month = 0;
 
+private:
+  void output_genotype_frequency_3(const int &number_of_genotypes,
+                                   PersonIndexByLocationStateAgeClass* pi);
 };
 
-
-#endif //POMS_SRC_REPORTERS_NOVELDRUGREPORTER_H
+#endif  // POMS_SRC_REPORTERS_NOVELDRUGREPORTER_H

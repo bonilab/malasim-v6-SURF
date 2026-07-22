@@ -7,7 +7,6 @@
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#include "Configuration/Config.h"
 #include "Core/Scheduler/Scheduler.h"
 #include "MDC/ModelDataCollector.h"
 #include "Parasites/Genotype.h"
@@ -27,7 +26,7 @@ void SeasonalImmunity::initialize(int job_number, const std::string &path) {
   spdlog::info("SeasonalImmunityReporter initialized with job number {}", job_number);
 
   auto monthly_filename =
-      fmt::format("{}seasonal_immunity_monthly_data_{}.{}", path, job_number, Csv::extension);
+      fmt::format("{}seasonal_immunity_monthly_data_{}.{}", path, job_number, csv::EXTENSION);
 
   // Create console logger
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -47,12 +46,12 @@ void SeasonalImmunity::initialize(int job_number, const std::string &path) {
   spdlog::set_default_logger(console_logger);
 
   // Log the seasonal headers
-  ss << "DaysElapsed" << Csv::sep << "ClimaticZone" << Csv::sep << "Population" << Csv::sep
-     << "MedianTheta" << Csv::sep << "MeanTheta" << Csv::sep << "InfectedIndividuals" << Csv::sep
-     << "ClinicalIndividuals" << Csv::sep << "NewInfections" << Csv::sep << "Treatments" << Csv::sep
-     << "NonTreatment" << Csv::sep << "TreatmentFailure" << Csv::sep << "ParasiteClones" << Csv::sep
-     << "Multiclonal" << Csv::sep << "580yWeighted" << Csv::sep << "580yUnweighted" << Csv::sep
-     << "580yMulticlonal" << Csv::sep << Csv::end_line;
+  ss << "DaysElapsed" << csv::SEP << "ClimaticZone" << csv::SEP << "Population" << csv::SEP
+     << "MedianTheta" << csv::SEP << "MeanTheta" << csv::SEP << "InfectedIndividuals" << csv::SEP
+     << "ClinicalIndividuals" << csv::SEP << "NewInfections" << csv::SEP << "Treatments" << csv::SEP
+     << "NonTreatment" << csv::SEP << "TreatmentFailure" << csv::SEP << "ParasiteClones" << csv::SEP
+     << "Multiclonal" << csv::SEP << "580yWeighted" << csv::SEP << "580yUnweighted" << csv::SEP
+     << "580yMulticlonal" << csv::SEP << csv::END_LINE;
   spdlog::get("monthly_reporter")->info(ss.str());
   ss.str("");
 
@@ -118,14 +117,14 @@ void SeasonalImmunity::monthly_report() {
   }
 
   for (int zone = 0; zone < lookup_allocation; zone++) {
-    ss << Model::get_scheduler()->current_time() << Csv::sep << zone << Csv::sep << population[zone]
-       << Csv::sep << median_theta[zone].getMedian() << Csv::sep
-       << mean_theta[zone] / population[zone] << Csv::sep << infected_individuals[zone] << Csv::sep
-       << clinical_individuals[zone] << Csv::sep << new_infections[zone] << Csv::sep
-       << treatments[zone] << Csv::sep << nontreatment[zone] << Csv::sep << treatment_failure[zone]
-       << Csv::sep << parasite_clones[zone] << Csv::sep << multiclonal[zone] << Csv::sep
-       << weighted_580y[zone] << Csv::sep << unweighted_580y[zone] << Csv::sep
-       << multiclonal_580y[zone] << Csv::sep << Csv::end_line;
+    ss << Model::get_scheduler()->current_time() << csv::SEP << zone << csv::SEP << population[zone]
+       << csv::SEP << median_theta[zone].getMedian() << csv::SEP
+       << mean_theta[zone] / population[zone] << csv::SEP << infected_individuals[zone] << csv::SEP
+       << clinical_individuals[zone] << csv::SEP << new_infections[zone] << csv::SEP
+       << treatments[zone] << csv::SEP << nontreatment[zone] << csv::SEP << treatment_failure[zone]
+       << csv::SEP << parasite_clones[zone] << csv::SEP << multiclonal[zone] << csv::SEP
+       << weighted_580y[zone] << csv::SEP << unweighted_580y[zone] << csv::SEP
+       << multiclonal_580y[zone] << csv::SEP << csv::END_LINE;
   }
   spdlog::get("monthly_reporter")->info(ss.str());
   ss.str("");

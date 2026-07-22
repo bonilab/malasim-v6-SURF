@@ -21,9 +21,9 @@ void NovelDrugReporter::initialize(int job_number, const std::string &path) {
   spdlog::info("NovelDrugReporter initialized with job number {}", job_number);
 
   auto monthly_filename =
-      fmt::format("{}novel_drug_monthly_date_{}.{}", path, job_number, Csv::extension);
+      fmt::format("{}novel_drug_monthly_date_{}.{}", path, job_number, csv::EXTENSION);
   auto summary_filename =
-      fmt::format("{}novel_drug_summary_data_{}.{}", path, job_number, Csv::extension);
+      fmt::format("{}novel_drug_summary_data_{}.{}", path, job_number, csv::EXTENSION);
 
   // Create console logger
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -82,7 +82,7 @@ void NovelDrugReporter::monthly_report() {
   }
 
   output_genotype_frequency_3(
-      Model::get_genotype_db()->size(),
+      static_cast<int>(Model::get_genotype_db()->size()),
       Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>());
 
   ss << (dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())->is_switched
@@ -156,7 +156,7 @@ void NovelDrugReporter::output_genotype_frequency_3(const int &number_of_genotyp
     for (auto hs = 0; hs < Person::NUMBER_OF_STATE - 1; hs++) {
       for (auto ac = 0; ac < number_of_age_classes; ac++) {
         const auto size = pi->vPerson()[loc][hs][ac].size();
-        for (auto i = 0ull; i < size; i++) {
+        for (auto i = 0ULL; i < size; i++) {
           auto* person = pi->vPerson()[loc][hs][ac][i];
 
           if (!person->get_all_clonal_parasite_populations()->empty()) {
@@ -168,7 +168,7 @@ void NovelDrugReporter::output_genotype_frequency_3(const int &number_of_genotyp
 
           for (auto &parasite_population : *person->get_all_clonal_parasite_populations()) {
             const auto g_id = parasite_population->genotype()->genotype_id();
-            if (individual_genotype_map.find(g_id) == individual_genotype_map.end()) {
+            if (!individual_genotype_map.contains(g_id)) {
               individual_genotype_map[parasite_population->genotype()->genotype_id()] = 1;
             } else {
               individual_genotype_map[parasite_population->genotype()->genotype_id()] += 1;
@@ -187,9 +187,9 @@ void NovelDrugReporter::output_genotype_frequency_3(const int &number_of_genotyp
       }
     }
     // output per location
-    for (auto &i : result3) {
-      i /= sum1;
-      ss << (sum1 == 0 ? 0 : i) << sep;
+    for (auto &count_per_loc : result3) {
+      count_per_loc /= sum1;
+      ss << (sum1 == 0 ? 0 : count_per_loc) << sep;
     }
   }
 }

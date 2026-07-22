@@ -1,25 +1,21 @@
 #ifndef MMCREPORTER_H
 #define MMCREPORTER_H
 
-#include "Reporter.h"
 #include <sstream>
+
+#include "Reporter.h"
 
 class PersonIndexByLocationStateAgeClass;
 
 class MMCReporter : public Reporter {
 public:
   // Disallow copy
-  MMCReporter(const MMCReporter&) = delete;
-  MMCReporter& operator=(const MMCReporter&) = delete;
+  MMCReporter(const MMCReporter &) = delete;
+  MMCReporter &operator=(const MMCReporter &) = delete;
 
   // Disallow move
-  MMCReporter(MMCReporter&&) = delete;
-  MMCReporter& operator=(MMCReporter&&) = delete;
-
-public:
-  std::stringstream ss;
-  const std::string group_sep = "-1111\t";
-  const std::string sep = "\t";
+  MMCReporter(MMCReporter &&) = delete;
+  MMCReporter &operator=(MMCReporter &&) = delete;
 
   MMCReporter();
 
@@ -41,8 +37,11 @@ public:
 
   void monthly_report() override;
 
-  void print_EIR_PfPR_by_location();
+  void print_eir_pfpr_by_location();
 
+  std::stringstream ss;
+  const std::string group_sep = "-1111\t";
+  const std::string sep = "\t";
 };
 
-#endif // MMCREPORTER_H
+#endif  // MMCREPORTER_H

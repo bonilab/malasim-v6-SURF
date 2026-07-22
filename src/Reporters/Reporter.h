@@ -9,38 +9,36 @@ class Model;
 class Genotype;
 
 // Wrapper for TSV file constants
-namespace Tsv {
-const std::string sep = "\t";
-const std::string end_line = "\n";
-const std::string extension = "tsv";
-}  // namespace Tsv
+namespace tsv {
+const std::string SEP = "\t";
+const std::string END_LINE = "\n";
+const std::string EXTENSION = "tsv";
+}  // namespace tsv
 
 // Wrapper for CSV file constants
-namespace Csv {
-const std::string sep = ",";
-const std::string end_line = "\n";
-const std::string extension = "csv";
-}  // namespace Csv
+namespace csv {
+const std::string SEP = ",";
+const std::string END_LINE = "\n";
+const std::string EXTENSION = "csv";
+}  // namespace csv
 
 class Reporter {
 public:
   // Disallow copy
-  Reporter(const Reporter&) = delete;
-  Reporter& operator=(const Reporter&) = delete;
+  Reporter(const Reporter &) = delete;
+  Reporter &operator=(const Reporter &) = delete;
 
   // Disallow move
-  Reporter(Reporter&&) = delete;
-  Reporter& operator=(Reporter&&) = delete;
+  Reporter(Reporter &&) = delete;
+  Reporter &operator=(Reporter &&) = delete;
+
+  void set_model(Model* value) { model_ = value; }
+
+private:
+  Model* model_;
 
 public:
-  Model *model{};
-  void set_model(Model *value) { model = value; }
-
- private:
- Model *model_;
-
-public:
-  enum ReportType {
+  enum class ReportType : std::uint8_t {
     CONSOLE,
     MONTHLY_REPORTER,
     MMC_REPORTER,
@@ -68,12 +66,8 @@ public:
 #endif
   };
 
+  static std::map<std::string, ReportType> report_type_map;
 
-
- public:
-  static std::map<std::string, ReportType> ReportTypeMap;
-
- public:
   Reporter();
 
   //    Reporter(const Reporter& orig);
@@ -91,12 +85,11 @@ public:
 
   virtual void monthly_report() = 0;
 
-  virtual void on_genotype_added(const Genotype& /*genotype*/) {}
+  virtual void on_genotype_added(const Genotype & /*genotype*/) {}
 
-  static std::unique_ptr<Reporter> MakeReport(ReportType report_type);
+  static std::unique_ptr<Reporter> make_report(ReportType report_type);
 
- private:
-
+private:
 };
 
 #endif /* REPORTER_H */

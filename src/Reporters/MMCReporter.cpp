@@ -7,7 +7,6 @@
 #include "Core/Scheduler/Scheduler.h"
 #include "MDC/ModelDataCollector.h"
 #include "Population/Population.h"
-#include "Population/SingleHostClonalParasitePopulations.h"
 #include "Simulation/Model.h"
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
@@ -19,12 +18,13 @@ MMCReporter::MMCReporter() = default;
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 void MMCReporter::initialize(int job_number, const std::string &path) {
+  auto* mdc = Model::get_mdc();
   ReporterUtils::initialize_moi_file_logger();
 
   spdlog::info("MMCReporter initialized with job number {}", job_number);
 
-  auto monthly_filename = fmt::format("{}mmc_monthly_data_{}.{}", path, job_number, Csv::extension);
-  auto summary_filename = fmt::format("{}mmc_summary_data_{}.{}", path, job_number, Csv::extension);
+  auto monthly_filename = fmt::format("{}mmc_monthly_data_{}.{}", path, job_number, csv::EXTENSION);
+  auto summary_filename = fmt::format("{}mmc_summary_data_{}.{}", path, job_number, csv::EXTENSION);
 
   // Create console logger
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -61,65 +61,76 @@ void MMCReporter::before_run() {
 void MMCReporter::begin_time_step() {}
 
 void MMCReporter::print_treatment_failure_rate_by_therapy() {
-  for (auto tf_by_therapy : Model::get_mdc()->current_tf_by_therapy()) {
-    ss << tf_by_therapy << sep;
-  }
+  auto* mdc = Model::get_mdc();
+  for (auto tf_by_therapy : mdc->current_tf_by_therapy()) { ss << tf_by_therapy << sep; }
 }
 
 void MMCReporter::print_ntf_by_location() {
+  auto* mdc = Model::get_mdc();
+  auto* config = Model::get_config();
   double sum_ntf = 0.0;
   uint64_t pop_size = 0;
-  for (auto location = 0; location < Model::get_config()->number_of_locations(); location++) {
-    sum_ntf += Model::get_mdc()->cumulative_ntf_by_location()[location];
-    pop_size += Model::get_mdc()->popsize_by_location()[location];
+  for (auto location = 0; location < config->number_of_locations(); location++) {
+    sum_ntf += mdc->cumulative_ntf_by_location()[location];
+    pop_size += mdc->popsize_by_location()[location];
   }
 
-  ss << (sum_ntf * 100.0 / pop_size) << sep;
+  ss << (sum_ntf * 100.0 / static_cast<double>(pop_size)) << sep;
 }
 
 void MMCReporter::monthly_report() {
-  ss << Model::get_scheduler()->current_time() << sep;
-  ss << Model::get_scheduler()->get_unix_time() << sep;
-  ss << Model::get_scheduler()->get_calendar_date() << sep;
-  ss << Model::get_config()->get_seasonality_settings().get_seasonal_factor(
-      Model::get_scheduler()->get_calendar_date(), 0)
+  auto* scheduler = Model::get_scheduler();
+  auto* mdc = Model::get_mdc();
+  auto* config = Model::get_config();
+  auto* treatment_coverage = Model::get_treatment_coverage();
+  auto* population = Model::get_population();
+
+  ss << scheduler->current_time() << sep;
+  ss << scheduler->get_unix_time() << sep;
+  ss << scheduler->get_calendar_date() << sep;
+  ss << config->get_seasonality_settings().get_seasonal_factor(scheduler->get_calendar_date(), 0)
      << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 1) << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 10) << sep;
-  ss << Model::get_population()->size() << sep;
+  ss << treatment_coverage->get_probability_to_be_treated(0, 1) << sep;
+  ss << treatment_coverage->get_probability_to_be_treated(0, 10) << sep;
+  ss << population->size() << sep;
   ss << group_sep;
 
-  print_EIR_PfPR_by_location();
+  print_eir_pfpr_by_location();
   ss << group_sep;
-  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << sep;
+  for (auto loc = 0; loc < config->number_of_locations(); loc++) {
+    ss << mdc->monthly_number_of_treatment_by_location()[loc] << sep;
   }
   ss << group_sep;
-  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << sep;
+  for (auto loc = 0; loc < config->number_of_locations(); loc++) {
+    ss << mdc->monthly_number_of_clinical_episode_by_location()[loc] << sep;
   }
   ss << group_sep;
 
   ReporterUtils::output_genotype_frequency3(
-      ss, Model::get_genotype_db()->size(),
-      Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>());
+      ss, static_cast<int>(Model::get_genotype_db()->size()),
+      population->get_person_index<PersonIndexByLocationStateAgeClass>());
 
   ss << group_sep;
   print_ntf_by_location();
   ss << group_sep;
   print_treatment_failure_rate_by_therapy();
-  ss << Model::get_mdc()->current_tf_by_location()[0];
+  ss << mdc->current_tf_by_location()[0];
   // CLOG(INFO, "monthly_reporter") << ss.str();
   spdlog::get("monthly_reporter")->info("{}", ss.str());
   ss.str("");
 }
 
 void MMCReporter::after_run() {
+  auto* mdc = Model::get_mdc();
+  auto* scheduler = Model::get_scheduler();
+  auto* config = Model::get_config();
+  auto* population = Model::get_population();
+
   ss.str("");
-  ss << Model::get_random()->get_seed() << sep << Model::get_config()->number_of_locations() << sep;
-  ss << Model::get_config()->location_db()[0].beta << sep;
-  ss << Model::get_config()->location_db()[0].population_size << sep;
-  print_EIR_PfPR_by_location();
+  ss << Model::get_random()->get_seed() << sep << config->number_of_locations() << sep;
+  ss << config->location_db()[0].beta << sep;
+  ss << config->location_db()[0].population_size << sep;
+  print_eir_pfpr_by_location();
 
   ss << group_sep;
   // output last strategy information
@@ -127,31 +138,31 @@ void MMCReporter::after_run() {
 
   // output NTF
   const auto total_time_in_years =
-      (Model::get_scheduler()->current_time()
-       - Model::get_config()->get_simulation_timeframe().get_start_of_comparison_period())
+      (scheduler->current_time()
+       - config->get_simulation_timeframe().get_start_of_comparison_period())
       / static_cast<double>(Constants::DAYS_IN_YEAR);
 
   auto sum_ntf = 0.0;
   uint64_t pop_size = 0;
-  for (auto location = 0; location < Model::get_config()->number_of_locations(); location++) {
-    sum_ntf += Model::get_mdc()->cumulative_ntf_by_location()[location];
-    pop_size += Model::get_mdc()->popsize_by_location()[location];
+  for (auto location = 0; location < config->number_of_locations(); location++) {
+    sum_ntf += mdc->cumulative_ntf_by_location()[location];
+    pop_size += mdc->popsize_by_location()[location];
   }
 
-  ss << (sum_ntf * 100 / pop_size) / total_time_in_years << sep;
+  ss << (sum_ntf * 100 / static_cast<double>(pop_size)) / total_time_in_years << sep;
   ss << group_sep;
 
-  ss << Model::get_mdc()->cumulative_number_treatments_by_location()[0] << sep;
-  ss << Model::get_mdc()->cumulative_tf_by_location()[0] << sep;
-  ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[0] << sep;
+  ss << mdc->cumulative_number_treatments_by_location()[0] << sep;
+  ss << mdc->cumulative_tf_by_location()[0] << sep;
+  ss << mdc->cumulative_clinical_episodes_by_location()[0] << sep;
 
   ss << group_sep;
   // print # mutation events of first 10 years
-  int number_of_years = Model::get_mdc()->number_of_mutation_events_by_year().size() >= 11
+  int number_of_years = mdc->number_of_mutation_events_by_year().size() >= 11
                             ? 11
-                            : Model::get_mdc()->number_of_mutation_events_by_year().size();
+                            : static_cast<int>(mdc->number_of_mutation_events_by_year().size());
   for (int i = 0; i < number_of_years; ++i) {
-    ss << Model::get_mdc()->number_of_mutation_events_by_year()[i] << sep;
+    ss << mdc->number_of_mutation_events_by_year()[i] << sep;
   }
 
   // CLOG(INFO, "summary_reporter") << ss.str();
@@ -159,26 +170,27 @@ void MMCReporter::after_run() {
   ss.str("");
 
   // Report MOI
-  ReporterUtils::output_moi(
-      ss, Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>());
+  ReporterUtils::output_moi(ss, population->get_person_index<PersonIndexByLocationStateAgeClass>());
 }
 
-void MMCReporter::print_EIR_PfPR_by_location() {
-  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
+void MMCReporter::print_eir_pfpr_by_location() {
+  auto* mdc = Model::get_mdc();
+  auto* config = Model::get_config();
+  for (auto loc = 0; loc < config->number_of_locations(); ++loc) {
     //
     // EIR
-    if (Model::get_mdc()->eir_by_location_year()[loc].empty()) {
+    if (mdc->eir_by_location_year()[loc].empty()) {
       ss << 0 << sep;
     } else {
-      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << sep;
+      ss << mdc->eir_by_location_year()[loc].back() << sep;
     }
 
     // pfpr <5 and all
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 0, 5) * 100 << sep;
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 2, 10) * 100 << sep;
-    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << sep;
-    //    std::cout << Model::get_population()->size() << "\t"
-    //              << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 <<
+    ss << mdc->get_blood_slide_prevalence(loc, 0, 5) * 100 << sep;
+    ss << mdc->get_blood_slide_prevalence(loc, 2, 10) * 100 << sep;
+    ss << mdc->blood_slide_prevalence_by_location()[loc] * 100 << sep;
+    //    std::cout << population->size() << "\t"
+    //              << mdc->blood_slide_prevalence_by_location()[loc] * 100 <<
     //              std::endl;
   }
 }

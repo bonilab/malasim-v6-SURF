@@ -1,8 +1,8 @@
 #ifndef POMS_TACTREPORTER_H
 #define POMS_TACTREPORTER_H
 
-
 #include <sstream>
+
 #include "Reporter.h"
 
 class PersonIndexByLocationStateAgeClass;
@@ -10,14 +10,12 @@ class PersonIndexByLocationStateAgeClass;
 class TACTReporter : public Reporter {
 public:
   // Disallow copy
-  TACTReporter(const TACTReporter&) = delete;
-  TACTReporter& operator=(const TACTReporter&) = delete;
+  TACTReporter(const TACTReporter &) = delete;
+  TACTReporter &operator=(const TACTReporter &) = delete;
 
   // Disallow move
-  TACTReporter(TACTReporter&&) = delete;
-  TACTReporter& operator=(TACTReporter&&) = delete;
-
-public:
+  TACTReporter(TACTReporter &&) = delete;
+  TACTReporter &operator=(TACTReporter &&) = delete;
 
   TACTReporter() = default;
 
@@ -34,19 +32,15 @@ public:
   void monthly_report() override;
 
 private:
-  void output_genotype_frequency_3(
-      const int& number_of_genotypes,
-      PersonIndexByLocationStateAgeClass* pi
-  );
+  void output_genotype_frequency_3(const int &number_of_genotypes,
+                                   PersonIndexByLocationStateAgeClass* pi);
 
 public:
   std::stringstream ss;
   const std::string group_sep = "-1111\t";
   const std::string sep = "\t";
 
-  long cumulative_number_of_mutation_events_last_month = 0;
-
+  uint64_t cumulative_number_of_mutation_events_last_month = 0;
 };
 
-
-#endif //POMS_TACTREPORTER_H
+#endif  // POMS_TACTREPORTER_H
