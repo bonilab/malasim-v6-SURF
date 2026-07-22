@@ -30,8 +30,6 @@ public:
   void monthly_report() override;
 
   std::stringstream ss;
-  const std::string group_sep = "-1111\t";
-  const std::string sep = "\t";
 
   uint64_t cumulative_number_of_mutation_events_last_month = 0;
 

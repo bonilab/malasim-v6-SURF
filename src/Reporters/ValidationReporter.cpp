@@ -11,6 +11,7 @@
 #include "Mosquito/Mosquito.h"
 #include "Parasites/Genotype.h"
 #include "Population/Population.h"
+#include "Reporters/Reporter.h"
 #include "Simulation/Model.h"
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
@@ -93,100 +94,102 @@ void ValidationReporter::monthly_report() {
   //   Constants::DAYS_IN_YEAR,Model::get_mdc()->person_days_by_location_year()[0]);
   std::stringstream ss;
 
-  ss << Model::get_scheduler()->current_time() << sep;
-  ss << Model::get_scheduler()->get_unix_time() << sep;
-  ss << Model::get_scheduler()->get_current_date_seperated_string() << sep;
+  ss << Model::get_scheduler()->current_time() << tsv::SEP;
+  ss << Model::get_scheduler()->get_unix_time() << tsv::SEP;
+  ss << Model::get_scheduler()->get_current_date_seperated_string() << tsv::SEP;
   ss << Model::get_config()->get_seasonality_settings().get_seasonal_factor(
       Model::get_scheduler()->get_calendar_date(), 0)
-     << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 1) << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 10) << sep;
-  ss << Model::get_population()->size() << sep;
-  ss << group_sep;                 // 9 - index 0
-  print_EIR_PfPR_by_location(ss);  // 11
-  ss << group_sep;                 // 15
+     << tsv::SEP;
+  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 1) << tsv::SEP;
+  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 10) << tsv::SEP;
+  ss << Model::get_population()->size() << tsv::SEP;
+  ss << tsv::GROUP_SEP;            // 9 - index 0
+  print_eir_pfpr_by_location(ss);  // 11
+  ss << tsv::GROUP_SEP;            // 15
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_new_infections_by_location()[loc] << sep;
-    ss << group_sep;  // 17
+    ss << Model::get_mdc()->monthly_number_of_new_infections_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 17
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << sep;  // Incidence
-    ss << group_sep;                                                                // 19
+    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc]
+       << tsv::SEP;        // Incidence
+    ss << tsv::GROUP_SEP;  // 19
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << sep;
-    ss << group_sep;  /// 21
+    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  /// 21
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto moi : Model::get_mdc()->multiple_of_infection_by_location()[loc]) {
-      ss << moi << sep;
+      ss << moi << tsv::SEP;
     }
-    ss << group_sep;  /// 32
+    ss << tsv::GROUP_SEP;  /// 32
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-      ss << Model::get_mdc()->blood_slide_prevalence_by_location_age_group()[loc][ac] << sep;
+      ss << Model::get_mdc()->blood_slide_prevalence_by_location_age_group()[loc][ac] << tsv::SEP;
     }
-    ss << group_sep;  // 48
+    ss << tsv::GROUP_SEP;  // 48
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->blood_slide_prevalence_by_location_age()[loc][age] << sep;
+      ss << Model::get_mdc()->blood_slide_prevalence_by_location_age()[loc][age] << tsv::SEP;
     }
-    ss << group_sep;  /// 129
+    ss << tsv::GROUP_SEP;  /// 129
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->current_tf_by_location()[loc] << sep;
+    ss << Model::get_mdc()->current_tf_by_location()[loc] << tsv::SEP;
   }
-  ss << group_sep;  // 131
+  ss << tsv::GROUP_SEP;  // 131
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_mutation_events_by_location()[loc] << sep;
-    ss << group_sep;  // 133
+    ss << Model::get_mdc()->monthly_number_of_mutation_events_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 133
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-      ss << Model::get_mdc()->number_of_treatments_by_location_age_year()[loc][ac] << sep;
+      ss << Model::get_mdc()->number_of_treatments_by_location_age_year()[loc][ac] << tsv::SEP;
     }
-    ss << group_sep;  // 149
+    ss << tsv::GROUP_SEP;  // 149
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->total_number_of_bites_by_location()[loc] << sep;
+    ss << Model::get_mdc()->total_number_of_bites_by_location()[loc] << tsv::SEP;
   }
-  ss << group_sep;  // 151
+  ss << tsv::GROUP_SEP;  // 151
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->total_number_of_bites_by_location_year()[loc] << sep;
-    ss << group_sep;  // 153
+    ss << Model::get_mdc()->total_number_of_bites_by_location_year()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 153
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->today_number_of_treatments_by_location()[loc] << sep;
-    ss << group_sep;  // 155
+    ss << Model::get_mdc()->today_number_of_treatments_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 155
   }
-  ss << Model::get_mdc()->current_number_of_mutation_events_in_this_year() << sep;
-  ss << group_sep;  // 157
+  ss << Model::get_mdc()->current_number_of_mutation_events_in_this_year() << tsv::SEP;
+  ss << tsv::GROUP_SEP;  // 157
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     if ((Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::ASYMPTOMATIC]
          + Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::CLINICAL])
         == 0) {
-      ss << 0 << sep;
+      ss << 0 << tsv::SEP;
     } else {
       ss << Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::ASYMPTOMATIC]
                 / (Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::ASYMPTOMATIC]
                    + Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::CLINICAL])
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  // 159
+    ss << tsv::GROUP_SEP;  // 159
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->popsize_by_location_age()[loc][age] << sep;
+      ss << Model::get_mdc()->popsize_by_location_age()[loc][age] << tsv::SEP;
     }
-    ss << group_sep;  // 240
+    ss << tsv::GROUP_SEP;  // 240
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location_age()[loc][age] << sep;
+      ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location_age()[loc][age]
+         << tsv::SEP;
     }
-    ss << group_sep;  // 321
+    ss << tsv::GROUP_SEP;  // 321
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
@@ -194,153 +197,157 @@ void ValidationReporter::monthly_report() {
           Model::get_mdc()->popsize_by_location_hoststate_age_class()[loc][Person::ASYMPTOMATIC][ac]
           + Model::get_mdc()->popsize_by_location_hoststate_age_class()[loc][Person::CLINICAL][ac];
       if (all_infected_pop == 0) {
-        ss << 0 << sep;
+        ss << 0 << tsv::SEP;
       } else {
         ss << std::setprecision(6)
            << Model::get_mdc()->number_of_clinical_by_location_age_group()[loc][ac]
                   / static_cast<double>(all_infected_pop)
-           << sep;
+           << tsv::SEP;
       }
     }
-    ss << group_sep;  // 337
+    ss << tsv::GROUP_SEP;  // 337
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     ss << Model::get_mdc()->total_immune_by_location()[loc]
               / static_cast<double>(Model::get_population()->size_at(loc))
-       << sep;
-    ss << group_sep;  // 339
+       << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 339
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     int all_infected_pop =
         Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::ASYMPTOMATIC]
         + Model::get_mdc()->popsize_by_location_hoststate()[loc][Person::CLINICAL];
     if (all_infected_pop == 0) {
-      ss << 0 << sep;
+      ss << 0 << tsv::SEP;
     } else {
       ss << std::setprecision(6)
          << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc]
                 / static_cast<double>(all_infected_pop)
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  // 341
+    ss << tsv::GROUP_SEP;  // 341
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_ntf_by_location()[loc] << sep;
-    ss << group_sep;  // 343
+    ss << Model::get_mdc()->cumulative_ntf_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 343
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_tf_by_location()[loc] << sep;
-    ss << group_sep;  // 345
+    ss << Model::get_mdc()->monthly_number_of_tf_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 345
   }  // 417
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << sep;
-    ss << group_sep;  // 347
+    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 347
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << sep;
-    ss << group_sep;  // 349
+    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 349
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << sep;
-    ss << group_sep;  // 351
-  }
-  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    for (int age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->number_of_untreated_cases_by_location_age_year()[loc][age] << sep;
-    }
-    ss << group_sep;  /// 432
+    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 351
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->number_of_deaths_by_location_age_year()[loc][age] << sep;
+      ss << Model::get_mdc()->number_of_untreated_cases_by_location_age_year()[loc][age]
+         << tsv::SEP;
     }
-    ss << group_sep;  /// 513
+    ss << tsv::GROUP_SEP;  /// 432
+  }
+  for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
+    for (int age = 0; age < 80; age++) {
+      ss << Model::get_mdc()->number_of_deaths_by_location_age_year()[loc][age] << tsv::SEP;
+    }
+    ss << tsv::GROUP_SEP;  /// 513
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
       ss << Model::get_mdc()->number_of_malaria_deaths_treated_by_location_age_year()[loc][age]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  /// 594
+    ss << tsv::GROUP_SEP;  /// 594
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
       ss << Model::get_mdc()->number_of_malaria_deaths_non_treated_by_location_age_year()[loc][age]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  /// 675
+    ss << tsv::GROUP_SEP;  /// 675
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->total_immune_by_location_age()[loc][age] << sep;
+      ss << Model::get_mdc()->total_immune_by_location_age()[loc][age] << tsv::SEP;
     }
-    ss << group_sep;  /// 756
+    ss << tsv::GROUP_SEP;  /// 756
   }
   for (auto tf_by_therapy : Model::get_mdc()->current_tf_by_therapy()) {
-    ss << tf_by_therapy << sep;
+    ss << tf_by_therapy << tsv::SEP;
   }
-  ss << group_sep;  // 772
+  ss << tsv::GROUP_SEP;  // 772
   for (int t_id = 0; t_id < Model::get_therapy_db().size(); t_id++) {
     int n_treaments = Model::get_mdc()->number_of_treatments_with_therapy_id()[t_id];
     int n_success = Model::get_mdc()->number_of_treatments_success_with_therapy_id()[t_id];
     int n_fail = Model::get_mdc()->number_of_treatments_fail_with_therapy_id()[t_id];
     double p_success = (n_treaments == 0) ? 0 : n_success * 100.0 / n_treaments;
-    ss << n_treaments << sep << n_success << sep << n_fail << sep << p_success << sep;
+    ss << n_treaments << tsv::SEP << n_success << tsv::SEP << n_fail << tsv::SEP << p_success
+       << tsv::SEP;
   }
-  ss << group_sep;  // 833
+  ss << tsv::GROUP_SEP;  // 833
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto age = 0; age < 80; age++) {
-      ss << Model::get_mdc()->cumulative_clinical_episodes_by_location_age()[loc][age] << sep;
+      ss << Model::get_mdc()->cumulative_clinical_episodes_by_location_age()[loc][age] << tsv::SEP;
     }
-    ss << group_sep;  // 914
+    ss << tsv::GROUP_SEP;  // 914
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].total << sep;
-    ss << group_sep;  // 916
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].total << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 916
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].recrudescence << sep;
-    ss << group_sep;  // 918
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].recrudescence << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 918
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].new_infection << sep;
-    ss << group_sep;  // 920
+    ss << Model::get_mdc()->progress_to_clinical_in_7d_counter[loc].new_infection << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 920
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[loc] << sep;
-    ss << group_sep;  // 922
+    ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location()[loc]
+       << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 922
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
       ss << Model::get_mdc()
                 ->monthly_number_of_recrudescence_treatment_by_location_age_class()[loc][ac]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  /// 938
+    ss << tsv::GROUP_SEP;  /// 938
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (int age = 0; age < 80; age++) {
       ss << Model::get_mdc()->monthly_number_of_recrudescence_treatment_by_location_age()[loc][age]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  /// 1019
+    ss << tsv::GROUP_SEP;  /// 1019
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_treatment_failure_by_location()[loc] << sep;
-    ss << group_sep;  // 1021
+    ss << Model::get_mdc()->monthly_treatment_failure_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 1021
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto ac = 0; ac < Model::get_config()->number_of_age_classes(); ac++) {
-      ss << Model::get_mdc()->monthly_treatment_failure_by_location_age_class()[loc][ac] << sep;
+      ss << Model::get_mdc()->monthly_treatment_failure_by_location_age_class()[loc][ac]
+         << tsv::SEP;
     }
-    ss << group_sep;  // 1137
+    ss << tsv::GROUP_SEP;  // 1137
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->total_number_of_bites_by_location()[loc] << sep;
-    ss << Model::get_mdc()->total_number_of_bites_by_location_year()[loc] << sep;
-    ss << Model::get_mdc()->person_days_by_location_year()[loc] << sep;
-    ss << Model::get_population()->current_force_of_infection_by_location()[loc] << sep;
-    ss << group_sep;  // 1142
+    ss << Model::get_mdc()->total_number_of_bites_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->total_number_of_bites_by_location_year()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->person_days_by_location_year()[loc] << tsv::SEP;
+    ss << Model::get_population()->current_force_of_infection_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 1142
   }
   const auto age_index_count =
       static_cast<int>(Model::get_config()
@@ -352,9 +359,9 @@ void ValidationReporter::monthly_report() {
     for (auto idx = 0; idx < (age_index_count > 0 ? age_index_count : 1); ++idx) {
       ss << Model::get_mdc()
                 ->monthly_number_of_people_seeking_treatment_by_location_age_index()[loc][idx]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  // 1158
+    ss << tsv::GROUP_SEP;  // 1158
   }
   monthly_data_logger->info(ss.str());
 
@@ -375,11 +382,11 @@ void ValidationReporter::monthly_report() {
     for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
       sum += static_cast<int>(Model::get_mdc()->mutation_tracker[loc].size());
       for (auto &yearly_data : Model::get_mdc()->mutation_tracker[loc]) {
-        ss << std::get<0>(yearly_data) << sep;
-        ss << std::get<1>(yearly_data) << sep;
-        ss << std::get<2>(yearly_data) << sep;
-        ss << std::get<3>(yearly_data) << sep;
-        ss << std::get<4>(yearly_data) << sep;
+        ss << std::get<0>(yearly_data) << tsv::SEP;
+        ss << std::get<1>(yearly_data) << tsv::SEP;
+        ss << std::get<2>(yearly_data) << tsv::SEP;
+        ss << std::get<3>(yearly_data) << tsv::SEP;
+        ss << std::get<4>(yearly_data) << tsv::SEP;
         ss << std::get<5>(yearly_data) << '\n';
       }
     }
@@ -397,9 +404,9 @@ void ValidationReporter::monthly_report() {
           Model::get_mdc()->mosquito_recombined_resistant_genotype_tracker[loc].size());
       for (auto &genotype_tracked :
            Model::get_mdc()->mosquito_recombined_resistant_genotype_tracker[loc]) {
-        ss << std::get<0>(genotype_tracked) << sep;
-        ss << std::get<1>(genotype_tracked) << sep;
-        ss << std::get<2>(genotype_tracked) << sep;
+        ss << std::get<0>(genotype_tracked) << tsv::SEP;
+        ss << std::get<1>(genotype_tracked) << tsv::SEP;
+        ss << std::get<2>(genotype_tracked) << tsv::SEP;
         ss << std::get<3>(genotype_tracked) << '\n';
       }
     }
@@ -416,13 +423,14 @@ void ValidationReporter::after_run() {
   std::stringstream ss;
 
   ss.str("");
-  ss << Model::get_random()->get_seed() << sep << Model::get_config()->number_of_locations() << sep;
-  ss << Model::get_config()->location_db()[0].beta << sep;
-  ss << Model::get_config()->location_db()[0].population_size << sep;
-  print_EIR_PfPR_by_location(ss);
-  ss << group_sep;  // 9
+  ss << Model::get_random()->get_seed() << tsv::SEP << Model::get_config()->number_of_locations()
+     << tsv::SEP;
+  ss << Model::get_config()->location_db()[0].beta << tsv::SEP;
+  ss << Model::get_config()->location_db()[0].population_size << tsv::SEP;
+  print_eir_pfpr_by_location(ss);
+  ss << tsv::GROUP_SEP;  // 9
   // output last strategy information
-  ss << Model::get_treatment_strategy()->id << sep;  // 10
+  ss << Model::get_treatment_strategy()->id << tsv::SEP;  // 10
   // output NTF
   const auto total_time_in_years =
       (Model::get_scheduler()->current_time()
@@ -434,56 +442,56 @@ void ValidationReporter::after_run() {
     sum_ntf += Model::get_mdc()->cumulative_ntf_by_location()[loc];
     pop_size += Model::get_mdc()->popsize_by_location()[loc];
   }
-  ss << (sum_ntf * 100 / static_cast<double>(pop_size)) / total_time_in_years << sep;
-  ss << group_sep;  // 12
+  ss << (sum_ntf * 100 / static_cast<double>(pop_size)) / total_time_in_years << tsv::SEP;
+  ss << tsv::GROUP_SEP;  // 12
   for (int loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << sep;
-    ss << group_sep;  // 14
+    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 14
   }
   for (int loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->percentage_bites_on_top_20_by_location()[loc] * 100 << "%" << sep;
+    ss << Model::get_mdc()->percentage_bites_on_top_20_by_location()[loc] * 100 << "%" << tsv::SEP;
     //        std::cout << Model::get_mdc()->percentage_bites_on_top_20_by_location()[loc] * 100 <<
     //        "%" << "\t";
-    ss << group_sep;  // 16
+    ss << tsv::GROUP_SEP;  // 16
   }
   for (int loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     double location_ntf = Model::get_mdc()->cumulative_ntf_by_location()[loc] * 100
                           / static_cast<double>(Model::get_mdc()->popsize_by_location()[loc]);
     location_ntf /= total_time_in_years;
-    ss << location_ntf << sep;
+    ss << location_ntf << tsv::SEP;
     //        std::cout << location_NTF << "\t";
-    ss << group_sep;  // 18
+    ss << tsv::GROUP_SEP;  // 18
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
     for (auto age = 0; age < 80; age++) {
       ss << static_cast<double>(
                 Model::get_mdc()->cumulative_clinical_episodes_by_location_age()[loc][age])
                 / total_time_in_years / Model::get_mdc()->popsize_by_location_age()[loc][age]
-         << sep;
+         << tsv::SEP;
     }
-    ss << group_sep;  // 99
+    ss << tsv::GROUP_SEP;  // 99
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << sep;
-    ss << group_sep;  // 101
+    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 101
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << sep;
-    ss << group_sep;  // 103
+    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 103
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << sep;
-    ss << group_sep;  // 105
+    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 105
   }
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->mosquito_recombination_events_count()[loc][0] << sep;
-    ss << Model::get_mdc()->mosquito_recombination_events_count()[loc][1] << sep;
-    ss << group_sep;  // 107
+    ss << Model::get_mdc()->mosquito_recombination_events_count()[loc][0] << tsv::SEP;
+    ss << Model::get_mdc()->mosquito_recombination_events_count()[loc][1] << tsv::SEP;
+    ss << tsv::GROUP_SEP;  // 107
   }
   summary_data_logger->info(ss.str());
 
   for (const auto &genotype : *(Model::get_genotype_db())) {
-    gene_db_logger->info("{}{}{}", genotype->genotype_id(), sep, genotype->aa_sequence);
+    gene_db_logger->info("{}{}{}", genotype->genotype_id(), tsv::SEP, genotype->aa_sequence);
     // prmc_db_logger->info("{}{}{}",g_id,sep,genotype->aa_sequence);
   }
 
@@ -531,23 +539,23 @@ void ValidationReporter::after_run() {
   }
 }
 
-void ValidationReporter::print_EIR_PfPR_by_location(std::stringstream &ss) {
+void ValidationReporter::print_eir_pfpr_by_location(std::stringstream &ss) {
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
     //
     // EIR
     if (Model::get_mdc()->eir_by_location_year()[loc].empty()) {
-      ss << 0 << sep;
+      ss << 0 << tsv::SEP;
       // spdlog::info("print_EIR_PfPR_by_location {}: EIR_by_location_year is empty", loc);
     } else {
-      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << sep;
+      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << tsv::SEP;
       // spdlog::info("print_EIR_PfPR_by_location {}: EIR_by_location_year {:.8f}", loc,
       // Model::get_mdc()->EIR_by_location_year()[loc].back());
     }
-    ss << group_sep;  // 11
+    ss << tsv::GROUP_SEP;  // 11
     // pfpr <5 , 2-10 and all
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 2, 10) * 100 << sep;
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 0, 5) * 100 << sep;
-    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << sep;
+    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 2, 10) * 100 << tsv::SEP;
+    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 0, 5) * 100 << tsv::SEP;
+    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << tsv::SEP;
   }
 }
 

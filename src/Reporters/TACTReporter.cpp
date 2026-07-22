@@ -13,6 +13,7 @@
 
 #include "Core/Scheduler/Scheduler.h"
 #include "Parasites/Genotype.h"
+#include "Reporters/Reporter.h"
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
 
@@ -51,48 +52,52 @@ void TACTReporter::initialize(int job_number, const std::string &path) {
 
 void TACTReporter::before_run() {
   // output header for csv file
-  ss << "TIME" << sep << "PFPR" << sep << "MUTATIONS" << sep << "NUMBER_OF_TREATMENTS" << sep
-     << "NUMBER_OF_TREATMENT_FAILURES" << sep << "NUMBER_OF_SYMPTOMATIC_CASES" << sep;
-  for (auto i = 0; i < Model::get_genotype_db()->size(); i++) { ss << "GENOTYPE_ID_" << i << sep; }
-  ss << group_sep;
-  for (auto i = 0; i < Model::get_mdc()->current_tf_by_therapy().size(); i++) {
-    ss << "TF_THERAPY_" << i << sep;
+  ss << "TIME" << tsv::SEP << "PFPR" << tsv::SEP << "MUTATIONS" << tsv::SEP
+     << "NUMBER_OF_TREATMENTS" << tsv::SEP << "NUMBER_OF_TREATMENT_FAILURES" << tsv::SEP
+     << "NUMBER_OF_SYMPTOMATIC_CASES" << tsv::SEP;
+  for (auto i = 0; i < Model::get_genotype_db()->size(); i++) {
+    ss << "GENOTYPE_ID_" << i << tsv::SEP;
   }
-  ss << "AVERAGE_TF_60" << sep;
-  ss << "PUBLIC_FRACTION" << sep;
+  ss << tsv::GROUP_SEP;
+  for (auto i = 0; i < Model::get_mdc()->current_tf_by_therapy().size(); i++) {
+    ss << "TF_THERAPY_" << i << tsv::SEP;
+  }
+  ss << "AVERAGE_TF_60" << tsv::SEP;
+  ss << "PUBLIC_FRACTION" << tsv::SEP;
   ss << "PRIVATE_FRACTION";
   spdlog::get("monthly_reporter")->info("{}", ss.str());
   ss.str("");
 }
 
 void TACTReporter::monthly_report() {
-  ss << Model::get_scheduler()->current_time() << sep;
+  ss << Model::get_scheduler()->current_time() << tsv::SEP;
 
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
-    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << sep;
+    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << tsv::SEP;
   }
 
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
-    ss << Model::get_mdc()->monthly_number_of_mutation_events_by_location()[loc] << sep;
-    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << sep;
-    ss << Model::get_mdc()->monthly_number_of_tf_by_location()[loc] << sep;
-    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << sep;
+    ss << Model::get_mdc()->monthly_number_of_mutation_events_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->monthly_number_of_tf_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << tsv::SEP;
   }
 
   output_genotype_frequency_3(
       static_cast<int>(Model::get_genotype_db()->size()),
       Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>());
 
-  ss << group_sep;
+  ss << tsv::GROUP_SEP;
 
   for (auto tf_by_therapy : Model::get_mdc()->current_tf_by_therapy()) {
-    ss << tf_by_therapy << sep;
+    ss << tf_by_therapy << tsv::SEP;
   }
 
-  ss << Model::get_mdc()->current_tf_by_location()[0] << sep;
+  ss << Model::get_mdc()->current_tf_by_location()[0] << tsv::SEP;
 
   if (Model::get_treatment_strategy()->get_type() == IStrategy::NestedMFT) {
-    ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[0] << sep;
+    ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[0]
+       << tsv::SEP;
     ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[1];
   }
 
@@ -103,19 +108,19 @@ void TACTReporter::monthly_report() {
 void TACTReporter::after_run() {
   ss.str("");
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
-    ss << Model::get_config()->location_db()[loc].beta << sep;
+    ss << Model::get_config()->location_db()[loc].beta << tsv::SEP;
     if (Model::get_mdc()->eir_by_location_year()[loc].empty()) {
-      ss << 0 << sep;
+      ss << 0 << tsv::SEP;
     } else {
-      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << sep;
+      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << tsv::SEP;
     }
-    ss << Model::get_treatment_coverage()->p_treatment_under_5[0] << sep;
-    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << sep;
-    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << sep;
-    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << sep;
-    ss << "FLT" << sep;
-    ss << "TACT" << sep;
-    ss << "importation" << sep;
+    ss << Model::get_treatment_coverage()->p_treatment_under_5[0] << tsv::SEP;
+    ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << tsv::SEP;
+    ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << tsv::SEP;
+    ss << "FLT" << tsv::SEP;
+    ss << "TACT" << tsv::SEP;
+    ss << "importation" << tsv::SEP;
   }
   spdlog::get("summary_reporter")->info("{}", ss.str());
   ss.str("");
@@ -170,7 +175,7 @@ void TACTReporter::output_genotype_frequency_3(const int &number_of_genotypes,
     // output per location
     for (auto &occurence_by_loc : result3) {
       occurence_by_loc /= sum1;
-      ss << (sum1 == 0 ? 0 : occurence_by_loc) << sep;
+      ss << (sum1 == 0 ? 0 : occurence_by_loc) << tsv::SEP;
     }
   }
 }

@@ -40,8 +40,6 @@ public:
   void print_eir_pfpr_by_location();
 
   std::stringstream ss;
-  const std::string group_sep = "-1111\t";
-  const std::string sep = "\t";
 };
 
 #endif  // MMCREPORTER_H

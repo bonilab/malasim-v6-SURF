@@ -18,9 +18,6 @@
 #include "Utils/Index/PersonIndexByLocationStateAgeClass.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
-const std::string GROUP_SEP = "-1111\t";
-const std::string SEP = "\t";
-
 void ReporterUtils::output_genotype_frequency1(std::stringstream &ss,
                                                const int &number_of_genotypes,
                                                PersonIndexByLocationStateAgeClass* pi) {
@@ -67,13 +64,13 @@ void ReporterUtils::output_genotype_frequency1(std::stringstream &ss,
 
     for (auto &genotype_count : result1) {
       genotype_count /= sum1;
-      ss << (sum1 == 0 ? 0 : genotype_count) << SEP;
+      ss << (sum1 == 0 ? 0 : genotype_count) << tsv::SEP;
     }
   }
-  ss << GROUP_SEP;
+  ss << tsv::GROUP_SEP;
   for (auto &weighted : result1_all) {
     weighted /= sum1_all;
-    ss << (sum1_all == 0 ? 0 : weighted) << SEP;
+    ss << (sum1_all == 0 ? 0 : weighted) << tsv::SEP;
   }
 }
 
@@ -111,14 +108,14 @@ void ReporterUtils::output_genotype_frequency2(std::stringstream &ss,
     // output for each location
     for (auto &genotype_count : result2) {
       genotype_count /= sum2;
-      ss << (sum2 == 0 ? 0 : genotype_count) << SEP;
+      ss << (sum2 == 0 ? 0 : genotype_count) << tsv::SEP;
     }
   }
-  ss << GROUP_SEP;
+  ss << tsv::GROUP_SEP;
   // output for all locations
   for (auto &weighted : result2_all) {
     weighted /= sum2_all;
-    ss << (sum2_all == 0 ? 0 : weighted) << SEP;
+    ss << (sum2_all == 0 ? 0 : weighted) << tsv::SEP;
   }
 }
 
@@ -177,14 +174,15 @@ void ReporterUtils::output_genotype_frequency3(std::stringstream &ss,
   // this is for all locations
   for (auto &weighted_genotype : result3_all) {
     weighted_genotype /= sum1_all;
-    ss << (sum1_all == 0 ? 0 : weighted_genotype) << SEP;
+    ss << (sum1_all == 0 ? 0 : weighted_genotype) << tsv::SEP;
   }
   //
   //  ss << group_sep;
   //  ss << sum1_all << sep;
 }
 
-void ReporterUtils::output_genotype_frequency4(std::stringstream &ss, std::stringstream &ss2,
+void ReporterUtils::output_genotype_frequency4(std::stringstream &ss,
+                                               std::stringstream &ss2,
                                                const int &number_of_genotypes,
                                                PersonIndexByLocationStateAgeClass* pi) {
   auto sum1_all = 0.0;
@@ -269,7 +267,7 @@ void ReporterUtils::output_genotype_frequency4(std::stringstream &ss, std::strin
             / static_cast<double>(Model::get_mosquito()->genotypes_table[tracking_day][loc].size());
       }
 
-      for (auto &weighted_genotype : prmc4) { ss2 << weighted_genotype << SEP; }
+      for (auto &weighted_genotype : prmc4) { ss2 << weighted_genotype << tsv::SEP; }
     }
   }
   //  ss << group_sep;
@@ -277,7 +275,7 @@ void ReporterUtils::output_genotype_frequency4(std::stringstream &ss, std::strin
   // this is for all locations
   for (auto &weighted_genotyp : result4_all) {
     weighted_genotyp /= sum1_all;
-    ss << (sum1_all == 0 ? 0 : weighted_genotyp) << SEP;
+    ss << (sum1_all == 0 ? 0 : weighted_genotyp) << tsv::SEP;
   }
   //
   //  ss << group_sep;
@@ -351,30 +349,30 @@ void ReporterUtils::output_3_genotype_frequency(std::stringstream &ss,
 
     for (auto j = 0; j < number_of_genotypes; ++j) {
       if (sum1 == 0) {
-        ss << 0 << SEP << 0 << SEP << 0 << SEP;
+        ss << 0 << tsv::SEP << 0 << tsv::SEP << 0 << tsv::SEP;
       } else {
-        ss << result1[j] << SEP;
-        ss << result2[j] << SEP;
-        ss << result3[j] << SEP;
+        ss << result1[j] << tsv::SEP;
+        ss << result2[j] << tsv::SEP;
+        ss << result3[j] << tsv::SEP;
       }
     }
 
-    ss << GROUP_SEP;
+    ss << tsv::GROUP_SEP;
   }
 
   // this is for all locations
-  ss << GROUP_SEP;
+  ss << tsv::GROUP_SEP;
   for (auto j = 0; j < number_of_genotypes; ++j) {
     if (sum1_all == 0) {
-      ss << 0 << SEP << 0 << SEP << 0 << SEP;
+      ss << 0 << tsv::SEP << 0 << tsv::SEP << 0 << tsv::SEP;
     } else {
       result1_all[j] /= sum1_all;
       result2_all[j] /= sum2_all;
       result3_all[j] /= sum1_all;
 
-      ss << result1_all[j] << SEP;
-      ss << result1_all[j] << SEP;
-      ss << result1_all[j] << SEP;
+      ss << result1_all[j] << tsv::SEP;
+      ss << result1_all[j] << tsv::SEP;
+      ss << result1_all[j] << tsv::SEP;
     }
   }
 }

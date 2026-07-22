@@ -1,21 +1,20 @@
 #ifndef VALIDATIONREPORTER_H
 #define VALIDATIONREPORTER_H
 
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #include <memory>
+
 #include "Reporter.h"
 
 class ValidationReporter : public Reporter {
 public:
   // Disable copy, assignment, and move
   ValidationReporter(const ValidationReporter &) = delete;
-  ValidationReporter& operator=(const ValidationReporter &) = delete;
+  ValidationReporter &operator=(const ValidationReporter &) = delete;
   ValidationReporter(ValidationReporter &&) = delete;
-  ValidationReporter& operator=(ValidationReporter &&) = delete;
-
-  const std::string group_sep = "-1111\t";
-  const std::string sep = "\t";
+  ValidationReporter &operator=(ValidationReporter &&) = delete;
 
   std::shared_ptr<spdlog::logger> monthly_data_logger;
   std::shared_ptr<spdlog::logger> summary_data_logger;
@@ -24,10 +23,6 @@ public:
   std::shared_ptr<spdlog::logger> monthly_mutation_logger;
   std::shared_ptr<spdlog::logger> mosquito_res_count_logger;
 
-  std::string monthly_mutation_path = "";
-  std::string mosquito_res_count_path = "";
-
-public:
   ValidationReporter();
   ~ValidationReporter() override = default;
 
@@ -36,7 +31,10 @@ public:
   void after_run() override;
   void begin_time_step() override;
   void monthly_report() override;
-  void print_EIR_PfPR_by_location(std::stringstream& ss);
+  void print_eir_pfpr_by_location(std::stringstream &ss);
+
+  std::string monthly_mutation_path;
+  std::string mosquito_res_count_path;
 };
 
 #endif  // VALIDATIONREPORTER_H
