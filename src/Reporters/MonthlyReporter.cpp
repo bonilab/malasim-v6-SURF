@@ -8,11 +8,10 @@
 #include "MDC/ModelDataCollector.h"
 #include "Parasites/Genotype.h"
 #include "Population/Population.h"
+#include "Reporters/Reporter.h"
 #include "Simulation/Model.h"
 #include "Treatment/ITreatmentCoverageModel.h"
-#include "Treatment/Strategies/IStrategy.h"
 #include "Utility/ReporterUtils.h"
-#include "Utils/Cli.h"
 #include "Utils/Constants.h"
 #include "Utils/Index/PersonIndexByLocationStateAgeClass.h"
 #include "Utils/Random.h"
@@ -65,31 +64,31 @@ void MonthlyReporter::begin_time_step() {}
 void MonthlyReporter::monthly_report() {
   std::stringstream ss;
 
-  ss << Model::get_scheduler()->current_time() << sep;
-  ss << Model::get_scheduler()->get_unix_time() << sep;
-  ss << Model::get_scheduler()->get_current_date_string() << sep;
+  ss << Model::get_scheduler()->current_time() << tsv::SEP;
+  ss << Model::get_scheduler()->get_unix_time() << tsv::SEP;
+  ss << Model::get_scheduler()->get_current_date_string() << tsv::SEP;
   ss << Model::get_config()->get_seasonality_settings().get_seasonal_factor(
       Model::get_scheduler()->get_calendar_date(), 0)
-     << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 1) << sep;
-  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 10) << sep;
-  ss << Model::get_population()->size() << sep;
-  ss << group_sep;
+     << tsv::SEP;
+  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 1) << tsv::SEP;
+  ss << Model::get_treatment_coverage()->get_probability_to_be_treated(0, 10) << tsv::SEP;
+  ss << Model::get_population()->size() << tsv::SEP;
+  ss << tsv::GROUP_SEP;
 
-  print_EIR_PfPR_by_location(ss);
-  ss << group_sep;
+  print_eir_pfpr_by_location(ss);
+  ss << tsv::GROUP_SEP;
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_new_infections_by_location()[loc] << sep;
+    ss << Model::get_mdc()->monthly_number_of_new_infections_by_location()[loc] << tsv::SEP;
   }
-  ss << group_sep;
+  ss << tsv::GROUP_SEP;
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << sep;
+    ss << Model::get_mdc()->monthly_number_of_treatment_by_location()[loc] << tsv::SEP;
   }
-  ss << group_sep;
+  ss << tsv::GROUP_SEP;
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); loc++) {
-    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << sep;
+    ss << Model::get_mdc()->monthly_number_of_clinical_episode_by_location()[loc] << tsv::SEP;
   }
-  ss << group_sep;
+  ss << tsv::GROUP_SEP;
 
   // Log monthly data
   monthly_data_logger->info(ss.str());
@@ -104,13 +103,14 @@ void MonthlyReporter::monthly_report() {
 
 void MonthlyReporter::after_run() {
   std::stringstream ss;
-  ss << Model::get_random()->get_seed() << sep << Model::get_config()->number_of_locations() << sep;
-  ss << Model::get_config()->location_db()[0].beta << sep;
-  ss << Model::get_config()->location_db()[0].population_size << sep;
-  print_EIR_PfPR_by_location(ss);
+  ss << Model::get_random()->get_seed() << tsv::SEP << Model::get_config()->number_of_locations()
+     << tsv::SEP;
+  ss << Model::get_config()->location_db()[0].beta << tsv::SEP;
+  ss << Model::get_config()->location_db()[0].population_size << tsv::SEP;
+  print_eir_pfpr_by_location(ss);
 
-  ss << group_sep;
-  ss << Model::get_treatment_strategy()->id << sep;
+  ss << tsv::GROUP_SEP;
+  ss << Model::get_treatment_strategy()->id << tsv::SEP;
 
   // Calculate and log NTF
   const auto total_time_in_years =
@@ -124,29 +124,29 @@ void MonthlyReporter::after_run() {
     sum_ntf += Model::get_mdc()->cumulative_ntf_by_location()[location];
     pop_size += Model::get_mdc()->popsize_by_location()[location];
   }
-  ss << (sum_ntf * 100 / static_cast<double>(pop_size)) / total_time_in_years << sep;
+  ss << (sum_ntf * 100 / static_cast<double>(pop_size)) / total_time_in_years << tsv::SEP;
 
   summary_data_logger->info(ss.str());
 
   // Log gene database
   for (const auto &genotype : *Model::get_genotype_db()) {
-    gene_db_logger->info("{}{}{}", genotype->genotype_id(), sep, genotype->get_aa_sequence());
+    gene_db_logger->info("{}{}{}", genotype->genotype_id(), tsv::SEP, genotype->get_aa_sequence());
   }
 }
 
-void MonthlyReporter::print_EIR_PfPR_by_location(std::stringstream &ss) {
+void MonthlyReporter::print_eir_pfpr_by_location(std::stringstream &ss) {
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
     if (Model::get_mdc()->eir_by_location_year()[loc].empty()) {
-      ss << 0 << sep;
+      ss << 0 << tsv::SEP;
       // spdlog::info("print_EIR_PfPR_by_location {}: EIR_by_location_year is empty", loc);
     } else {
-      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << sep;
+      ss << Model::get_mdc()->eir_by_location_year()[loc].back() << tsv::SEP;
       // spdlog::info("print_EIR_PfPR_by_location {}: EIR_by_location_year {:.8f}", loc,
       // Model::get_mdc()->EIR_by_location_year()[loc].back());
     }
-    ss << group_sep;
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 2, 10) * 100 << sep;
-    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 0, 5) * 100 << sep;
-    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << sep;
+    ss << tsv::GROUP_SEP;
+    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 2, 10) * 100 << tsv::SEP;
+    ss << Model::get_mdc()->get_blood_slide_prevalence(loc, 0, 5) * 100 << tsv::SEP;
+    ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << tsv::SEP;
   }
 }

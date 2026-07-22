@@ -11,6 +11,7 @@ class Genotype;
 // Wrapper for TSV file constants
 namespace tsv {
 const std::string SEP = "\t";
+const std::string GROUP_SEP = "-1111\t";
 const std::string END_LINE = "\n";
 const std::string EXTENSION = "tsv";
 }  // namespace tsv
