@@ -5,6 +5,7 @@
 #include "Population/ClonalParasitePopulation.h"
 #include "Population/ParasiteDensity/ParasiteDensityUpdateFunction.h"
 #include "Population/SingleHostClonalParasitePopulations.h"
+#include "Utils/Constants.h"
 
 class MockParasiteDensityUpdateFunction : public ParasiteDensityUpdateFunction {
 public:
@@ -79,7 +80,8 @@ TEST_F(ClonalParasitePopulationTest, GetLog10InfectiousDensity) {
 }
 
 TEST_F(ClonalParasitePopulationTest, PerformDrugAction) {
-  const double log10_parasite_density_cured = -1111;
+  const double log10_parasite_density_cured =
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED;
   cpp->set_last_update_log10_parasite_density(5.0);
 
   // Test with 50% parasite removal
@@ -180,7 +182,8 @@ TEST_F(ClonalParasitePopulationTest, GetLog10InfectiousDensityEdgeCases) {
 }
 
 TEST_F(ClonalParasitePopulationTest, PerformDrugActionEdgeCases) {
-  const double log10_parasite_density_cured = -1111;
+  const double log10_parasite_density_cured =
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED;
 
   // Test with very small parasite removal
   cpp->set_last_update_log10_parasite_density(5.0);

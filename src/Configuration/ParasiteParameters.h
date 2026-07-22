@@ -1,6 +1,7 @@
 #ifndef PARASITEPARAMETERS_H
 #define PARASITEPARAMETERS_H
 #include "IConfigData.h"
+#include "Utils/Constants.h"
 #include <spdlog/spdlog.h>
 
 class ParasiteParameters : public IConfigData {
@@ -36,7 +37,7 @@ public:
         void set_log_parasite_density_pyrogenic(const double value) { log_parasite_density_pyrogenic_ = value; }
 
     private:
-        double log_parasite_density_cured_ = -4.699;
+        double log_parasite_density_cured_ = Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED;
         double log_parasite_density_from_liver_ = -2.000;
         double log_parasite_density_asymptomatic_ = 3.0;
         double log_parasite_density_clinical_ = 4.301;

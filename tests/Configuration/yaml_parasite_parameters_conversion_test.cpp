@@ -1,6 +1,13 @@
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
 #include "Configuration/ParasiteParameters.h"
+#include "Utils/Constants.h"
+
+TEST(ParasiteParametersDefaultsTest, UsesNamedCuredDensityConstant) {
+    const ParasiteParameters::ParasiteDensityLevels density_levels;
+    EXPECT_DOUBLE_EQ(density_levels.get_log_parasite_density_cured(),
+                     Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
+}
 
 class ParasiteParametersYAMLTest : public ::testing::Test {
 protected:

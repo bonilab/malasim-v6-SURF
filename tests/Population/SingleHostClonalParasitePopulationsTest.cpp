@@ -12,6 +12,7 @@
 #include "Population/SingleHostClonalParasitePopulations.h"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
+#include "Utils/Constants.h"
 #include "fixtures/TestFileGenerators.h"
 
 // Mock Person class
@@ -147,14 +148,15 @@ TEST_F(SingleHostClonalParasitePopulationsTest, ClearCuredParasites) {
 
   // Set up parasites with different densities
   parasite1->set_last_update_log10_parasite_density(5.0);
-  parasite2->set_last_update_log10_parasite_density(-1111.0);  // Cured level
+  parasite2->set_last_update_log10_parasite_density(
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
   parasite3->set_last_update_log10_parasite_density(3.0);
 
   populations->add(std::move(parasite1));
   populations->add(std::move(parasite2));
   populations->add(std::move(parasite3));
 
-  populations->clear_cured_parasites(-1111.0);
+  populations->clear_cured_parasites(Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
 
   EXPECT_EQ(populations->size(), 2);
   EXPECT_EQ(populations->at(0), parasite1_ptr);
@@ -163,20 +165,22 @@ TEST_F(SingleHostClonalParasitePopulationsTest, ClearCuredParasites) {
 
 TEST_F(SingleHostClonalParasitePopulationsTest, ClearCuredParasitesEdgeCases) {
   // Test with empty population
-  populations->clear_cured_parasites(-1111.0);
+  populations->clear_cured_parasites(Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
   EXPECT_EQ(populations->size(), 0);
 
   // Test with all cured parasites
   auto parasite1 = std::make_unique<ClonalParasitePopulation>(genotype.get());
   auto parasite2 = std::make_unique<ClonalParasitePopulation>(genotype.get());
 
-  parasite1->set_last_update_log10_parasite_density(-1111.0);
-  parasite2->set_last_update_log10_parasite_density(-1111.0);
+  parasite1->set_last_update_log10_parasite_density(
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
+  parasite2->set_last_update_log10_parasite_density(
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
 
   populations->add(std::move(parasite1));
   populations->add(std::move(parasite2));
 
-  populations->clear_cured_parasites(-1111.0);
+  populations->clear_cured_parasites(Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
   EXPECT_EQ(populations->size(), 0);
 }
 
@@ -185,7 +189,8 @@ TEST_F(SingleHostClonalParasitePopulationsTest, HasDetectableParasite) {
   auto parasite_ptr = parasite.get();
 
   // Test with undetectable parasite
-  parasite_ptr->set_last_update_log10_parasite_density(-1111.0);
+  parasite_ptr->set_last_update_log10_parasite_density(
+      Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
   populations->add(std::move(parasite));
   EXPECT_FALSE(populations->has_detectable_parasite(1.0));
 
@@ -257,7 +262,8 @@ TEST_F(SingleHostClonalParasitePopulationsTest,
     target->add(std::move(parasite1));
 
     auto parasite2 = std::make_unique<ClonalParasitePopulation>(real_genotype);
-    parasite2->set_last_update_log10_parasite_density(-1111.0);
+    parasite2->set_last_update_log10_parasite_density(
+        Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
     parasite2->set_gametocyte_level(1.0);
     target->add(std::move(parasite2));
 
@@ -268,8 +274,9 @@ TEST_F(SingleHostClonalParasitePopulationsTest,
   }
 
   separate_passes->update_with_drug_effects(drugs_in_blood.get());
-  separate_passes->clear_cured_parasites(-1111.0);
-  combined_pass->update_with_drug_effects_and_clear_cured(drugs_in_blood.get(), -1111.0);
+  separate_passes->clear_cured_parasites(Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
+  combined_pass->update_with_drug_effects_and_clear_cured(
+      drugs_in_blood.get(), Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
 
   EXPECT_EQ(combined_pass->size(), separate_passes->size());
   EXPECT_DOUBLE_EQ(combined_pass->log10_total_infectious_density(),
@@ -353,7 +360,7 @@ TEST_F(SingleHostClonalParasitePopulationsTest, MultipleParasitesWithDifferentDe
   populations->add(std::move(parasite3));
 
   // Test total infectious density calculation
-  populations->clear_cured_parasites(-1111.0);
+  populations->clear_cured_parasites(Constants::DEFAULT_LOG10_PARASITE_DENSITY_CURED);
   EXPECT_GT(populations->log10_total_infectious_density(), 5.0);
 }
 
