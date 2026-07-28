@@ -139,6 +139,16 @@ TEST_F(GenotypeTest, CoversResistanceMutationPlaceholderAndStreamFormatting) {
   EXPECT_EQ(output.str(), "17\t" + aa_seq);
 }
 
+TEST_F(GenotypeTest, HandlesEmptyAlleleModificationAndInvalidGenotypeShape) {
+  const auto aa_seq = read_first_genotype_from_yaml("test_input.yml");
+  Genotype genotype(aa_seq);
+  EXPECT_EQ(genotype.modify_genotype_allele({}, Model::get_config()),
+            Model::get_genotype_db()->get_genotype(aa_seq));
+
+  Genotype malformed("");
+  EXPECT_FALSE(malformed.is_valid(Model::get_config()->get_genotype_parameters().get_pf_genotype_info()));
+}
+
 TEST_F(GenotypeTest, MatchPattern) {
   std::string aa_seq = read_first_genotype_from_yaml("test_input.yml");
   Genotype g(aa_seq);
