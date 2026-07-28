@@ -13,6 +13,10 @@ protected:
         equation->set_raster_A(std::vector<double>{0.4});
         equation->set_raster_B(std::vector<double>{0.6});
         equation->set_raster_phi(std::vector<int>{146});
+        equation->set_base(std::vector<double>{2.5});
+        equation->set_A(std::vector<double>{0.4});
+        equation->set_B(std::vector<double>{0.6});
+        equation->set_phi(std::vector<int>{146});
         equation->set_raster(true);
 
         auto rainfall = std::make_unique<SeasonalRainfall>();
@@ -107,4 +111,62 @@ TEST_F(SeasonalitySettingsTest, DecodeSeasonalitySettingsMissingField) {
 
     SeasonalitySettings decoded_settings;
     EXPECT_THROW(YAML::convert<SeasonalitySettings>::decode(node, decoded_settings), std::runtime_error);
+}
+
+TEST_F(SeasonalitySettingsTest, EncodesAllConfiguredSeasonalityModels) {
+    const auto node = YAML::convert<SeasonalitySettings>::encode(default_settings);
+    EXPECT_EQ(node["equation"]["base"].as<std::vector<double>>(), std::vector<double>{2.5});
+    EXPECT_EQ(node["rainfall"]["filename"].as<std::string>(), "sample_inputs/dev_seasonality.csv");
+    EXPECT_EQ(node["rainfall"]["period"].as<int>(), 365);
+}
+
+TEST_F(SeasonalitySettingsTest, DecodesEquationRainfallAndPatternModes) {
+    const auto equation = YAML::Load(R"(
+      enable: true
+      mode: equation
+      equation:
+        raster: true
+        base: [2.5]
+        a: [0.4]
+        b: [0.6]
+        phi: [146]
+    )");
+    SeasonalitySettings equation_settings;
+    ASSERT_TRUE(YAML::convert<SeasonalitySettings>::decode(equation, equation_settings));
+    ASSERT_NE(equation_settings.get_seasonal_equation(), nullptr);
+
+    const auto rainfall = YAML::Load(R"(
+      enable: true
+      mode: rainfall
+      rainfall:
+        filename: sample_inputs/dev_seasonality.csv
+        period: 365
+    )");
+    SeasonalitySettings rainfall_settings;
+    ASSERT_TRUE(YAML::convert<SeasonalitySettings>::decode(rainfall, rainfall_settings));
+    ASSERT_NE(rainfall_settings.get_seasonal_rainfall(), nullptr);
+
+    const auto pattern = YAML::Load(R"(
+      enable: true
+      mode: pattern
+      pattern:
+        filename: sample_inputs/dev_seasonality_pattern.csv
+        period: 365
+        admin_level: district
+    )");
+    SeasonalitySettings pattern_settings;
+    ASSERT_TRUE(YAML::convert<SeasonalitySettings>::decode(pattern, pattern_settings));
+    ASSERT_NE(pattern_settings.get_seasonal_pattern(), nullptr);
+}
+
+TEST(SeasonalitySettingsStandaloneTest, RejectsMissingNestedModelFields) {
+    SeasonalEquation equation;
+    EXPECT_THROW(YAML::convert<SeasonalEquation*>::decode(YAML::Load("base: [1]"), &equation),
+                 std::runtime_error);
+    SeasonalRainfall rainfall;
+    EXPECT_THROW(YAML::convert<SeasonalRainfall*>::decode(YAML::Load("period: 365"), &rainfall),
+                 std::runtime_error);
+    SeasonalPattern pattern;
+    EXPECT_THROW(YAML::convert<SeasonalPattern*>::decode(YAML::Load("filename: x"), &pattern),
+                 std::runtime_error);
 }
