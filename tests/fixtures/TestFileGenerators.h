@@ -150,6 +150,22 @@ inline void create_test_seasonality_file(const std::string& filename) {
 }
 
 /**
+ * @brief Generate a numeric rainfall seasonality file
+ */
+inline void create_test_rainfall_file(
+    const std::string& filename, int period = 365, double value = 0.5) {
+  std::ofstream file(filename);
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to create rainfall file: " + filename);
+  }
+
+  for (int day = 0; day < period; ++day) {
+    file << value << "\n";
+  }
+  file.close();
+}
+
+/**
  * @brief Create all raster files referenced in test YAML
  */
 inline void create_raster_files_from_yaml(const YAML::Node& config) {
@@ -235,6 +251,7 @@ inline void cleanup_test_files() {
     "test_mosquito_ifr.asc",
     "test_mosquito_size.asc",
     "test_seasonality.csv",
+    "test_rainfall.csv",
     "test_seasonality_pattern.csv",
     "test_pop.asc",
     "test_population.asc"

@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
-#include <algorithm>
-#include <array>
-#include <filesystem>
 #include "Configuration/SeasonalitySettings.h"
+#include "fixtures/TestFileGenerators.h"
 
 class SeasonalitySettingsTest : public ::testing::Test {
 protected:
@@ -162,7 +160,12 @@ TEST_F(SeasonalitySettingsTest, DecodesEquationRainfallAndPatternModes) {
     ASSERT_NE(pattern_settings.get_seasonal_pattern(), nullptr);
 }
 
-TEST(SeasonalitySettingsStandaloneTest, RejectsMissingNestedModelFields) {
+class SeasonalitySettingsStandaloneTest : public ::testing::Test {
+protected:
+    void TearDown() override { test_fixtures::cleanup_test_files(); }
+};
+
+TEST_F(SeasonalitySettingsStandaloneTest, RejectsMissingNestedModelFields) {
     SeasonalEquation equation;
     EXPECT_THROW(YAML::convert<SeasonalEquation*>::decode(YAML::Load("base: [1]"), &equation),
                  std::runtime_error);
@@ -174,7 +177,7 @@ TEST(SeasonalitySettingsStandaloneTest, RejectsMissingNestedModelFields) {
                  std::runtime_error);
 }
 
-TEST(SeasonalitySettingsStandaloneTest, ReturnsDefaultFactorWhenDisabledOrModeIsUnknown) {
+TEST_F(SeasonalitySettingsStandaloneTest, ReturnsDefaultFactorWhenDisabledOrModeIsUnknown) {
     SeasonalitySettings settings;
     const auto today = date::sys_days{date::year{2024} / 1 / 1};
 
@@ -185,16 +188,11 @@ TEST(SeasonalitySettingsStandaloneTest, ReturnsDefaultFactorWhenDisabledOrModeIs
     EXPECT_THROW(settings.process_config_using_number_of_locations(nullptr, 0), std::runtime_error);
 }
 
-TEST(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallModes) {
+TEST_F(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallModes) {
     const auto today = date::sys_days{date::year{2024} / 1 / 1};
-    const std::array<std::string, 3> rainfall_candidates{
-        "sample_inputs/dev_seasonality.csv",
-        "../../sample_inputs/dev_seasonality.csv",
-        "../../../sample_inputs/dev_seasonality.csv"};
-    const auto rainfall_path = std::find_if(
-        rainfall_candidates.begin(), rainfall_candidates.end(),
-        [](const auto& path) { return std::filesystem::exists(path); });
-    ASSERT_NE(rainfall_path, rainfall_candidates.end());
+    constexpr double expected_rainfall_factor = 0.5;
+    test_fixtures::create_test_rainfall_file(
+        "test_rainfall.csv", 365, expected_rainfall_factor);
 
     SeasonalitySettings equation_settings;
     auto equation = std::make_unique<SeasonalEquation>();
@@ -214,11 +212,12 @@ TEST(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallMod
 
     SeasonalitySettings rainfall_settings;
     auto rainfall = std::make_unique<SeasonalRainfall>();
-    rainfall->set_filename(*rainfall_path);
+    rainfall->set_filename("test_rainfall.csv");
     rainfall->set_period(365);
     rainfall_settings.set_enable(true);
     rainfall_settings.set_mode("rainfall");
     rainfall_settings.set_seasonal_rainfall(std::move(rainfall));
     EXPECT_NO_THROW(rainfall_settings.process_config_using_number_of_locations(nullptr, 0));
-    EXPECT_DOUBLE_EQ(rainfall_settings.get_seasonal_factor(today, 0), 0.828298715144364);
+    EXPECT_DOUBLE_EQ(
+        rainfall_settings.get_seasonal_factor(today, 0), expected_rainfall_factor);
 }
