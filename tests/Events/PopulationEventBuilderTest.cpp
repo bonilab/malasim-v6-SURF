@@ -149,6 +149,18 @@ TEST_F(PopulationEventBuilderTest, RejectsInvalidAnnualAndCirculationDefinitions
   EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
                    YAML::Load("- date: 2024/01/01\n  genotype_id: 0\n  count: 1\n  log_parasite_density: 0.0"), config()),
                std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_update_beta_raster_event(
+                   YAML::Load("- date: 2024/01/01\n  beta_raster: missing-beta.asc"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_rotate_treatment_strategy_event(
+                   YAML::Load("- date: 2024/01/01\n  years: 0\n  first_strategy_id: 0\n  second_strategy_id: 1"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_rotate_treatment_strategy_event(
+                   YAML::Load("- date: 2024/01/01\n  years: 1\n  first_strategy_id: -1\n  second_strategy_id: 1"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_rotate_treatment_strategy_event(
+                   YAML::Load("- date: 2024/01/01\n  years: 1\n  first_strategy_id: 9999\n  second_strategy_id: 1"), config()),
+               std::invalid_argument);
 }
 
 TEST_F(PopulationEventBuilderTest, BuildsAdditionalPopulationEventTypes) {
