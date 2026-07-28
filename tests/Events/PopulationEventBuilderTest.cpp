@@ -27,6 +27,7 @@
 #include "Events/Population/IntroduceMutantRasterEvent.hxx"
 #include "Events/Population/ModifyNestedMFTEvent.h"
 #include "Events/Population/UpdateBetaRasterEvent.hxx"
+#include "Parasites/Genotype.h"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
 #include "fixtures/TestFileGenerators.h"
@@ -370,4 +371,49 @@ TEST_F(PopulationEventBuilderTest, ExecutesStrategyAndDistrictEventsWithNoCases)
                                                                    std::vector<std::tuple<int, int, char>>{});
   district->set_executable(true);
   EXPECT_NO_THROW(district->execute());
+}
+
+TEST_F(PopulationEventBuilderTest, DispatchesRemainingSupportedEventDefinitions) {
+  const auto genotype_sequence = Model::get_genotype_db()->at(0)->get_aa_sequence();
+
+  YAML::Node importation;
+  importation["name"] = ImportationEvent::EVENT_NAME;
+  importation["info"][0]["location"] = 0;
+  importation["info"][0]["parasite_info"][0]["genotype_aa_sequence"] = genotype_sequence;
+  importation["info"][0]["parasite_info"][0]["number_of_cases"] = 0;
+  importation["info"][0]["parasite_info"][0]["date"] = "2024/01/01";
+  EXPECT_EQ(PopulationEventBuilder::build(importation).size(), 1);
+
+  YAML::Node periodic;
+  periodic["name"] = ImportationPeriodicallyEvent::EVENT_NAME;
+  periodic["info"][0]["location"] = 0;
+  periodic["info"][0]["parasite_info"][0]["genotype_aa_sequence"] = genotype_sequence;
+  periodic["info"][0]["parasite_info"][0]["duration"] = 1;
+  periodic["info"][0]["parasite_info"][0]["number_of_cases"] = 0;
+  periodic["info"][0]["parasite_info"][0]["start_date"] = "2024/01/01";
+  EXPECT_EQ(PopulationEventBuilder::build(periodic).size(), 1);
+
+  YAML::Node random_periodic;
+  random_periodic["name"] = ImportationPeriodicallyRandomEvent::EVENT_NAME;
+  random_periodic["info"][0]["date"] = "2024/02/01";
+  random_periodic["info"][0]["genotype_id"] = 0;
+  random_periodic["info"][0]["count"] = 1;
+  random_periodic["info"][0]["log_parasite_density"] = 1.0;
+  EXPECT_EQ(PopulationEventBuilder::build(random_periodic).size(), 1);
+
+  YAML::Node annual_beta;
+  annual_beta["name"] = AnnualBetaUpdateEvent::EVENT_NAME;
+  annual_beta["info"][0]["date"] = "2024/01/01";
+  annual_beta["info"][0]["rate"] = 0.1;
+  EXPECT_EQ(PopulationEventBuilder::build(annual_beta).size(), 1);
+
+  YAML::Node mask;
+  mask["name"] = ChangeMutationMaskEvent::EVENT_NAME;
+  mask["info"][0]["date"] = "2024/01/01";
+  mask["info"][0]["mutation_mask"] = YAML::Load("[true, false]");
+  EXPECT_EQ(PopulationEventBuilder::build(mask).size(), 1);
+
+  YAML::Node unknown;
+  unknown["name"] = "unsupported_event";
+  EXPECT_TRUE(PopulationEventBuilder::build(unknown).empty());
 }
