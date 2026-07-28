@@ -2,7 +2,7 @@
   "schema_version": 1,
   "description": "MalaSim full unit-test coverage baseline",
   "generated_at": "2026-07-28T10:06:36Z",
-  "source_commit": "a953181",
+  "source_commit": "898a9d5",
   "source_branch": "main",
   "working_tree_dirty": false,
   "build_type": "Debug",
