@@ -174,6 +174,9 @@ void ModelDataCollector::initialize() {
 
   last_10_blood_slide_prevalence_by_location_ =
       DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
+  last_10_blood_slide_prevalence_by_location_age_class_ = DoubleVector2(
+      Model::get_config()->number_of_locations(),
+      DoubleVector(Model::get_config()->number_of_age_classes(), 0.0));
   last_10_fraction_positive_that_are_clinical_by_location_ =
       DoubleVector2(Model::get_config()->number_of_locations(), DoubleVector(10, 0.0));
   last_10_fraction_positive_that_are_clinical_by_location_age_class_ = DoubleVector3(

@@ -532,3 +532,121 @@ TEST_F(ModelDataCollectorTest, AgeBasedSeekingEvaluationEnabledDisabled) {
     EXPECT_DOUBLE_EQ(agecfg2.evaluate_for_age(2), 1.0);
     EXPECT_DOUBLE_EQ(agecfg2.evaluate_for_age(12), 1.0);
 }
+
+TEST_F(ModelDataCollectorTest, InitializedStatisticsExposeConfiguredDimensions) {
+    const auto location_count = Model::get_config()->number_of_locations();
+    const auto age_class_count = Model::get_config()->number_of_age_classes();
+    const auto therapy_count = Model::get_therapy_db().size();
+
+#define EXPECT_LOCATION_ROWS(accessor) EXPECT_EQ(mdc_->accessor().size(), location_count)
+#define EXPECT_AGE_ROWS(accessor) EXPECT_EQ(mdc_->accessor().size(), location_count)
+#define EXPECT_THERAPY_ROWS(accessor) EXPECT_EQ(mdc_->accessor().size(), therapy_count)
+
+    EXPECT_LOCATION_ROWS(total_immune_by_location);
+    EXPECT_AGE_ROWS(total_immune_by_location_age_class);
+    EXPECT_AGE_ROWS(total_immune_by_location_age);
+    EXPECT_LOCATION_ROWS(popsize_by_location);
+    EXPECT_LOCATION_ROWS(popsize_residence_by_location);
+    EXPECT_AGE_ROWS(popsize_by_location_age_class);
+    EXPECT_AGE_ROWS(popsize_by_location_age_class_by_5);
+    EXPECT_AGE_ROWS(popsize_by_location_hoststate);
+    EXPECT_AGE_ROWS(popsize_by_location_hoststate_age_class);
+    EXPECT_LOCATION_ROWS(blood_slide_prevalence_by_location);
+    EXPECT_AGE_ROWS(blood_slide_number_by_location_age_group);
+    EXPECT_AGE_ROWS(blood_slide_prevalence_by_location_age_group);
+    EXPECT_AGE_ROWS(blood_slide_number_by_location_age_group_by_5);
+    EXPECT_AGE_ROWS(blood_slide_prevalence_by_location_age_group_by_5);
+    EXPECT_AGE_ROWS(blood_slide_prevalence_by_location_age);
+    EXPECT_AGE_ROWS(blood_slide_number_by_location_age);
+    EXPECT_LOCATION_ROWS(fraction_of_positive_that_are_clinical_by_location);
+    EXPECT_LOCATION_ROWS(total_number_of_bites_by_location);
+    EXPECT_LOCATION_ROWS(total_number_of_bites_by_location_year);
+    EXPECT_LOCATION_ROWS(person_days_by_location_year);
+    EXPECT_AGE_ROWS(eir_by_location_year);
+    EXPECT_LOCATION_ROWS(eir_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_clinical_episodes_by_location);
+    EXPECT_AGE_ROWS(cumulative_clinical_episodes_by_location_age);
+    EXPECT_AGE_ROWS(cumulative_clinical_episodes_by_location_age_group);
+    EXPECT_AGE_ROWS(average_number_biten_by_location_person);
+    EXPECT_LOCATION_ROWS(percentage_bites_on_top_20_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_discounted_ntf_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_ntf_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_tf_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_number_treatments_by_location);
+    EXPECT_LOCATION_ROWS(today_tf_by_location);
+    EXPECT_LOCATION_ROWS(today_number_of_treatments_by_location);
+    EXPECT_LOCATION_ROWS(today_ritf_by_location);
+    EXPECT_AGE_ROWS(total_number_of_treatments_60_by_location);
+    EXPECT_AGE_ROWS(total_ritf_60_by_location);
+    EXPECT_AGE_ROWS(total_tf_60_by_location);
+    EXPECT_LOCATION_ROWS(current_ritf_by_location);
+    EXPECT_LOCATION_ROWS(current_tf_by_location);
+    EXPECT_LOCATION_ROWS(cumulative_mutants_by_location);
+    EXPECT_THERAPY_ROWS(number_of_treatments_with_therapy_id);
+    EXPECT_THERAPY_ROWS(number_of_treatments_success_with_therapy_id);
+    EXPECT_THERAPY_ROWS(number_of_treatments_fail_with_therapy_id);
+    EXPECT_AGE_ROWS(multiple_of_infection_by_location);
+    EXPECT_LOCATION_ROWS(current_eir_by_location);
+    EXPECT_LOCATION_ROWS(last_update_total_number_of_bites_by_location);
+    EXPECT_AGE_ROWS(last_10_blood_slide_prevalence_by_location);
+    EXPECT_AGE_ROWS(last_10_blood_slide_prevalence_by_location_age_class);
+    EXPECT_AGE_ROWS(last_10_fraction_positive_that_are_clinical_by_location);
+    EXPECT_AGE_ROWS(last_10_fraction_positive_that_are_clinical_by_location_age_class);
+    EXPECT_AGE_ROWS(last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5);
+    EXPECT_LOCATION_ROWS(total_parasite_population_by_location);
+    EXPECT_LOCATION_ROWS(number_of_positive_by_location);
+    EXPECT_AGE_ROWS(total_parasite_population_by_location_age_group);
+    EXPECT_AGE_ROWS(number_of_positive_by_location_age_group);
+    EXPECT_AGE_ROWS(number_of_clinical_by_location_age_group);
+    EXPECT_AGE_ROWS(number_of_clinical_by_location_age_group_by_5);
+    EXPECT_AGE_ROWS(number_of_death_by_location_age_group);
+    EXPECT_AGE_ROWS(number_of_untreated_cases_by_location_age_year);
+    EXPECT_AGE_ROWS(number_of_treatments_by_location_age_year);
+    EXPECT_AGE_ROWS(number_of_deaths_by_location_age_year);
+    EXPECT_AGE_ROWS(number_of_malaria_deaths_treated_by_location_age_year);
+    EXPECT_AGE_ROWS(number_of_malaria_deaths_non_treated_by_location_age_year);
+    EXPECT_LOCATION_ROWS(monthly_number_of_treatment_by_location);
+    EXPECT_LOCATION_ROWS(monthly_number_of_tf_by_location);
+    EXPECT_LOCATION_ROWS(monthly_number_of_new_infections_by_location);
+    EXPECT_LOCATION_ROWS(monthly_number_of_recrudescence_treatment_by_location);
+    EXPECT_AGE_ROWS(monthly_number_of_recrudescence_treatment_by_location_age_class);
+    EXPECT_AGE_ROWS(monthly_number_of_recrudescence_treatment_by_location_age);
+    EXPECT_LOCATION_ROWS(monthly_number_of_clinical_episode_by_location);
+    EXPECT_AGE_ROWS(monthly_number_of_clinical_episode_by_location_age);
+    EXPECT_LOCATION_ROWS(monthly_number_of_mutation_events_by_location);
+    EXPECT_AGE_ROWS(popsize_by_location_age);
+    EXPECT_THERAPY_ROWS(today_tf_by_therapy);
+    EXPECT_THERAPY_ROWS(today_number_of_treatments_by_therapy);
+    EXPECT_THERAPY_ROWS(current_tf_by_therapy);
+    EXPECT_THERAPY_ROWS(total_number_of_treatments_60_by_therapy);
+    EXPECT_THERAPY_ROWS(total_tf_60_by_therapy);
+    EXPECT_LOCATION_ROWS(monthly_treatment_failure_by_location);
+    EXPECT_LOCATION_ROWS(monthly_nontreatment_by_location);
+    EXPECT_AGE_ROWS(monthly_number_of_treatment_by_location_age_class);
+    EXPECT_AGE_ROWS(monthly_number_of_clinical_episode_by_location_age_class);
+    EXPECT_LOCATION_ROWS(births_by_location);
+    EXPECT_LOCATION_ROWS(deaths_by_location);
+    EXPECT_LOCATION_ROWS(malaria_deaths_by_location);
+    EXPECT_LOCATION_ROWS(monthly_treatment_success_by_location);
+    EXPECT_AGE_ROWS(monthly_nontreatment_by_location_age_class);
+    EXPECT_AGE_ROWS(malaria_deaths_by_location_age_class);
+    EXPECT_AGE_ROWS(monthly_number_of_treatment_by_location_therapy);
+    EXPECT_AGE_ROWS(monthly_treatment_complete_by_location_therapy);
+    EXPECT_AGE_ROWS(monthly_treatment_failure_by_location_age_class);
+    EXPECT_AGE_ROWS(monthly_treatment_failure_by_location_therapy);
+    EXPECT_AGE_ROWS(monthly_treatment_success_by_location_age_class);
+    EXPECT_AGE_ROWS(monthly_treatment_success_by_location_therapy);
+    EXPECT_LOCATION_ROWS(monthly_number_of_people_seeking_treatment_by_location_age_index);
+    EXPECT_LOCATION_ROWS(mosquito_recombination_events_count);
+
+    mdc_->set_tf_at_15(0.25);
+    mdc_->set_mean_moi(1.5);
+    mdc_->set_current_number_of_mutation_events_in_this_year(4);
+    EXPECT_DOUBLE_EQ(mdc_->tf_at_15(), 0.25);
+    EXPECT_DOUBLE_EQ(mdc_->mean_moi(), 1.5);
+    EXPECT_EQ(mdc_->current_number_of_mutation_events_in_this_year(), 4);
+
+#undef EXPECT_LOCATION_ROWS
+#undef EXPECT_AGE_ROWS
+#undef EXPECT_THERAPY_ROWS
+}
