@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 
 #define private public
 #include "Configuration/Config.h"
@@ -7,6 +9,9 @@
 
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
+#include "Environment/SeasonalEquation.h"
+#include "Environment/SeasonalRainfall.h"
+#include "Spatial/GIS/SpatialData.h"
 #include "fixtures/TestFileGenerators.h"
 
 class ConfigValidationEdgeCasesTest : public ::testing::Test {
@@ -96,6 +101,60 @@ TEST_F(ConfigValidationEdgeCasesTest, SelectsRandomCalibrationAndHandlesEmptyCan
 
   config()->version6_pfpr_incidence_calibrations_.set_calibration_ids({});
   EXPECT_NO_THROW(config()->select_random_immune_system_parameter_calibration_id());
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, ParsesRandomCalibrationSelectionAndUnknownSelection) {
+  const auto calibration_config = YAML::Load(R"(
+    chosen_calibration_id: 99
+    random_selection: true
+    calibration_ids:
+      4: {}
+      9: {}
+  )");
+  YAML::Node root;
+  root["version6_pfpr_incidence_calibrations"] = calibration_config;
+  EXPECT_NO_THROW(config()->parse_version6_pfpr_incidence_calibrations(root));
+  EXPECT_TRUE(config()->has_version6_pfpr_incidence_calibrations());
+  EXPECT_TRUE(config()->version6_pfpr_incidence_calibrations_.has_selected_calibration_id());
+
+  config()->version6_pfpr_incidence_calibrations_.set_chosen_calibration_id(99);
+  EXPECT_NO_THROW(config()->apply_selected_immune_system_parameter_calibration_id());
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, RejectsInvalidSeasonalitySettings) {
+  config()->seasonality_settings_.set_enable(true);
+  config()->seasonality_settings_.set_mode("");
+  EXPECT_THROW(config()->validate_seasonality_settings(), std::invalid_argument);
+
+  auto rainfall = std::make_unique<SeasonalRainfall>();
+  rainfall->set_filename("missing-rainfall.csv");
+  rainfall->set_period(365);
+  config()->seasonality_settings_.set_mode("rainfall");
+  config()->seasonality_settings_.set_seasonal_rainfall(std::move(rainfall));
+  EXPECT_THROW(config()->validate_seasonality_settings(), std::invalid_argument);
+
+  auto equation = std::make_unique<SeasonalEquation>();
+  equation->set_raster(true);
+  config()->seasonality_settings_.set_mode("equation");
+  config()->seasonality_settings_.set_seasonal_equation(std::move(equation));
+  config()->spatial_settings_.set_spatial_data(
+      std::make_unique<SpatialData>(&config()->spatial_settings_));
+  EXPECT_THROW(config()->validate_seasonality_settings(), std::invalid_argument);
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, RejectsInvalidPublicPrivateStrategyShares) {
+  auto strategies = config()->strategy_parameters_.get_strategy_db_raw();
+  auto strategy_it = std::find_if(
+      strategies.begin(), strategies.end(), [](const auto &entry) {
+        return entry.second.get_type() == "PublicPrivate";
+      });
+  ASSERT_NE(strategy_it, strategies.end());
+
+  auto invalid_strategy = strategy_it->second;
+  invalid_strategy.set_start_public_share(-0.1);
+  strategies[strategy_it->first] = invalid_strategy;
+  config()->strategy_parameters_.set_strategy_db_raw(strategies);
+  EXPECT_THROW(config()->validate_strategy_parameters(), std::invalid_argument);
 }
 
 TEST_F(ConfigValidationEdgeCasesTest, AppliesCalibrationOverridesAndSkipsNegativeValues) {

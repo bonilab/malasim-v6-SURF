@@ -15,6 +15,7 @@
 #include "Treatment/Strategies/NovelDrugIntroductionStrategy.h"
 #include "Treatment/Strategies/MFTAgeBasedStrategy.h"
 #include "Treatment/Strategies/PublicPrivateStrategy.h"
+#include "Treatment/Strategies/PublicPrivateMultiLocationStrategy.h"
 #include "Treatment/Therapies/Therapy.h"
 #include "Treatment/Therapies/TherapyBuilder.h"
 #include "Simulation/Model.h"
@@ -339,4 +340,35 @@ TEST_F(StrategyBuilderTest, ValidatesPublicPrivateStrategyFields) {
 
   public_private["start_public_share"] = 1.1;
   EXPECT_THROW(StrategyBuilder::build(public_private, 2), std::invalid_argument);
+}
+
+TEST_F(StrategyBuilderTest, ValidatesPublicPrivateMultiLocationFields) {
+  YAML::Node node = YAML::Load(R"(
+    name: public-private-multi
+    type: PublicPrivateMultiLocation
+    public_strategy_id: 0
+    private_strategy_id: 1
+    peak_after: 30
+  )");
+  YAML::Node start_shares;
+  YAML::Node peak_shares;
+  for (int location = 0; location < Model::get_config()->number_of_locations(); ++location) {
+    start_shares.push_back(0.3);
+    peak_shares.push_back(0.7);
+  }
+  node["start_public_share_by_location"] = start_shares;
+  node["peak_public_share_by_location"] = peak_shares;
+
+  auto strategy = StrategyBuilder::build(node, 2);
+  ASSERT_NE(dynamic_cast<PublicPrivateMultiLocationStrategy*>(strategy.get()), nullptr);
+
+  node["start_public_share_by_location"][0] = 1.1;
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+  node["start_public_share_by_location"][0] = 0.3;
+  node.remove("peak_after");
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+  node["peak_after"] = 30;
+  node["public_strategy_id"] = 2;
+  node["private_strategy_id"] = 2;
+  EXPECT_THROW(StrategyBuilder::build(node, 3), std::invalid_argument);
 }
