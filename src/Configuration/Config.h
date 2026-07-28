@@ -160,18 +160,6 @@ private:
   void validate_mosquito_parameters() const;
   void validate_population_events() const;
 
-  // Template method for getting a field
-  template <typename T>
-  [[nodiscard]] const T &get_field(const T &field) const {
-    return field;
-  }
-
-  // Template method for setting a field
-  template <typename T>
-  void set_field(T &field, const T &value) {
-    field = value;
-  }
-
   // Configuration File Path
   std::string config_file_path_;
   // Model *model_;
