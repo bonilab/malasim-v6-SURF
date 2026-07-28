@@ -12,6 +12,14 @@
 #include "Events/Population/SingleRoundMDAEvent.h"
 #include "Events/Population/TurnOffMutationEvent.h"
 #include "Events/Population/TurnOnMutationEvent.h"
+#include "Events/Population/ChangeCirculationPercentEvent.hxx"
+#include "Events/Population/DistrictImportationDailyEvent.h"
+#include "Events/Population/ImportationPeriodicallyRandomEvent.h"
+#include "Events/Population/IntroduceAmodiaquineMutantEvent.h"
+#include "Events/Population/IntroduceLumefantrineMutantEvent.h"
+#include "Events/Population/Introduce580YMutantEvent.h"
+#include "Events/Population/IntroduceTripleMutantToDPMEvent.h"
+#include "Events/Population/UpdateBetaRasterEvent.hxx"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
 #include "fixtures/TestFileGenerators.h"
@@ -112,6 +120,70 @@ TEST_F(PopulationEventBuilderTest, RejectsInvalidAnnualAndCirculationDefinitions
   EXPECT_THROW(PopulationEventBuilder::build_change_circulation_percent_event(
                    YAML::Load("- date: 2024/01/01\n  circulation_percent: -0.1"), config()),
                std::invalid_argument);
+}
+
+TEST_F(PopulationEventBuilderTest, BuildsAdditionalPopulationEventTypes) {
+  const auto annual_beta = PopulationEventBuilder::build_annual_beta_update_event(
+      YAML::Load("- date: 2024/01/01\n  rate: 0.1"), config());
+  ASSERT_EQ(annual_beta.size(), 1);
+  EXPECT_EQ(annual_beta[0]->name(), AnnualBetaUpdateEvent::EVENT_NAME);
+
+  const auto annual_coverage = PopulationEventBuilder::build_annual_coverage_update_event(
+      YAML::Load("- date: 2024/01/01\n  rate: 0.1"), config());
+  ASSERT_EQ(annual_coverage.size(), 1);
+  EXPECT_EQ(annual_coverage[0]->name(), AnnualCoverageUpdateEvent::EVENT_NAME);
+
+  const auto circulation = PopulationEventBuilder::build_change_circulation_percent_event(
+      YAML::Load("- date: 2024/01/01\n  circulation_percent: 0.4"), config());
+  ASSERT_EQ(circulation.size(), 1);
+  EXPECT_EQ(circulation[0]->name(), ChangeCirculationPercentEvent::EVENT_NAME);
+
+  const std::string raster_name = "builder_beta.asc";
+  test_fixtures::create_test_raster_file(raster_name, 1, 1, 0.5);
+  const auto raster = PopulationEventBuilder::build_update_beta_raster_event(
+      YAML::Load("- date: 2024/01/01\n  beta_raster: builder_beta.asc"), config());
+  ASSERT_EQ(raster.size(), 1);
+  EXPECT_EQ(raster[0]->name(), UpdateBetaRasterEvent::EVENT_NAME);
+  std::remove(raster_name.c_str());
+
+  const auto district = PopulationEventBuilder::build_import_district_mutant_daily_events(
+      YAML::Load("- district: 1\n  daily_rate: 0.2\n  start_date: 2024/01/01\n  alleles:\n    - chromosome: 5\n      locus: 86\n      allele: Y"),
+      config());
+  ASSERT_EQ(district.size(), 1);
+  EXPECT_EQ(district[0]->name(), DistrictImportationDailyEvent::EVENT_NAME);
+
+  const auto random_import = PopulationEventBuilder::build_importation_periodically_random_event(
+      YAML::Load("- date: 2024/01/01\n  genotype_id: 0\n  count: 2\n  log_parasite_density: 3.0"),
+      config());
+  ASSERT_EQ(random_import.size(), 1);
+  EXPECT_EQ(random_import[0]->name(), ImportationPeriodicallyRandomEvent::EVENT_NAME);
+}
+
+TEST_F(PopulationEventBuilderTest, BuildsMutantEventDefinitionsAndSkipsInvalidLocations) {
+  const auto alleles = "    - chromosome: 5\n      locus: 86\n      allele: Y\n";
+  const auto amodiaquine = PopulationEventBuilder::build_introduce_amodiaquine_mutant_parasite_events(
+      YAML::Load(std::string("- location: 0\n  date: 2024/01/01\n  fraction: 0.2\n  alleles:\n") + alleles), config());
+  ASSERT_EQ(amodiaquine.size(), 1);
+  EXPECT_EQ(amodiaquine[0]->name(), IntroduceAmodiaquineMutantEvent::EVENT_NAME);
+
+  const auto lumefantrine = PopulationEventBuilder::build_introduce_lumefantrine_mutant_parasite_events(
+      YAML::Load(std::string("- location: 0\n  date: 2024/01/01\n  fraction: 0.2\n  alleles:\n") + alleles), config());
+  ASSERT_EQ(lumefantrine.size(), 1);
+  EXPECT_EQ(lumefantrine[0]->name(), IntroduceLumefantrineMutantEvent::EVENT_NAME);
+
+  const auto mutant_580y = PopulationEventBuilder::build_introduce_580Y_mutant_events(
+      YAML::Load(std::string("- location: 0\n  date: 2024/01/01\n  fraction: 0.2\n  alleles:\n") + alleles), config());
+  ASSERT_EQ(mutant_580y.size(), 1);
+  EXPECT_EQ(mutant_580y[0]->name(), Introduce580YMutantEvent::EVENT_NAME);
+
+  const auto triple = PopulationEventBuilder::build_introduce_triple_mutant_to_dpm_parasite_events(
+      YAML::Load(std::string("- location: 0\n  date: 2024/01/01\n  fraction: 0.2\n  alleles:\n") + alleles), config());
+  ASSERT_EQ(triple.size(), 1);
+  EXPECT_EQ(triple[0]->name(), IntroduceTripleMutantToDPMEvent::EVENT_NAME);
+
+  const auto skipped = PopulationEventBuilder::build_introduce_580Y_mutant_events(
+      YAML::Load("- location: 999\n  date: 2024/01/01\n  fraction: 0.2\n  alleles: []"), config());
+  EXPECT_TRUE(skipped.empty());
 }
 
 TEST_F(PopulationEventBuilderTest, BuildsThroughPublicDispatcher) {

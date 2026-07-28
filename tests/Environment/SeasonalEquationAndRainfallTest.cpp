@@ -93,6 +93,24 @@ TEST_F(SeasonalRainfallTest, RejectsInvalidFileDataAndPeriod) {
   EXPECT_THROW(rainfall.build(), std::invalid_argument);
 }
 
+TEST_F(SeasonalRainfallTest, RebuildingReplacesPreviouslyReadFactors) {
+  {
+    std::ofstream output(filename_);
+    output << "0.1 0.2";
+  }
+  SeasonalRainfall rainfall;
+  rainfall.set_filename(filename_);
+  rainfall.set_period(2);
+  ASSERT_NO_THROW(rainfall.build());
+
+  {
+    std::ofstream output(filename_);
+    output << "0.7 0.8";
+  }
+  ASSERT_NO_THROW(rainfall.build());
+  EXPECT_DOUBLE_EQ(rainfall.get_seasonal_factor(date::sys_days{date::year{2023} / 1 / 1}, 0), 0.7);
+}
+
 TEST_F(SeasonalRainfallTest, RejectsMissingAndEmptyFiles) {
   SeasonalRainfall rainfall;
   rainfall.set_filename("missing-seasonal-rainfall.txt");

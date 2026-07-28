@@ -3,6 +3,7 @@
 SeasonalRainfall::SeasonalRainfall() = default;
 
 void SeasonalRainfall::build() {
+  adjustments_.clear();
   read(filename_);
   if (adjustments_.size() != period_) {
     throw std::invalid_argument(fmt::format(
