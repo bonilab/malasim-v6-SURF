@@ -170,3 +170,44 @@ TEST(SeasonalitySettingsStandaloneTest, RejectsMissingNestedModelFields) {
     EXPECT_THROW(YAML::convert<SeasonalPattern*>::decode(YAML::Load("filename: x"), &pattern),
                  std::runtime_error);
 }
+
+TEST(SeasonalitySettingsStandaloneTest, ReturnsDefaultFactorWhenDisabledOrModeIsUnknown) {
+    SeasonalitySettings settings;
+    const auto today = date::sys_days{date::year{2024} / 1 / 1};
+
+    EXPECT_DOUBLE_EQ(settings.get_seasonal_factor(today, 0), 1.0);
+    settings.set_enable(true);
+    settings.set_mode("unknown");
+    EXPECT_DOUBLE_EQ(settings.get_seasonal_factor(today, 0), 1.0);
+    EXPECT_THROW(settings.process_config_using_number_of_locations(nullptr, 0), std::runtime_error);
+}
+
+TEST(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallModes) {
+    const auto today = date::sys_days{date::year{2024} / 1 / 1};
+
+    SeasonalitySettings equation_settings;
+    auto equation = std::make_unique<SeasonalEquation>();
+    equation->set_base({2.0});
+    equation->set_A({0.0});
+    equation->set_B({1.0});
+    equation->set_phi({1});
+    equation->set_raster_base({2.0});
+    equation->set_raster_A({0.0});
+    equation->set_raster_B({1.0});
+    equation->set_raster_phi({1});
+    equation_settings.set_enable(true);
+    equation_settings.set_mode("equation");
+    equation_settings.set_seasonal_equation(std::move(equation));
+    EXPECT_NO_THROW(equation_settings.process_config_using_number_of_locations(nullptr, 1));
+    EXPECT_DOUBLE_EQ(equation_settings.get_seasonal_factor(today, 0), 2.0);
+
+    SeasonalitySettings rainfall_settings;
+    auto rainfall = std::make_unique<SeasonalRainfall>();
+    rainfall->set_filename("sample_inputs/dev_seasonality.csv");
+    rainfall->set_period(365);
+    rainfall_settings.set_enable(true);
+    rainfall_settings.set_mode("rainfall");
+    rainfall_settings.set_seasonal_rainfall(std::move(rainfall));
+    EXPECT_NO_THROW(rainfall_settings.process_config_using_number_of_locations(nullptr, 0));
+    EXPECT_DOUBLE_EQ(rainfall_settings.get_seasonal_factor(today, 0), 0.828298715144364);
+}
