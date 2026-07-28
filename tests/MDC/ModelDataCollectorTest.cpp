@@ -650,3 +650,116 @@ TEST_F(ModelDataCollectorTest, InitializedStatisticsExposeConfiguredDimensions) 
 #undef EXPECT_AGE_ROWS
 #undef EXPECT_THERAPY_ROWS
 }
+
+TEST_F(ModelDataCollectorTest, PublicStatisticsAccessorsRoundTripTheirValues) {
+#define ROUNDTRIP(accessor) \
+    do { \
+        const auto snapshot = mdc_->accessor(); \
+        mdc_->set_##accessor(snapshot); \
+        EXPECT_EQ(mdc_->accessor(), snapshot); \
+    } while (false)
+
+    ROUNDTRIP(total_immune_by_location);
+    ROUNDTRIP(total_immune_by_location_age_class);
+    ROUNDTRIP(total_immune_by_location_age);
+    ROUNDTRIP(popsize_by_location);
+    ROUNDTRIP(popsize_residence_by_location);
+    ROUNDTRIP(popsize_by_location_age_class);
+    ROUNDTRIP(popsize_by_location_age_class_by_5);
+    ROUNDTRIP(popsize_by_location_hoststate);
+    ROUNDTRIP(popsize_by_location_hoststate_age_class);
+    ROUNDTRIP(blood_slide_prevalence_by_location);
+    ROUNDTRIP(blood_slide_number_by_location_age_group);
+    ROUNDTRIP(blood_slide_prevalence_by_location_age_group);
+    ROUNDTRIP(blood_slide_number_by_location_age_group_by_5);
+    ROUNDTRIP(blood_slide_prevalence_by_location_age_group_by_5);
+    ROUNDTRIP(blood_slide_prevalence_by_location_age);
+    ROUNDTRIP(blood_slide_number_by_location_age);
+    ROUNDTRIP(fraction_of_positive_that_are_clinical_by_location);
+    ROUNDTRIP(total_number_of_bites_by_location);
+    ROUNDTRIP(total_number_of_bites_by_location_year);
+    ROUNDTRIP(person_days_by_location_year);
+    ROUNDTRIP(eir_by_location_year);
+    ROUNDTRIP(eir_by_location);
+    ROUNDTRIP(cumulative_clinical_episodes_by_location);
+    ROUNDTRIP(cumulative_clinical_episodes_by_location_age);
+    ROUNDTRIP(cumulative_clinical_episodes_by_location_age_group);
+    ROUNDTRIP(average_number_biten_by_location_person);
+    ROUNDTRIP(percentage_bites_on_top_20_by_location);
+    ROUNDTRIP(cumulative_discounted_ntf_by_location);
+    ROUNDTRIP(cumulative_ntf_by_location);
+    ROUNDTRIP(cumulative_tf_by_location);
+    ROUNDTRIP(cumulative_number_treatments_by_location);
+    ROUNDTRIP(today_tf_by_location);
+    ROUNDTRIP(today_number_of_treatments_by_location);
+    ROUNDTRIP(today_ritf_by_location);
+    ROUNDTRIP(total_number_of_treatments_60_by_location);
+    ROUNDTRIP(total_ritf_60_by_location);
+    ROUNDTRIP(total_tf_60_by_location);
+    ROUNDTRIP(current_ritf_by_location);
+    ROUNDTRIP(current_tf_by_location);
+    ROUNDTRIP(cumulative_mutants_by_location);
+    ROUNDTRIP(number_of_treatments_with_therapy_id);
+    ROUNDTRIP(number_of_treatments_success_with_therapy_id);
+    ROUNDTRIP(number_of_treatments_fail_with_therapy_id);
+    ROUNDTRIP(multiple_of_infection_by_location);
+    ROUNDTRIP(current_eir_by_location);
+    ROUNDTRIP(last_update_total_number_of_bites_by_location);
+    ROUNDTRIP(last_10_blood_slide_prevalence_by_location);
+    ROUNDTRIP(last_10_blood_slide_prevalence_by_location_age_class);
+    ROUNDTRIP(last_10_fraction_positive_that_are_clinical_by_location);
+    ROUNDTRIP(last_10_fraction_positive_that_are_clinical_by_location_age_class);
+    ROUNDTRIP(last_10_fraction_positive_that_are_clinical_by_location_age_class_by_5);
+    ROUNDTRIP(total_parasite_population_by_location);
+    ROUNDTRIP(number_of_positive_by_location);
+    ROUNDTRIP(total_parasite_population_by_location_age_group);
+    ROUNDTRIP(number_of_positive_by_location_age_group);
+    ROUNDTRIP(number_of_clinical_by_location_age_group);
+    ROUNDTRIP(number_of_clinical_by_location_age_group_by_5);
+    ROUNDTRIP(number_of_death_by_location_age_group);
+    ROUNDTRIP(number_of_untreated_cases_by_location_age_year);
+    ROUNDTRIP(number_of_treatments_by_location_age_year);
+    ROUNDTRIP(number_of_deaths_by_location_age_year);
+    ROUNDTRIP(number_of_malaria_deaths_treated_by_location_age_year);
+    ROUNDTRIP(number_of_malaria_deaths_non_treated_by_location_age_year);
+    ROUNDTRIP(monthly_number_of_treatment_by_location);
+    ROUNDTRIP(monthly_number_of_tf_by_location);
+    ROUNDTRIP(monthly_number_of_new_infections_by_location);
+    ROUNDTRIP(monthly_number_of_recrudescence_treatment_by_location);
+    ROUNDTRIP(monthly_number_of_recrudescence_treatment_by_location_age_class);
+    ROUNDTRIP(monthly_number_of_recrudescence_treatment_by_location_age);
+    ROUNDTRIP(monthly_number_of_clinical_episode_by_location);
+    ROUNDTRIP(monthly_number_of_clinical_episode_by_location_age);
+    ROUNDTRIP(monthly_number_of_mutation_events_by_location);
+    ROUNDTRIP(popsize_by_location_age);
+    ROUNDTRIP(today_tf_by_therapy);
+    ROUNDTRIP(today_number_of_treatments_by_therapy);
+    ROUNDTRIP(current_tf_by_therapy);
+    ROUNDTRIP(total_number_of_treatments_60_by_therapy);
+    ROUNDTRIP(total_tf_60_by_therapy);
+    ROUNDTRIP(monthly_treatment_failure_by_location);
+    ROUNDTRIP(monthly_nontreatment_by_location);
+    ROUNDTRIP(monthly_number_of_treatment_by_location_age_class);
+    ROUNDTRIP(monthly_number_of_clinical_episode_by_location_age_class);
+    ROUNDTRIP(births_by_location);
+    ROUNDTRIP(deaths_by_location);
+    ROUNDTRIP(malaria_deaths_by_location);
+    ROUNDTRIP(monthly_treatment_success_by_location);
+    ROUNDTRIP(monthly_nontreatment_by_location_age_class);
+    ROUNDTRIP(malaria_deaths_by_location_age_class);
+    ROUNDTRIP(monthly_number_of_treatment_by_location_therapy);
+    ROUNDTRIP(monthly_treatment_complete_by_location_therapy);
+    ROUNDTRIP(monthly_treatment_failure_by_location_age_class);
+    ROUNDTRIP(monthly_treatment_failure_by_location_therapy);
+    ROUNDTRIP(monthly_treatment_success_by_location_age_class);
+    ROUNDTRIP(monthly_treatment_success_by_location_therapy);
+    ROUNDTRIP(monthly_number_of_people_seeking_treatment_by_location_age_index);
+    ROUNDTRIP(mosquito_recombination_events_count);
+
+    mdc_->set_recording(true);
+    EXPECT_TRUE(mdc_->get_recording());
+    mdc_->set_recording(false);
+    EXPECT_FALSE(mdc_->get_recording());
+
+#undef ROUNDTRIP
+}
