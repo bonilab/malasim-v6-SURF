@@ -46,7 +46,8 @@ void MonthlyReporter::initialize(int job_number, const std::string &path) {
   gene_db_logger->set_pattern("%v");
 
   // Set up a default console logger
-  auto console_logger = spdlog::stdout_color_mt("console");
+  auto console_logger = spdlog::get("console");
+  if (!console_logger) { console_logger = spdlog::stdout_color_mt("console"); }
   spdlog::set_default_logger(console_logger);  // Make console logger the default
   // spdlog::set_pattern("[%H:%M:%S] %v");  // Format console log with time
 

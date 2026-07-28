@@ -69,7 +69,8 @@ void ValidationReporter::initialize(int job_number, const std::string &path) {
   }
 
   // Set up a default console logger
-  auto console_logger = spdlog::stdout_color_mt("console");
+  auto console_logger = spdlog::get("console");
+  if (!console_logger) { console_logger = spdlog::stdout_color_mt("console"); }
   // console_logger->set_pattern("[%H:%M:%S] %v");  // Format console log with time
   spdlog::set_default_logger(console_logger);  // Make console logger the default
 
@@ -558,4 +559,3 @@ void ValidationReporter::print_eir_pfpr_by_location(std::stringstream &ss) {
     ss << Model::get_mdc()->blood_slide_prevalence_by_location()[loc] * 100 << tsv::SEP;
   }
 }
-

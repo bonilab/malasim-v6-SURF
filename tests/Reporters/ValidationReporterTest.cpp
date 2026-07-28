@@ -7,6 +7,7 @@
 #include "Reporters/ValidationReporter.h"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
+#include "Utils/Logger.h"
 #include "fixtures/TestFileGenerators.h"
 
 class ValidationReporterTest : public ::testing::Test {
@@ -22,6 +23,7 @@ class ValidationReporterTest : public ::testing::Test {
   void TearDown() override {
     Model::get_instance()->release();
     spdlog::drop_all();
+    Logger::initialize(spdlog::level::off);
     test_fixtures::cleanup_test_files();
     for (const auto* name : {"validation_monthly_data_0.txt", "validation_summary_0.txt",
                              "validation_gene_freq_0.txt", "validation_gene_db_0.txt",

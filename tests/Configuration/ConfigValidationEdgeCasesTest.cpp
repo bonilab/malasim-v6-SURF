@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+
 #define private public
 #include "Configuration/Config.h"
 #undef private
@@ -76,4 +77,42 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsAdditionalEpidemiologicalRanges) {
   config()->epidemiological_parameters_.relapse_duration_ = 1;
   config()->epidemiological_parameters_.tf_window_size_ = -1;
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, HandlesMissingConfigurationFile) {
+  Config unloaded_config;
+  EXPECT_FALSE(unloaded_config.load("config-file-that-does-not-exist.yml"));
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, SelectsRandomCalibrationAndHandlesEmptyCandidates) {
+  config()->version6_pfpr_incidence_calibrations_.set_calibration_ids({
+      {4, ImmuneSystemParametercalibration_id{}},
+      {9, ImmuneSystemParametercalibration_id{}},
+  });
+  config()->version6_pfpr_incidence_calibrations_.set_chosen_calibration_id(-1);
+  config()->select_random_immune_system_parameter_calibration_id();
+  EXPECT_TRUE(config()->version6_pfpr_incidence_calibrations_.get_chosen_calibration_id() == 4 ||
+              config()->version6_pfpr_incidence_calibrations_.get_chosen_calibration_id() == 9);
+
+  config()->version6_pfpr_incidence_calibrations_.set_calibration_ids({});
+  EXPECT_NO_THROW(config()->select_random_immune_system_parameter_calibration_id());
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, AppliesCalibrationOverridesAndSkipsNegativeValues) {
+  namespace P = ImmuneSystemOverridePaths;
+  ImmuneSystemParametercalibration_id overrides;
+  overrides.overrides[P::K_Z] = 0.25;
+  overrides.overrides[P::K_KAPPA] = 0.75;
+  overrides.overrides[P::K_MIDPOINT] = 2.0;
+  overrides.overrides[P::K_P_CI_SYMP] = 0.4;
+  overrides.overrides[P::K_P_SEEK_BASE] = 0.3;
+  overrides.overrides[P::K_MUTATION_PROB] = -1.0;
+  overrides.overrides[P::K_DEFAULT_CNV_REVERSION_MULTIPLIER] = -1.0;
+  config()->version6_pfpr_incidence_calibrations_.set_chosen_calibration_id(7);
+  config()->version6_pfpr_incidence_calibrations_.set_calibration_ids({{7, overrides}});
+
+  EXPECT_NO_THROW(config()->apply_selected_immune_system_parameter_calibration_id());
+  EXPECT_DOUBLE_EQ(config()->immune_system_parameters_.get_immune_effect_on_progression_to_clinical(), 0.25);
+  EXPECT_DOUBLE_EQ(config()->immune_system_parameters_.get_factor_effect_age_mature_immunity(), 0.75);
+  EXPECT_DOUBLE_EQ(config()->immune_system_parameters_.get_midpoint(), 2.0);
 }
