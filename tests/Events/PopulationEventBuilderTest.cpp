@@ -270,3 +270,30 @@ TEST_F(PopulationEventBuilderTest, ExecutesSimpleMutationAndMosquitoConfiguratio
   probability->execute();
   EXPECT_DOUBLE_EQ(config()->get_genotype_parameters().get_mutation_probability_per_locus(), 0.33);
 }
+
+TEST_F(PopulationEventBuilderTest, ExecutesAnnualAndCirculationUpdates) {
+  config()->location_db()[0].beta = 1.0;
+  auto annual_beta = std::make_unique<AnnualBetaUpdateEvent>(0.5, 0);
+  annual_beta->set_executable(true);
+  annual_beta->execute();
+  EXPECT_DOUBLE_EQ(config()->location_db()[0].beta, 1.5);
+
+  auto* treatment_coverage = Model::get_treatment_coverage();
+  ASSERT_NE(treatment_coverage, nullptr);
+  treatment_coverage->p_treatment_under_5[0] = 0.2;
+  treatment_coverage->p_treatment_over_5[0] = 0.4;
+  auto annual_coverage = std::make_unique<AnnualCoverageUpdateEvent>(0.5, 0);
+  annual_coverage->set_executable(true);
+  annual_coverage->execute();
+  EXPECT_DOUBLE_EQ(treatment_coverage->p_treatment_under_5[0], 0.6);
+  EXPECT_DOUBLE_EQ(treatment_coverage->p_treatment_over_5[0], 0.7);
+
+  auto circulation_info = config()->get_movement_settings().get_circulation_info();
+  circulation_info.set_circulation_percent(0.1);
+  config()->get_movement_settings().set_circulation_info(circulation_info);
+  auto circulation = std::make_unique<ChangeCirculationPercentEvent>(0.8, 0);
+  circulation->set_executable(true);
+  circulation->execute();
+  EXPECT_NEAR(config()->get_movement_settings().get_circulation_info().get_circulation_percent(),
+              0.8, 1e-6);
+}
