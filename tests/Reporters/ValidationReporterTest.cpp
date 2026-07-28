@@ -42,3 +42,13 @@ TEST_F(ValidationReporterTest, RunsDirectReporterLifecycle) {
   EXPECT_NO_THROW(reporter.monthly_report());
   EXPECT_NO_THROW(reporter.after_run());
 }
+
+TEST_F(ValidationReporterTest, RunsRecombinationReporterLifecycle) {
+  Model::get_config()->get_mosquito_parameters().set_record_recombination_events(true);
+  ValidationReporter reporter;
+  EXPECT_NO_THROW(reporter.initialize(0, "."));
+  EXPECT_NO_THROW(reporter.before_run());
+  EXPECT_NO_THROW(reporter.begin_time_step());
+  EXPECT_NO_THROW(reporter.monthly_report());
+  EXPECT_NO_THROW(reporter.after_run());
+}
