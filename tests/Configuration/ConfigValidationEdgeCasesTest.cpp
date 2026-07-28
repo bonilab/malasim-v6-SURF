@@ -117,6 +117,58 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsInvalidTherapyAndStrategyDatabaseRe
   EXPECT_THROW(config()->validate_strategy_parameters(), std::invalid_argument);
 }
 
+TEST_F(ConfigValidationEdgeCasesTest, ExercisesConfigurationAccessorGraph) {
+  const auto &epi = config()->get_epidemiological_parameters();
+  (void)epi.get_number_of_tracking_days();
+  (void)epi.get_days_to_clinical_under_five();
+  (void)epi.get_days_to_clinical_over_five();
+  (void)epi.get_days_mature_gametocyte_under_five();
+  (void)epi.get_days_mature_gametocyte_over_five();
+  (void)epi.get_p_compliance();
+  (void)epi.get_min_dosing_days();
+  (void)epi.get_gametocyte_level_under_artemisinin_action();
+  (void)epi.get_gametocyte_level_full();
+  (void)epi.get_p_relapse();
+  (void)epi.get_relapse_duration();
+  (void)epi.get_relapse_rate();
+  (void)epi.get_update_frequency();
+  (void)epi.get_tf_window_size();
+  (void)epi.get_fraction_mosquitoes_interrupted_feeding();
+  (void)epi.get_inflation_factor();
+  (void)epi.get_using_age_dependent_biting_level();
+  (void)epi.get_using_variable_probability_infectious_bites_cause_infection();
+  const auto &biting = epi.get_relative_biting_info();
+  (void)biting.get_max_relative_biting_value();
+  (void)biting.get_min_relative_biting_value();
+  (void)biting.get_number_of_biting_levels();
+  (void)biting.get_biting_level_distribution().get_distribution();
+  (void)epi.get_relative_infectivity().get_sigma();
+  (void)epi.get_relative_infectivity().get_ro_star();
+  (void)epi.get_relative_infectivity().get_blood_meal_volume();
+  (void)epi.get_allow_new_coinfection_to_cause_symptoms().get_enable();
+
+  auto &movement = config()->get_movement_settings();
+  (void)movement.get_spatial_model_settings().get_name();
+  (void)movement.get_circulation_info().get_circulation_percent();
+  (void)movement.get_circulation_info().get_max_relative_moving_value();
+  (void)movement.get_circulation_info().get_number_of_moving_levels();
+  (void)movement.get_circulation_info().get_length_of_stay().get_mean();
+  (void)movement.get_circulation_info().get_length_of_stay().get_sd();
+  (void)movement.get_length_of_stay_theta();
+  (void)movement.get_length_of_stay_k();
+  (void)movement.get_v_moving_level_density();
+  (void)movement.get_v_moving_level_value();
+
+  auto &genotype = config()->get_genotype_parameters();
+  (void)genotype.get_mutation_mask();
+  (void)genotype.get_mutation_probability_per_locus();
+  (void)genotype.get_default_cnv_reversion_multiplier();
+  (void)genotype.get_override_ec50_patterns();
+  (void)genotype.get_initial_parasite_info();
+  (void)genotype.get_initial_parasite_info_raw();
+  (void)genotype.get_pf_genotype_info().get_cnv_gene_indices();
+}
+
 TEST_F(ConfigValidationEdgeCasesTest, HandlesMissingConfigurationFile) {
   Config unloaded_config;
   EXPECT_FALSE(unloaded_config.load("config-file-that-does-not-exist.yml"));
