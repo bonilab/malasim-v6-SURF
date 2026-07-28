@@ -48,13 +48,12 @@ public:
 
   // Getters for entire configuration structures
   [[nodiscard]] const ModelSettings &get_model_settings() const { return model_settings_; }
-  void set_model_settings(const ModelSettings &settings) { model_settings_ = settings; }
+  [[nodiscard]] ModelSettings &get_model_settings() { return model_settings_; }
+
   [[nodiscard]] const SimulationTimeframe &get_simulation_timeframe() const {
     return simulation_timeframe_;
   }
-  void set_simulation_timeframe(const SimulationTimeframe &timeframe) {
-    simulation_timeframe_ = timeframe;
-  }
+  [[nodiscard]] SimulationTimeframe &get_simulation_timeframe() { return simulation_timeframe_; }
 
   [[nodiscard]] const TransmissionSettings &get_transmission_settings() const {
     return transmission_settings_;
@@ -62,38 +61,35 @@ public:
   [[nodiscard]] const PopulationDemographic &get_population_demographic() const {
     return population_demographic_;
   }
-
-  void set_population_demographic(const PopulationDemographic &demographic) {
-    population_demographic_ = demographic;
+  [[nodiscard]] PopulationDemographic &get_population_demographic() {
+    return population_demographic_;
   }
 
   [[nodiscard]] const EpidemiologicalParameters &get_epidemiological_parameters() const {
     return epidemiological_parameters_;
   }
-  void set_epidemiological_parameters(const EpidemiologicalParameters &parameters) {
-    epidemiological_parameters_ = parameters;
+  [[nodiscard]] EpidemiologicalParameters &get_epidemiological_parameters() {
+    return epidemiological_parameters_;
   }
 
   [[nodiscard]] const ParasiteParameters &get_parasite_parameters() const {
     return parasite_parameters_;
   }
-  void set_parasite_parameters(const ParasiteParameters &parameters) {
-    parasite_parameters_ = parameters;
-  }
+  [[nodiscard]] ParasiteParameters &get_parasite_parameters() { return parasite_parameters_; }
 
-  [[nodiscard]] SpatialSettings &get_spatial_settings() {
-    /* no const here because Spatial Data class will need to access and modify
-     * later */
-    return spatial_settings_;
+  [[nodiscard]] const SpatialSettings &get_spatial_settings() const { return spatial_settings_; }
+  [[nodiscard]] SpatialSettings &get_spatial_settings() { return spatial_settings_; }
+
+  [[nodiscard]] const SeasonalitySettings &get_seasonality_settings() const {
+    return seasonality_settings_;
   }
   [[nodiscard]] SeasonalitySettings &get_seasonality_settings() { return seasonality_settings_; }
+
+  [[nodiscard]] const MovementSettings &get_movement_settings() const { return movement_settings_; }
   [[nodiscard]] MovementSettings &get_movement_settings() { return movement_settings_; }
 
   [[nodiscard]] const ImmuneSystemParameters &get_immune_system_parameters() const {
     return immune_system_parameters_;
-  }
-  void set_immune_system_parameters(const ImmuneSystemParameters &parameters) {
-    immune_system_parameters_ = parameters;
   }
 
   [[nodiscard]] const ImmuneSystemParameterOverrides &get_version6_pfpr_incidence_calibrations()
@@ -104,15 +100,29 @@ public:
     return has_version6_pfpr_incidence_calibrations_;
   }
 
+  [[nodiscard]] const GenotypeParameters &get_genotype_parameters() const {
+    return genotype_parameters_;
+  }
   [[nodiscard]] GenotypeParameters &get_genotype_parameters() { return genotype_parameters_; }
+
   [[nodiscard]] const DrugParameters &get_drug_parameters() const { return drug_parameters_; }
   [[nodiscard]] const TherapyParameters &get_therapy_parameters() const {
     return therapy_parameters_;
   }
+  [[nodiscard]] const StrategyParameters &get_strategy_parameters() const {
+    return strategy_parameters_;
+  }
   [[nodiscard]] StrategyParameters &get_strategy_parameters() { return strategy_parameters_; }
+
+  [[nodiscard]] const MosquitoParameters &get_mosquito_parameters() const {
+    return mosquito_parameters_;
+  }
   [[nodiscard]] MosquitoParameters &get_mosquito_parameters() { return mosquito_parameters_; }
+
+  [[nodiscard]] const PopulationEvents &get_population_events() const { return population_events_; }
   [[nodiscard]] PopulationEvents &get_population_events() { return population_events_; }
-  [[nodiscard]] RaptSettings &get_rapt_settings() { return rapt_settings_; }
+
+  [[nodiscard]] const RaptSettings &get_rapt_settings() const { return rapt_settings_; }
 
   // Make relevant getters virtual for mocking
   [[nodiscard]] size_t number_of_locations() const;

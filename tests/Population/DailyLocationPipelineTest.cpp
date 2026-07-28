@@ -43,9 +43,7 @@ TEST_F(DailyLocationPipelineTest, LocationBirthEventAppendsNewbornSamplingEntrie
   constexpr int location = 0;
   population->update_current_foi();
   const auto initial_size = population->all_alive_persons_by_location()[location].size();
-  auto demographic = Model::get_config()->get_population_demographic();
-  demographic.set_birth_rate(Constants::DAYS_IN_YEAR);
-  Model::get_config()->set_population_demographic(demographic);
+  Model::get_config()->get_population_demographic().set_birth_rate(Constants::DAYS_IN_YEAR);
 
   population->perform_birth_event_at_location(location);
 

@@ -18,7 +18,7 @@ protected:
     drug_info_art.set_n(25);
     drug_info_art.set_age_specific_drug_concentration_sd(std::vector<double>(15, 0.4));
     drug_info_art.set_k(4);
-    drug_info_art.set_base_EC50(0.75);
+    drug_info_art.set_base_ec50(0.75);
 
     // Insert the drug_info into the drug_parameters map
     std::map<int, DrugParameters::DrugInfo> drug_db;

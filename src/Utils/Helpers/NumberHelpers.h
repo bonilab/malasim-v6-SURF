@@ -1,7 +1,11 @@
 
 #ifndef NUMBER_HELPERS_HXX
 #define NUMBER_HELPERS_HXX
+#include <cmath>
 #include <fstream>
+#include <limits>
+#include <sstream>
+#include <string>
 
 class NumberHelpers {
 public:

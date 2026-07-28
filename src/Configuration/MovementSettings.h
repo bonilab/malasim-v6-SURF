@@ -1,5 +1,5 @@
 #include <gsl/gsl_cdf.h>
-#include <yaml-cpp/node/node.h>
+#include <yaml-cpp/yaml.h>
 
 #include <stdexcept>
 #include <string>

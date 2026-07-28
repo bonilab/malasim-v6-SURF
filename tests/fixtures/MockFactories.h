@@ -28,15 +28,11 @@ class MockConfig : public Config {
 public:
   MockConfig() : Config() {
     // Set up simulation timeframe
-    SimulationTimeframe simulation_timeframe_;
-    simulation_timeframe_.set_total_time(1000);
-    set_simulation_timeframe(simulation_timeframe_);
+    get_simulation_timeframe().set_total_time(1000);
 
-    ModelSettings model_settings;
-    model_settings.set_cell_level_reporting(true);
-    set_model_settings(model_settings);
+    get_model_settings().set_cell_level_reporting(true);
 
-    EpidemiologicalParameters epidemiological_parameters;
+    auto &epidemiological_parameters = get_epidemiological_parameters();
     epidemiological_parameters.set_days_to_clinical_under_five(5);
     epidemiological_parameters.set_days_to_clinical_over_five(7);
     epidemiological_parameters.set_days_mature_gametocyte_under_five(10);
@@ -49,21 +45,11 @@ public:
     relative_infectivity.set_blood_meal_volume(3.0);
     epidemiological_parameters.set_relative_infectivity(relative_infectivity);
     
-    set_epidemiological_parameters(epidemiological_parameters);
-
-    PopulationDemographic population_demographic;
     auto default_age_structure = std::vector<int>{5, 15, 30, 50, 70, 90};
-    population_demographic.set_age_structure(default_age_structure);
-    population_demographic.set_mortality_when_treatment_fail_by_age_class(
+    get_population_demographic().set_age_structure(default_age_structure);
+    get_population_demographic().set_mortality_when_treatment_fail_by_age_class(
         std::vector<double>(6, 0.4));
-    population_demographic.set_death_rate_by_age_class(std::vector<double>(6, 0.2));
-    set_population_demographic(population_demographic);
-
-    ImmuneSystemParameters immune_system_parameters;
-    set_immune_system_parameters(immune_system_parameters);
-
-    ParasiteParameters parasite_parameters;
-    set_parasite_parameters(parasite_parameters);
+    get_population_demographic().set_death_rate_by_age_class(std::vector<double>(6, 0.2));
   }
 };
 
@@ -123,7 +109,7 @@ inline std::unique_ptr<MockConfig> create_config_with_time(int total_days) {
   auto config = std::make_unique<MockConfig>();
   SimulationTimeframe timeframe;
   timeframe.set_total_time(total_days);
-  config->set_simulation_timeframe(timeframe);
+  config->get_simulation_timeframe().set_total_time(total_days);
   return config;
 }
 
@@ -140,7 +126,11 @@ inline std::unique_ptr<MockConfig> create_config_with_ages(
   pop_demo.set_mortality_when_treatment_fail_by_age_class(
       std::vector<double>(age_structure.size(), 0.4));
   pop_demo.set_death_rate_by_age_class(std::vector<double>(age_structure.size(), 0.2));
-  config->set_population_demographic(pop_demo);
+  config->get_population_demographic().set_age_structure(age_structure);
+  config->get_population_demographic().set_mortality_when_treatment_fail_by_age_class(
+      std::vector<double>(age_structure.size(), 0.4));
+  config->get_population_demographic().set_death_rate_by_age_class(
+      std::vector<double>(age_structure.size(), 0.2));
   return config;
 }
 

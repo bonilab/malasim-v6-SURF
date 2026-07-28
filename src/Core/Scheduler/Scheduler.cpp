@@ -97,14 +97,6 @@ int Scheduler::get_days_until_n_years_from_now(int n) const {
   return TimeHelpers::days_between(from_ymd, to_ymd);
 }
 
-int Scheduler::get_days_to_next_year() const {
-  return get_days_until_next_year_anniversary();
-}
-
-int Scheduler::get_days_to_next_n_year(int n) const {
-  return get_days_until_n_years_from_now(n);
-}
-
 unsigned Scheduler::get_days_in_current_month() const {
   auto date = static_cast<date::year_month_day>(calendar_date_);
   return TimeHelpers::days_in_month(static_cast<int>(date.year()),

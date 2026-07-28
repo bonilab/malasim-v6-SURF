@@ -260,13 +260,12 @@ TEST_F(PersonParasiteTest, RelativeInfectivityDnCalculation) {
 
 TEST_F(PersonParasiteTest, RelativeInfectivityWithCustomRoStar) {
   // Test with modified ro_star value
-  EpidemiologicalParameters epi_params = mock_config_->get_epidemiological_parameters();
+  auto &epi_params = mock_config_->get_epidemiological_parameters();
   EpidemiologicalParameters::RelativeInfectivity rel_inf = epi_params.get_relative_infectivity();
 
   // Change ro_star
   rel_inf.set_ro_star(1.0);  // Set to 1.0 instead of 0.00031
   epi_params.set_relative_infectivity(rel_inf);
-  mock_config_->set_epidemiological_parameters(epi_params);
 
   const double log10_density = 1.0;
   const double sigma = 3.91;
@@ -282,13 +281,12 @@ TEST_F(PersonParasiteTest, RelativeInfectivityWithCustomRoStar) {
 
 TEST_F(PersonParasiteTest, RelativeInfectivityWithCustomSigma) {
   // Test with modified sigma value
-  EpidemiologicalParameters epi_params = mock_config_->get_epidemiological_parameters();
+  auto &epi_params = mock_config_->get_epidemiological_parameters();
   EpidemiologicalParameters::RelativeInfectivity rel_inf = epi_params.get_relative_infectivity();
 
   // Change sigma
   rel_inf.set_sigma(2.0);  // Set to 2.0 instead of 3.91
   epi_params.set_relative_infectivity(rel_inf);
-  mock_config_->set_epidemiological_parameters(epi_params);
 
   const double log10_density = 3.0;
   const double sigma = 2.0;
@@ -682,4 +680,3 @@ TEST_F(PersonParasiteTest, InfectionFromInfectiousBite) {
 //      EXPECT_TRUE(person_->all_clonal_parasite_populations()->parasites()->empty());
 //      // Assert any related state changes or event removals if applicable
 // }
-

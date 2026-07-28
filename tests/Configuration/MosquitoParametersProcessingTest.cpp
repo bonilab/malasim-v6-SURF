@@ -8,8 +8,9 @@
 
 namespace {
 
-MosquitoParameters make_location_parameters(const std::vector<double>& ifr,
-                                            const std::vector<int>& size) {
+void configure_location_parameters(MosquitoParameters& parameters,
+                                   const std::vector<double>& ifr,
+                                   const std::vector<int>& size) {
   MosquitoParameters::LocationBased location_based;
   location_based.set_interrupted_feeding_rate(ifr);
   location_based.set_prmc_size(size);
@@ -18,15 +19,14 @@ MosquitoParameters make_location_parameters(const std::vector<double>& ifr,
   config.set_mode("location_based");
   config.set_location_based(location_based);
 
-  MosquitoParameters parameters;
   parameters.set_mosquito_config(config);
-  return parameters;
 }
 
 }  // namespace
 
 TEST(MosquitoParametersProcessingTest, DistributesSingleLocationValues) {
-  auto parameters = make_location_parameters({0.19}, {100});
+  MosquitoParameters parameters;
+  configure_location_parameters(parameters, {0.19}, {100});
   std::vector<Spatial::Location> locations(3);
 
   ASSERT_NO_THROW(parameters.process_config_using_locations(locations));
@@ -37,7 +37,8 @@ TEST(MosquitoParametersProcessingTest, DistributesSingleLocationValues) {
 }
 
 TEST(MosquitoParametersProcessingTest, AppliesPerLocationValues) {
-  auto parameters = make_location_parameters({0.1, 0.2}, {80, 120});
+  MosquitoParameters parameters;
+  configure_location_parameters(parameters, {0.1, 0.2}, {80, 120});
   std::vector<Spatial::Location> locations(2);
 
   ASSERT_NO_THROW(parameters.process_config_using_locations(locations));
@@ -48,14 +49,16 @@ TEST(MosquitoParametersProcessingTest, AppliesPerLocationValues) {
 }
 
 TEST(MosquitoParametersProcessingTest, RejectsMismatchedParameterArrays) {
-  auto parameters = make_location_parameters({0.1}, {80, 120});
+  MosquitoParameters parameters;
+  configure_location_parameters(parameters, {0.1}, {80, 120});
   std::vector<Spatial::Location> locations(2);
 
   EXPECT_THROW(parameters.process_config_using_locations(locations), std::invalid_argument);
 }
 
 TEST(MosquitoParametersProcessingTest, RejectsArraysThatDoNotMatchLocationCount) {
-  auto parameters = make_location_parameters({0.1, 0.2, 0.3}, {80, 120, 160});
+  MosquitoParameters parameters;
+  configure_location_parameters(parameters, {0.1, 0.2, 0.3}, {80, 120, 160});
   std::vector<Spatial::Location> locations(2);
 
   EXPECT_THROW(parameters.process_config_using_locations(locations), std::invalid_argument);

@@ -73,10 +73,10 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsGenotypeAndTherapyParameterRanges) 
   EXPECT_THROW(config()->validate_genotype_parameters(), std::invalid_argument);
 
   config()->therapy_parameters_.tf_testing_day_ = -1;
-  EXPECT_THROW(config()->validate_therapy_parameters(), std::invalid_argument);
+  EXPECT_THROW((void)config()->validate_therapy_parameters(), std::invalid_argument);
   config()->therapy_parameters_.tf_testing_day_ = 0;
   config()->therapy_parameters_.tf_rate_ = 2.0;
-  EXPECT_THROW(config()->validate_therapy_parameters(), std::invalid_argument);
+  EXPECT_THROW((void)config()->validate_therapy_parameters(), std::invalid_argument);
 }
 
 TEST_F(ConfigValidationEdgeCasesTest, RejectsAdditionalEpidemiologicalRanges) {
@@ -106,7 +106,7 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsInvalidTherapyAndStrategyDatabaseRe
   therapy.set_drug_ids({9999});
   therapies.begin()->second = therapy;
   config()->therapy_parameters_.therapy_db_raw_ = therapies;
-  EXPECT_THROW(config()->validate_therapy_parameters(), std::invalid_argument);
+  EXPECT_THROW((void)config()->validate_therapy_parameters(), std::invalid_argument);
 
   config()->therapy_parameters_.therapy_db_raw_ = Model::get_config()->therapy_parameters_.therapy_db_raw_;
   auto strategies = config()->strategy_parameters_.strategy_db_raw_;

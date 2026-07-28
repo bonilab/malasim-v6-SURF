@@ -80,14 +80,6 @@ TEST_F(SchedulerDateTest, DaysToNextNYears) {
   EXPECT_EQ(scheduler_.get_days_until_n_years_from_now(0), 0);
 }
 
-TEST_F(SchedulerDateTest, LegacyYearHelperNamesRemainCompatible) {
-  init(date::year_month_day{date::year{2020}, date::month{1}, date::day{1}});
-  EXPECT_EQ(scheduler_.get_days_to_next_year(),
-            scheduler_.get_days_until_next_year_anniversary());
-  EXPECT_EQ(scheduler_.get_days_to_next_n_year(2),
-            scheduler_.get_days_until_n_years_from_now(2));
-}
-
 TEST_F(SchedulerDateTest, DayInYearAccessor) {
   init(date::year_month_day{date::year{2021}, date::month{1}, date::day{1}});
   EXPECT_EQ(scheduler_.get_current_day_in_year(), 1);

@@ -14,10 +14,9 @@ protected:
 };
 
 TEST_F(PersonLifecycleEdgeTest, ComputesPartialTherapyComplianceAcrossProbabilityBranches) {
-  auto epidemiology = mock_config_->get_epidemiological_parameters();
+  auto &epidemiology = mock_config_->get_epidemiological_parameters();
   epidemiology.set_p_compliance(0.5);
   epidemiology.set_min_dosing_days(3);
-  mock_config_->set_epidemiological_parameters(epidemiology);
 
   EXPECT_CALL(*mock_random_, random_flat(_, _)).WillOnce(Return(0.9));
   EXPECT_EQ(Person::complied_dosing_days(1), 3);
@@ -25,7 +24,6 @@ TEST_F(PersonLifecycleEdgeTest, ComputesPartialTherapyComplianceAcrossProbabilit
   EXPECT_EQ(Person::complied_dosing_days(1), 1);
 
   epidemiology.set_p_compliance(1.0);
-  mock_config_->set_epidemiological_parameters(epidemiology);
   EXPECT_EQ(Person::complied_dosing_days(2), 2);
 }
 
@@ -49,9 +47,8 @@ TEST_F(PersonLifecycleEdgeTest, RejectsInvalidBirthdayDelayAndSchedulesLifecycle
 }
 
 TEST_F(PersonLifecycleEdgeTest, ComplianceOneUsesTheFullDosingDayCount) {
-  auto epidemiology = mock_config_->get_epidemiological_parameters();
+  auto &epidemiology = mock_config_->get_epidemiological_parameters();
   epidemiology.set_p_compliance(1.0);
-  mock_config_->set_epidemiological_parameters(epidemiology);
   EXPECT_CALL(*mock_random_, random_flat(_, _)).Times(0);
   EXPECT_EQ(Person::complied_dosing_days(7), 7);
 }

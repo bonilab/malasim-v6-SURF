@@ -8,6 +8,16 @@
 
 class RaptSettings : public IConfigData {
 public:
+  void reset_to_defaults() {
+    is_enabled_ = true;
+    period_ = 12;
+    therapy_id_ = 1;
+    compliance_ = 0.7;
+    age_start_ = 18;
+    start_date_as_day_ = 0;
+    start_date_ = date::year_month_day(date::year(2000), date::month(1), date::day(1));
+  }
+
   [[nodiscard]] bool get_is_enabled() const { return is_enabled_; }
   void set_is_enabled(const bool value) { is_enabled_ = value; }
   [[nodiscard]] int get_period() const { return period_; }

@@ -53,46 +53,50 @@ bool Config::load(const std::string &filename) {
 }
 
 void Config::reset_load_state() {
-  rapt_settings_ = RaptSettings{};
+  rapt_settings_.reset_to_defaults();
   version6_pfpr_incidence_calibrations_ = ImmuneSystemParameterOverrides{};
   has_version6_pfpr_incidence_calibrations_ = false;
   population_events_ = PopulationEvents{};
 }
 
 void Config::parse_configuration(const YAML::Node &config) {
-  model_settings_ = config["model_settings"].as<ModelSettings>();
+  YAML::convert<ModelSettings>::decode(config["model_settings"], model_settings_);
   if (model_settings_.get_initial_seed_number() > 0) {
     Model::get_random()->set_seed(static_cast<uint64_t>(model_settings_.get_initial_seed_number()));
   }
 
-  simulation_timeframe_ = config["simulation_timeframe"].as<SimulationTimeframe>();
-  transmission_settings_ = config["transmission_settings"].as<TransmissionSettings>();
-  population_demographic_ = config["population_demographic"].as<PopulationDemographic>();
-  spatial_settings_ = config["spatial_settings"].as<SpatialSettings>();
-  seasonality_settings_ = config["seasonality_settings"].as<SeasonalitySettings>();
-  movement_settings_ = config["movement_settings"].as<MovementSettings>();
-  parasite_parameters_ = config["parasite_parameters"].as<ParasiteParameters>();
-  immune_system_parameters_ = config["immune_system_parameters"].as<ImmuneSystemParameters>();
-  genotype_parameters_ = config["genotype_parameters"].as<GenotypeParameters>();
-  drug_parameters_ = config["drug_parameters"].as<DrugParameters>();
-  therapy_parameters_ = config["therapy_parameters"].as<TherapyParameters>();
-  strategy_parameters_ = config["strategy_parameters"].as<StrategyParameters>();
-  epidemiological_parameters_ =
-      config["epidemiological_parameters"].as<EpidemiologicalParameters>();
-  mosquito_parameters_ = config["mosquito_parameters"].as<MosquitoParameters>();
+  YAML::convert<SimulationTimeframe>::decode(config["simulation_timeframe"], simulation_timeframe_);
+  YAML::convert<TransmissionSettings>::decode(config["transmission_settings"], transmission_settings_);
+  YAML::convert<PopulationDemographic>::decode(config["population_demographic"], population_demographic_);
+  YAML::convert<SpatialSettings>::decode(config["spatial_settings"], spatial_settings_);
+  YAML::convert<SeasonalitySettings>::decode(config["seasonality_settings"], seasonality_settings_);
+  YAML::convert<MovementSettings>::decode(config["movement_settings"], movement_settings_);
+  YAML::convert<ParasiteParameters>::decode(config["parasite_parameters"], parasite_parameters_);
+  YAML::convert<ImmuneSystemParameters>::decode(config["immune_system_parameters"],
+                                                immune_system_parameters_);
+  YAML::convert<GenotypeParameters>::decode(config["genotype_parameters"], genotype_parameters_);
+  YAML::convert<DrugParameters>::decode(config["drug_parameters"], drug_parameters_);
+  YAML::convert<TherapyParameters>::decode(config["therapy_parameters"], therapy_parameters_);
+  YAML::convert<StrategyParameters>::decode(config["strategy_parameters"], strategy_parameters_);
+  YAML::convert<EpidemiologicalParameters>::decode(config["epidemiological_parameters"], epidemiological_parameters_);
+  YAML::convert<MosquitoParameters>::decode(config["mosquito_parameters"], mosquito_parameters_);
 
-  if (config["rapt_settings"]) { rapt_settings_ = config["rapt_settings"].as<RaptSettings>(); }
+  if (config["rapt_settings"]) {
+    YAML::convert<RaptSettings>::decode(config["rapt_settings"], rapt_settings_);
+  }
 }
 
 void Config::parse_version6_pfpr_incidence_calibrations(const YAML::Node &config) {
   const auto calibration_ids_node = config["version6_pfpr_incidence_calibrations"];
   if (!calibration_ids_node) {
-    spdlog::info("No version6_pfpr_incidence_calibrations section found — using default parameters");
+    spdlog::info(
+        "No version6_pfpr_incidence_calibrations section found — using default parameters");
     return;
   }
 
   spdlog::info("Found version6_pfpr_incidence_calibrations section — parsing overrides");
-  version6_pfpr_incidence_calibrations_ = calibration_ids_node.as<ImmuneSystemParameterOverrides>();
+  YAML::convert<ImmuneSystemParameterOverrides>::decode(
+      calibration_ids_node, version6_pfpr_incidence_calibrations_);
   if (version6_pfpr_incidence_calibrations_.get_random_selection()) {
     select_random_immune_system_parameter_calibration_id();
   }
@@ -113,7 +117,9 @@ void Config::select_random_immune_system_parameter_calibration_id() {
 
   std::vector<int> calibration_id_keys;
   calibration_id_keys.reserve(calibration_ids.size());
-  for (const auto &calibration_id : calibration_ids) { calibration_id_keys.push_back(calibration_id.first); }
+  for (const auto &calibration_id : calibration_ids) {
+    calibration_id_keys.push_back(calibration_id.first);
+  }
 
   const auto pick = static_cast<std::size_t>(
       Model::get_random()->random_uniform(static_cast<uint64_t>(calibration_id_keys.size())));
@@ -293,7 +299,7 @@ void Config::process_configuration(const YAML::Node &config) {
 
 void Config::parse_population_events(const YAML::Node &config) {
   // Population events depend on all processed settings and must be parsed last.
-  population_events_ = config["population_events"].as<PopulationEvents>();
+  YAML::convert<PopulationEvents>::decode(config["population_events"], population_events_);
   validate_population_events();
   spdlog::info("Population events parsed successfully");
 }
@@ -358,7 +364,7 @@ void Config::validate_simulation_timeframe() const {
   /*----------------------------
   Validate simulation timeframe
   ----------------------------*/
-  SimulationTimeframe simulation_timeframe = simulation_timeframe_;
+  const auto &simulation_timeframe = simulation_timeframe_;
   // Check if ending date is greater than starting date
   if (simulation_timeframe.get_starting_date() > simulation_timeframe.get_ending_date()) {
     throw std::invalid_argument("Simulation ending date should be greater than starting date");
@@ -380,7 +386,7 @@ void Config::validate_transmission_settings() const {
   /*----------------------------
   Validate transmission settings
   ----------------------------*/
-  TransmissionSettings transmission_settings = transmission_settings_;
+  const auto &transmission_settings = transmission_settings_;
   // Check transmission_parameter in range [0,1]
   if (transmission_settings.get_transmission_parameter() < 0
       || transmission_settings.get_transmission_parameter() > 1) {
@@ -397,7 +403,7 @@ void Config::validate_population_demographic() const {
   /*----------------------------
   Validate population demographic
   ----------------------------*/
-  PopulationDemographic population_demographic = population_demographic_;
+  const auto &population_demographic = population_demographic_;
   // Check if number_of_age_classes is a positive number
   if (population_demographic.get_number_of_age_classes() <= 0) {
     throw std::invalid_argument("Number of age classes should be a positive number");
@@ -545,7 +551,7 @@ void Config::validate_parasite_parameters() const {
   /*----------------------------
   Validate parasite parameters
   ----------------------------*/
-  ParasiteParameters parasite_parameters = parasite_parameters_;
+  const auto &parasite_parameters = parasite_parameters_;
   // All log numbers should be smaller than 6
   if (parasite_parameters.get_parasite_density_levels().get_log_parasite_density_cured() >= 6
       || parasite_parameters.get_parasite_density_levels().get_log_parasite_density_from_liver()
@@ -580,7 +586,7 @@ void Config::validate_immune_system_parameters() const {
   /*----------------------------
   Validate immune system parameters
   ----------------------------*/
-  ImmuneSystemParameters immune_system_parameters = immune_system_parameters_;
+  const auto &immune_system_parameters = immune_system_parameters_;
   // Check if all parameters are positive numbers
   if (immune_system_parameters.get_b1() < 0 || immune_system_parameters.get_b2() < 0
       || immune_system_parameters.get_duration_for_naive() < 0
@@ -602,7 +608,7 @@ void Config::validate_genotype_parameters() const {
   /*----------------------------
   Validate genotype parameters
   ----------------------------*/
-  GenotypeParameters genotype_parameters = genotype_parameters_;
+  const auto &genotype_parameters = genotype_parameters_;
   // Mutation mask entries are indexed by genotype aa_sequence character position.
   if (genotype_parameters.get_mutation_mask().empty()) {
     throw std::invalid_argument("Mutation mask should not be empty");
@@ -674,7 +680,7 @@ int Config::validate_therapy_parameters() const {
   /*----------------------------
   Validate therapy parameters
   ----------------------------*/
-  TherapyParameters therapy_parameters = therapy_parameters_;
+  const auto &therapy_parameters = therapy_parameters_;
   // Check if tf_testing_day is positive number
   if (therapy_parameters.get_tf_testing_day() < 0) {
     throw std::invalid_argument("TF testing day should be a positive number");
@@ -712,7 +718,7 @@ void Config::validate_strategy_database_ids() const {
   /*----------------------------
   Validate strategy database ids
   ----------------------------*/
-  StrategyParameters strategy_parameters = strategy_parameters_;
+  const auto &strategy_parameters = strategy_parameters_;
   // Check if initial_strategy_id is in strategy_db keys
   if (!strategy_parameters.get_strategy_db_raw().contains(
           strategy_parameters.get_initial_strategy_id())) {
@@ -726,7 +732,7 @@ void Config::validate_strategy_database_ids() const {
 }
 
 void Config::validate_public_private_strategies() const {
-  StrategyParameters strategy_parameters = strategy_parameters_;
+  const auto &strategy_parameters = strategy_parameters_;
   for (const auto &[strategy_id, strategy] : strategy_parameters.get_strategy_db_raw()) {
     if (strategy.get_type() != "PublicPrivate"
         && strategy.get_type() != "PublicPrivateMultiLocation") {
@@ -780,7 +786,7 @@ void Config::validate_epidemiological_treatment_parameters(
   /*----------------------------
   Validate epidemiological treatment parameters
   ----------------------------*/
-  EpidemiologicalParameters epidemiological_parameters = epidemiological_parameters_;
+  const auto &epidemiological_parameters = epidemiological_parameters_;
   // Check if number_of_tracking_days is a positive number
   if (epidemiological_parameters.get_number_of_tracking_days() <= 0) {
     throw std::invalid_argument("Number of tracking days should be a positive number");
@@ -833,7 +839,7 @@ void Config::validate_epidemiological_transmission_parameters() const {
   /*----------------------------
   Validate epidemiological transmission parameters
   ----------------------------*/
-  EpidemiologicalParameters epidemiological_parameters = epidemiological_parameters_;
+  const auto &epidemiological_parameters = epidemiological_parameters_;
   // Check if relapse_duration is a positive number
   if (epidemiological_parameters.get_relapse_duration() < 0) {
     throw std::invalid_argument("Relapse duration should be a positive number");
@@ -886,7 +892,7 @@ void Config::validate_mosquito_parameters() const {
   /*----------------------------
   Validate mosquito parameters
   ----------------------------*/
-  MosquitoParameters mosquito_parameters = mosquito_parameters_;
+  const auto &mosquito_parameters = mosquito_parameters_;
   // Check if mosquito_mode is either grid_based or location_based
   if (mosquito_parameters.get_mosquito_config().get_mode() != "grid_based"
       && mosquito_parameters.get_mosquito_config().get_mode() != "location_based") {

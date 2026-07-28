@@ -20,7 +20,7 @@ void RaptEvent::do_execute() {
   auto* person = get_person();
   if (person == nullptr) { throw std::runtime_error("Person is nullptr"); }
 
-  const auto rapt_config = Model::get_config()->get_rapt_settings();
+  const auto &rapt_config = Model::get_config()->get_rapt_settings();
 
   // Check to see if we should receive a therapy: RAPT is currently active, the
   // person is the correct age, and they have not recently taken a treatment in

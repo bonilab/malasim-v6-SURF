@@ -1,7 +1,7 @@
 #ifndef IMMUNESYSTEMPARAMETERS_H
 #define IMMUNESYSTEMPARAMETERS_H
 #include <spdlog/spdlog.h>
-#include <yaml-cpp/node/node.h>
+#include <yaml-cpp/yaml.h>
 
 #include <cmath>
 

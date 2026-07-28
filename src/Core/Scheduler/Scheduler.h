@@ -62,9 +62,6 @@ public:
   [[nodiscard]] bool is_today_last_day_of_year();
   [[nodiscard]] int get_days_until_next_year_anniversary() const;
   [[nodiscard]] int get_days_until_n_years_from_now(int n) const;
-  // Backward-compatible names retained for existing callers.
-  [[nodiscard]] int get_days_to_next_year() const;
-  [[nodiscard]] int get_days_to_next_n_year(int n) const;
   [[nodiscard]] unsigned get_days_in_current_month() const;
   [[nodiscard]] int get_current_year() const;
   [[nodiscard]] unsigned int get_current_day_of_month() const;

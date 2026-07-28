@@ -402,7 +402,7 @@ void Population::generate_individual(int location, int age_class) {
                                                      + (Constants::DAYS_IN_YEAR / 2));
   }
 
-  auto immune_system_parameters = Model::get_config()->get_immune_system_parameters();
+  const auto &immune_system_parameters = Model::get_config()->get_immune_system_parameters();
   auto immune_value = random->random_beta(immune_system_parameters.alpha_immune,
                                           immune_system_parameters.beta_immune);
   person->get_immune_system()->set_latest_immune_value(immune_value);

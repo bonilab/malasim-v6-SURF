@@ -20,8 +20,8 @@ class SeasonalitySettings : public IConfigData {
 public:
   SeasonalitySettings(const SeasonalitySettings &) = delete;
   SeasonalitySettings &operator=(const SeasonalitySettings &) = delete;
-  SeasonalitySettings(SeasonalitySettings &&) = default;
-  SeasonalitySettings &operator=(SeasonalitySettings &&) = default;
+  SeasonalitySettings(SeasonalitySettings &&) = delete;
+  SeasonalitySettings &operator=(SeasonalitySettings &&) = delete;
 
   SeasonalitySettings();
   ~SeasonalitySettings() override;

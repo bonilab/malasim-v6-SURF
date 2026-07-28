@@ -48,8 +48,8 @@ public:
     [[nodiscard]] int get_k() const { return k_; }
     void set_k(const int value) { k_ = value; }
 
-    [[nodiscard]] double get_base_ec50() const { return base_EC50_; }
-    void set_base_EC50(const double value) { base_EC50_ = value; }
+    [[nodiscard]] double get_base_ec50() const { return base_ec50_; }
+    void set_base_ec50(const double value) { base_ec50_ = value; }
 
   private:
     std::string name_;
@@ -59,7 +59,7 @@ public:
     std::vector<double> age_specific_drug_concentration_sd_;
     std::vector<double> age_specific_drug_absorption_;
     int k_ = -1;
-    double base_EC50_ = -1;
+    double base_ec50_ = -1;
   };
 
   // Getters and Setters for DrugParameters
@@ -106,7 +106,7 @@ struct convert<DrugParameters::DrugInfo> {
       rhs.set_age_specific_drug_absorption(
           node["age_specific_drug_absorption"].as<std::vector<double>>());
     rhs.set_k(node["k"].as<int>());
-    rhs.set_base_EC50(node["base_EC50"].as<double>());
+    rhs.set_base_ec50(node["base_EC50"].as<double>());
     return true;
   }
 };

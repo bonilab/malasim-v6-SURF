@@ -87,7 +87,7 @@ double ImmuneSystem::get_parasite_size_after_t_days(const int &duration,
 double ImmuneSystem::get_clinical_progression_probability() const {
   const auto immune = get_current_value();
 
-  const auto isf = Model::get_config()->get_immune_system_parameters();
+  const auto &isf = Model::get_config()->get_immune_system_parameters();
 
   //    double PClinical = (isf.min_clinical_probability - isf.max_clinical_probability) *
   //    pow(immune, isf.immune_effect_on_progression_to_clinical) + isf.max_clinical_probability;

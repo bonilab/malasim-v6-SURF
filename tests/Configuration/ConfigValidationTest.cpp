@@ -113,28 +113,23 @@ TEST_F(ConfigValidationTest, RejectsInvalidParasiteAndImmuneParameters) {
 }
 
 TEST_F(ConfigValidationTest, RejectsInvalidEpidemiologicalParameters) {
-  auto epidemiology = config()->epidemiological_parameters_;
+  auto &epidemiology = config()->epidemiological_parameters_;
   epidemiology.p_compliance_ = 2;
-  config()->epidemiological_parameters_ = epidemiology;
   EXPECT_THROW(config()->validate_epidemiological_treatment_parameters(10), std::invalid_argument);
 
   epidemiology.p_compliance_ = 0.5;
   epidemiology.min_dosing_days_ = 10;
-  config()->epidemiological_parameters_ = epidemiology;
   EXPECT_THROW(config()->validate_epidemiological_treatment_parameters(10), std::invalid_argument);
 
   epidemiology.p_relapse_ = -1;
-  config()->epidemiological_parameters_ = epidemiology;
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
 
   epidemiology.p_relapse_ = 0.2;
   epidemiology.relative_biting_info_.min_relative_biting_value_ = 0;
-  config()->epidemiological_parameters_ = epidemiology;
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
 
   epidemiology.relative_biting_info_.min_relative_biting_value_ = 2;
   epidemiology.relative_biting_info_.max_relative_biting_value_ = 1;
-  config()->epidemiological_parameters_ = epidemiology;
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
 }
 
