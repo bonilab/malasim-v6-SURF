@@ -133,6 +133,22 @@ TEST_F(PopulationEventBuilderTest, RejectsInvalidAnnualAndCirculationDefinitions
   EXPECT_THROW(PopulationEventBuilder::build_change_circulation_percent_event(
                    YAML::Load("- date: 2024/01/01\n  circulation_percent: -0.1"), config()),
                std::invalid_argument);
+
+  EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
+                   YAML::Load("- date: 2024/01/02\n  genotype_id: 0\n  count: 1\n  log_parasite_density: 3.0"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
+                   YAML::Load("- date: 2024/01/01\n  genotype_id: -1\n  count: 1\n  log_parasite_density: 3.0"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
+                   YAML::Load("- date: 2024/01/01\n  genotype_id: 9999\n  count: 1\n  log_parasite_density: 3.0"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
+                   YAML::Load("- date: 2024/01/01\n  genotype_id: 0\n  count: 0\n  log_parasite_density: 3.0"), config()),
+               std::invalid_argument);
+  EXPECT_THROW(PopulationEventBuilder::build_importation_periodically_random_event(
+                   YAML::Load("- date: 2024/01/01\n  genotype_id: 0\n  count: 1\n  log_parasite_density: 0.0"), config()),
+               std::invalid_argument);
 }
 
 TEST_F(PopulationEventBuilderTest, BuildsAdditionalPopulationEventTypes) {

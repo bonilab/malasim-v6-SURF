@@ -47,6 +47,14 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsAdditionalTimeframeAndDemographicVa
   config()->population_demographic_.initial_age_structure_ = {};
   config()->population_demographic_.artificial_rescaling_of_population_size_ = 0;
   EXPECT_THROW(config()->validate_population_demographic(), std::invalid_argument);
+
+  config()->population_demographic_.artificial_rescaling_of_population_size_ = 1;
+  config()->population_demographic_.initial_age_structure_ = {1};
+  config()->population_demographic_.death_rate_by_age_class_ = {-1};
+  EXPECT_THROW(config()->validate_population_demographic(), std::invalid_argument);
+  config()->population_demographic_.death_rate_by_age_class_ = {1};
+  config()->population_demographic_.mortality_when_treatment_fail_by_age_class_ = {-1};
+  EXPECT_THROW(config()->validate_population_demographic(), std::invalid_argument);
 }
 
 TEST_F(ConfigValidationEdgeCasesTest, RejectsGenotypeAndTherapyParameterRanges) {
@@ -55,6 +63,13 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsGenotypeAndTherapyParameterRanges) 
 
   config()->genotype_parameters_.mutation_mask_ = {true};
   config()->genotype_parameters_.mutation_probability_per_locus_ = 2.0;
+  EXPECT_THROW(config()->validate_genotype_parameters(), std::invalid_argument);
+
+  config()->genotype_parameters_.mutation_probability_per_locus_ = 0.1;
+  auto patterns = config()->genotype_parameters_.override_ec50_patterns_;
+  ASSERT_FALSE(patterns.empty());
+  patterns.front().set_pattern("bad");
+  config()->genotype_parameters_.override_ec50_patterns_ = patterns;
   EXPECT_THROW(config()->validate_genotype_parameters(), std::invalid_argument);
 
   config()->therapy_parameters_.tf_testing_day_ = -1;
@@ -82,6 +97,24 @@ TEST_F(ConfigValidationEdgeCasesTest, RejectsAdditionalEpidemiologicalRanges) {
   config()->epidemiological_parameters_.relapse_duration_ = 1;
   config()->epidemiological_parameters_.tf_window_size_ = -1;
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
+}
+
+TEST_F(ConfigValidationEdgeCasesTest, RejectsInvalidTherapyAndStrategyDatabaseReferences) {
+  auto therapies = config()->therapy_parameters_.therapy_db_raw_;
+  ASSERT_FALSE(therapies.empty());
+  auto therapy = therapies.begin()->second;
+  therapy.set_drug_ids({9999});
+  therapies.begin()->second = therapy;
+  config()->therapy_parameters_.therapy_db_raw_ = therapies;
+  EXPECT_THROW(config()->validate_therapy_parameters(), std::invalid_argument);
+
+  config()->therapy_parameters_.therapy_db_raw_ = Model::get_config()->therapy_parameters_.therapy_db_raw_;
+  auto strategies = config()->strategy_parameters_.strategy_db_raw_;
+  config()->strategy_parameters_.initial_strategy_id_ = 9999;
+  EXPECT_THROW(config()->validate_strategy_parameters(), std::invalid_argument);
+  config()->strategy_parameters_.initial_strategy_id_ = strategies.begin()->first;
+  config()->strategy_parameters_.second_line_strategy_id_ = 9999;
+  EXPECT_THROW(config()->validate_strategy_parameters(), std::invalid_argument);
 }
 
 TEST_F(ConfigValidationEdgeCasesTest, HandlesMissingConfigurationFile) {
