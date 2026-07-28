@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "Population/Person/Person.h"
+#include "Treatment/Therapies/SCTherapy.h"
 #include "PersonTestBase.h"
 
 class PersonLifecycleEdgeTest : public PersonTestBase {};
@@ -46,4 +47,19 @@ TEST_F(PersonLifecycleEdgeTest, ComplianceOneUsesTheFullDosingDayCount) {
   mock_config_->set_epidemiological_parameters(epidemiology);
   EXPECT_CALL(*mock_random_, random_flat(_, _)).Times(0);
   EXPECT_EQ(Person::complied_dosing_days(7), 7);
+}
+
+TEST_F(PersonLifecycleEdgeTest, ComputesVariableSingleCompoundTherapyCompletionDay) {
+  SCTherapy therapy;
+  therapy.dosing_day = {1, 3};
+  therapy.calculate_max_dosing_day();
+  therapy.set_full_compliance(true);
+  EXPECT_EQ(Person::complied_dosing_days(&therapy), 3);
+
+  therapy.set_full_compliance(false);
+  therapy.pr_completed_days = {0.25, 0.75};
+  EXPECT_CALL(*mock_random_, random_flat(_, _)).WillOnce(Return(0.1));
+  EXPECT_EQ(Person::complied_dosing_days(&therapy), 1);
+  EXPECT_CALL(*mock_random_, random_flat(_, _)).WillOnce(Return(0.5));
+  EXPECT_EQ(Person::complied_dosing_days(&therapy), 2);
 }
