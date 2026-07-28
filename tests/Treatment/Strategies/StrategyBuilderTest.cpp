@@ -371,4 +371,20 @@ TEST_F(StrategyBuilderTest, ValidatesPublicPrivateMultiLocationFields) {
   node["public_strategy_id"] = 2;
   node["private_strategy_id"] = 2;
   EXPECT_THROW(StrategyBuilder::build(node, 3), std::invalid_argument);
+
+  node["public_strategy_id"] = 0;
+  node["private_strategy_id"] = 1;
+  node["peak_after"] = -1;
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+  node["peak_after"] = 30;
+  node["start_public_share_by_location"] = YAML::Load("[0.3, 0.3]");
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+  node.remove("start_public_share_by_location");
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+
+  node["start_public_share_by_location"] = start_shares;
+  node.remove("private_strategy_id");
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
+  node["private_strategy_id"] = 9999;
+  EXPECT_THROW(StrategyBuilder::build(node, 2), std::invalid_argument);
 }
