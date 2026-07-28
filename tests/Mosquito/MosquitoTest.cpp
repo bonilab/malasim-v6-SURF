@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include "Configuration/Config.h"
 #include "Utils/Random.h"
 #include "Mosquito/Mosquito.h"
@@ -83,4 +85,19 @@ TEST_F(MosquitoTest, PrmcSampleWhenThereIsNoFOI) {
     all_person.clear();
     all_person_ptr.clear();
   }
+}
+
+TEST_F(MosquitoTest, BuildsInterruptedFeedingIndicesWithinRequestedSize) {
+  Mosquito mosquito;
+  utils::Random random;
+  random.set_seed(7);
+  const auto indices = Mosquito::build_interrupted_feeding_indices(&random, 0.25, 20);
+  ASSERT_EQ(indices.size(), 20u);
+  EXPECT_LE(std::count(indices.begin(), indices.end(), 1U), 20);
+}
+
+TEST_F(MosquitoTest, ConvertsNewGenotypeStringsToLegacyFormats) {
+  const std::string genotype = "aaaa|bbbb|cccc|dddd|eeee|ffff|gggggggX|hhhh|iiii|jjjj|kkkk|llll|mmmmmmmmmmmmm|n|o";
+  EXPECT_EQ(Mosquito::get_old_genotype_string(genotype), "eeee|ggggggg|mmmmmmmmmmmmm|n");
+  EXPECT_EQ(Mosquito::get_old_genotype_string2(genotype), "geeeemn");
 }
