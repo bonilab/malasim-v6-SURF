@@ -182,4 +182,39 @@ TEST_F(CliValidateTest, CreateCliOptionsParsesFullCommandLine) {
   EXPECT_EQ(input.replicate, 2);
 }
 
+TEST_F(CliValidateTest, CreateCliOptionsParsesAllMovementAndOutputFlags) {
+  CLI::App app;
+  utils::Cli::MaSimAppInput input;
+  utils::Cli::create_cli_options(app, input);
+  ASSERT_NO_THROW(app.parse(std::string{
+      "--dump --list reporters --im --mc --md --memory-stats --replicate 3"}));
+  EXPECT_TRUE(input.dump_movement_matrix);
+  EXPECT_EQ(input.list_reporters, "reporters");
+  EXPECT_TRUE(input.record_individual_movement);
+  EXPECT_TRUE(input.record_cell_movement);
+  EXPECT_TRUE(input.record_district_movement);
+  EXPECT_TRUE(input.print_memory_stats);
+  EXPECT_EQ(input.replicate, 3);
+}
+
+TEST_F(CliValidateTest, CreateDxgOptionsParsesCalibrationAndPopulationFlags) {
+  CLI::App app;
+  utils::Cli::DxGAppInput input;
+  utils::Cli::create_dxg_cli_options(app, input);
+  ASSERT_NO_THROW(app.parse(std::string{
+      "--cc --ee --art --pil --old_format --recurrence-test --nd 2 --popsize 50 "
+      "--iov 0.1 --iiv 0.2 --as_ec50 3.0 --dose 0 1 --halflife 2 "
+      "--kmax 0.8 --EC50 4 --slope 1.2 --mda 0.5"}));
+  EXPECT_TRUE(input.is_crt_calibration);
+  EXPECT_TRUE(input.is_ee_calibration);
+  EXPECT_TRUE(input.is_art);
+  EXPECT_TRUE(input.is_print_immunity_level);
+  EXPECT_TRUE(input.is_old_format);
+  EXPECT_TRUE(input.is_recurrence_test);
+  EXPECT_EQ(input.number_of_drugs_in_combination, 2);
+  EXPECT_EQ(input.population_size, 50);
+  EXPECT_DOUBLE_EQ(input.as_iov, 0.1);
+  EXPECT_EQ(input.dosing_days.size(), 2u);
+}
+
 }  // namespace
