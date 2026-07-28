@@ -5,12 +5,6 @@ class IConfigData {
 public:
   IConfigData() = default;
 
-  IConfigData(const IConfigData &) = default;
-  IConfigData &operator=(const IConfigData &) = default;
-
-  IConfigData(IConfigData &&) noexcept = default;
-  IConfigData &operator=(IConfigData &&) noexcept = default;
-
   virtual ~IConfigData() = default;
   virtual void process_config() = 0;
 };
