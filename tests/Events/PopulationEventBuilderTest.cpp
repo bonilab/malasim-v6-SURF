@@ -8,6 +8,7 @@
 #include "Events/Population/ChangeTreatmentStrategyEvent.h"
 #include "Events/Population/ChangeMutationMaskEvent.h"
 #include "Events/Population/ChangeMutationProbabilityPerLocusEvent.h"
+#include "Events/Population/ChangeTreatmentCoverageEvent.h"
 #include "Events/Population/ChangeWithinHostInducedFreeRecombinationEvent.h"
 #include "Events/Population/PopulationEventBuilder.h"
 #include "Events/Population/SingleRoundMDAEvent.h"
@@ -27,6 +28,8 @@
 #include "Events/Population/IntroduceMutantRasterEvent.hxx"
 #include "Events/Population/ModifyNestedMFTEvent.h"
 #include "Events/Population/UpdateBetaRasterEvent.hxx"
+#include "Events/Population/RotateStrategyEvent.h"
+#include "Events/Population/IntroduceParasitesPeriodicallyEventV2.h"
 #include "Parasites/Genotype.h"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
@@ -416,4 +419,73 @@ TEST_F(PopulationEventBuilderTest, DispatchesRemainingSupportedEventDefinitions)
   YAML::Node unknown;
   unknown["name"] = "unsupported_event";
   EXPECT_TRUE(PopulationEventBuilder::build(unknown).empty());
+}
+
+TEST_F(PopulationEventBuilderTest, DispatchesConfigurationAndRasterEventDefinitions) {
+  YAML::Node coverage;
+  coverage["name"] = ChangeTreatmentCoverageEvent::EVENT_NAME;
+  coverage["info"][0] = YAML::Load(R"(
+type: SteadyTCM
+date: 2000/1/1
+p_treatment_under_5_by_location: [0.1]
+p_treatment_over_5_by_location: [0.2]
+)");
+  EXPECT_EQ(PopulationEventBuilder::build(coverage).size(), 1);
+
+  YAML::Node strategy;
+  strategy["name"] = ChangeTreatmentStrategyEvent::EVENT_NAME;
+  strategy["info"][0]["date"] = "2000/1/1";
+  strategy["info"][0]["strategy_id"] = 0;
+  EXPECT_EQ(PopulationEventBuilder::build(strategy).size(), 1);
+
+  YAML::Node single_mda;
+  single_mda["name"] = SingleRoundMDAEvent::EVENT_NAME;
+  single_mda["info"][0]["date"] = "2000/1/1";
+  single_mda["info"][0]["fraction_population_targeted"] = YAML::Load("[0.0]");
+  single_mda["info"][0]["days_to_complete_all_treatments"] = 1;
+  EXPECT_EQ(PopulationEventBuilder::build(single_mda).size(), 1);
+
+  YAML::Node nested;
+  nested["name"] = ModifyNestedMFTEvent::EVENT_NAME;
+  nested["info"][0]["date"] = "2000/1/1";
+  nested["info"][0]["strategy_id"] = 0;
+  EXPECT_EQ(PopulationEventBuilder::build(nested).size(), 1);
+
+  YAML::Node raster;
+  raster["name"] = UpdateBetaRasterEvent::EVENT_NAME;
+  raster["info"][0]["date"] = "2000/1/1";
+  raster["info"][0]["beta_raster"] = "builder_beta_dispatch.asc";
+  test_fixtures::create_test_raster_file("builder_beta_dispatch.asc", 1, 1, 0.5);
+  EXPECT_EQ(PopulationEventBuilder::build(raster).size(), 1);
+  std::remove("builder_beta_dispatch.asc");
+
+  YAML::Node rotate;
+  rotate["name"] = RotateStrategyEvent::EVENT_NAME;
+  rotate["info"][0]["date"] = "2000/1/1";
+  rotate["info"][0]["years"] = 1;
+  rotate["info"][0]["first_strategy_id"] = 0;
+  rotate["info"][0]["second_strategy_id"] = 0;
+  EXPECT_EQ(PopulationEventBuilder::build(rotate).size(), 1);
+
+  YAML::Node district;
+  district["name"] = DistrictImportationDailyEvent::EVENT_NAME;
+  district["info"][0]["district"] = 1;
+  district["info"][0]["daily_rate"] = 0.1;
+  district["info"][0]["start_date"] = "2000/1/1";
+  district["info"][0]["alleles"] = YAML::Load("[]");
+  EXPECT_EQ(PopulationEventBuilder::build(district).size(), 1);
+
+  YAML::Node mutant;
+  mutant["name"] = IntroduceMutantEvent::EVENT_NAME;
+  mutant["admin_level"] = "district";
+  mutant["info"] = YAML::Load(R"(
+- day: 2000/1/1
+  unit_id: 0
+  fraction: 0.1
+  alleles:
+    - chromosome: 1
+      locus: 2
+      allele: A
+)");
+  EXPECT_EQ(PopulationEventBuilder::build(mutant).size(), 1);
 }
