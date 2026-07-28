@@ -36,8 +36,9 @@ double SeasonalEquation::get_seasonal_factor(const date::sys_days &today, const 
 }
 
 void SeasonalEquation::set_from_raster() {
-  AscFile* raster =
-      Model::get_spatial_data()->get_raster(SpatialData::SpatialFileType::ECOCLIMATIC);
+  auto* spatial_data = Model::get_spatial_data();
+  if (spatial_data == nullptr) { throw std::invalid_argument("Ecoclimatic raster not found."); }
+  AscFile* raster = spatial_data->get_raster(SpatialData::SpatialFileType::ECOCLIMATIC);
   if (raster == nullptr) { throw std::invalid_argument("Ecoclimatic raster not found."); }
   spdlog::info("Setting seasonal equation using raster data.");
   auto size = A_.size();
