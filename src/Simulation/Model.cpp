@@ -18,6 +18,97 @@
 #include "Treatment/LinearTCM.h"
 #include "Treatment/SteadyTCM.h"
 
+namespace {
+
+namespace isop = ImmuneSystemOverridePaths;
+
+double get_effective_override_value(const Config &config, const std::string &path) {
+  if (path == isop::K_Z) {
+    return config.get_immune_system_parameters().get_immune_effect_on_progression_to_clinical();
+  }
+  if (path == isop::K_KAPPA) {
+    return config.get_immune_system_parameters().get_factor_effect_age_mature_immunity();
+  }
+  if (path == isop::K_MIDPOINT) { return config.get_immune_system_parameters().get_midpoint(); }
+  if (path == isop::K_P_CI_SYMP) {
+    return config.get_epidemiological_parameters()
+        .get_allow_new_coinfection_to_cause_symptoms()
+        .get_probability();
+  }
+  if (path == isop::K_P_SEEK_BASE) {
+    return config.get_epidemiological_parameters()
+        .get_age_based_probability_of_seeking_treatment()
+        .get_power()
+        .base;
+  }
+  if (path == isop::K_MUTATION_PROB) {
+    return config.get_genotype_parameters().get_mutation_probability_per_locus();
+  }
+  if (path == isop::K_DEFAULT_CNV_REVERSION_MULTIPLIER) {
+    return config.get_genotype_parameters().get_default_cnv_reversion_multiplier();
+  }
+  return std::numeric_limits<double>::quiet_NaN();
+}
+
+bool is_keep_default_sentinel(const std::string &path, double override_value) {
+  const bool is_sentinel_path =
+      path == isop::K_MUTATION_PROB || path == isop::K_DEFAULT_CNV_REVERSION_MULTIPLIER;
+  return is_sentinel_path && override_value < 0.0;
+}
+
+void verify_override(const Config &config, const std::string &path, double override_value) {
+  const double effective = get_effective_override_value(config, path);
+
+  if (std::isnan(effective)) {
+    spdlog::warn("    [UNKNOWN PATH] {} = {} (no live config field to verify)", path,
+                 override_value);
+    return;
+  }
+
+  // A negative mutation/reversion value means "keep the existing default".
+  if (is_keep_default_sentinel(path, override_value)) {
+    spdlog::info("    [KEPT DEFAULT] {}: override={} (<0 sentinel), effective={}", path,
+                 override_value, effective);
+    return;
+  }
+
+  const bool applied =
+      std::fabs(effective - override_value) <= (1e-9 * std::max(1.0, std::fabs(override_value)));
+  spdlog::info("    [{}] {}: override={}, effective={}", applied ? "OK" : "MISMATCH", path,
+               override_value, effective);
+  if (!applied) { spdlog::warn("    ^ override for '{}' was NOT applied correctly!", path); }
+}
+
+void verify_immune_system_overrides(const Config* config) {
+  if (config == nullptr) { return; }
+
+  const bool section_present = config->has_version6_pfpr_incidence_calibrations();
+  const auto &overrides = config->get_version6_pfpr_incidence_calibrations();
+
+  spdlog::info("===== version6_pfpr_incidence_calibrations (before_run verification) =====");
+  spdlog::info("  section_present    = {}", section_present);
+  spdlog::info("  random_selection   = {}", overrides.get_random_selection());
+  spdlog::info("  chosen_calibration_id = {}", overrides.get_chosen_calibration_id());
+
+  if (!section_present) {
+    spdlog::info("  No overrides section -> running with default immune-system parameters.");
+  } else if (!overrides.has_selected_calibration_id()) {
+    spdlog::warn(
+        "  chosen_calibration_id={} not found among calibration_ids -> NO overrides applied!",
+        overrides.get_chosen_calibration_id());
+  } else {
+    const auto &calibration_id = overrides.get_selected_calibration_id();
+    spdlog::info("  selected calibration_id[{}] has {} override(s):",
+                 overrides.get_chosen_calibration_id(), calibration_id.overrides.size());
+    for (const auto &[path, override_value] : calibration_id.overrides) {
+      verify_override(*config, path, override_value);
+    }
+  }
+
+  spdlog::info("======================================================================");
+}
+}  // namespace
+
 bool Model::initialize() {
   config_ = std::make_unique<Config>();
   random_ = std::make_unique<utils::Random>(nullptr, -1);
@@ -163,104 +254,7 @@ void Model::run() {
 
 void Model::before_run() {
   spdlog::info("Perform before run events");
-
-  // --------------------------------------------------------------------------
-  // Verification dump: print every value that was overridden through
-  // version6_pfpr_incidence_calibrations for the selected calibration_id, and compare
-  // each one against the value that is actually live in the config right now,
-  // so we can confirm all overrides were applied correctly before the run.
-  // --------------------------------------------------------------------------
-  if (config_ != nullptr) {
-    namespace isop = ImmuneSystemOverridePaths;
-
-    // NOTE: adjust these two accessor names if your Config exposes the object
-    // under a different name (e.g. get_version6_pfpr_incidence_calibrations() /
-    // has_immune_system_parameter_calibration_ids()).
-    const bool section_present = config_->has_version6_pfpr_incidence_calibrations();
-    const auto &overrides = config_->get_version6_pfpr_incidence_calibrations();
-
-    spdlog::info("===== version6_pfpr_incidence_calibrations (before_run verification) =====");
-    spdlog::info("  section_present    = {}", section_present);
-    spdlog::info("  random_selection   = {}", overrides.get_random_selection());
-    spdlog::info("  chosen_calibration_id = {}", overrides.get_chosen_calibration_id());
-
-    if (!section_present) {
-      spdlog::info("  No overrides section -> running with default immune-system parameters.");
-    } else if (!overrides.has_selected_calibration_id()) {
-      spdlog::warn(
-          "  chosen_calibration_id={} not found among calibration_ids -> NO overrides applied!",
-          overrides.get_chosen_calibration_id());
-    } else {
-      // Resolve the value currently live in the config for a given override path.
-      // Returns NaN for a path with no corresponding live field.
-      auto effective_value = [&](const std::string &path) -> double {
-        if (path == isop::K_Z) {
-          return config_->get_immune_system_parameters()
-              .get_immune_effect_on_progression_to_clinical();
-        }
-        if (path == isop::K_KAPPA) {
-          return config_->get_immune_system_parameters().get_factor_effect_age_mature_immunity();
-        }
-        if (path == isop::K_MIDPOINT) {
-          return config_->get_immune_system_parameters().get_midpoint();
-        }
-        if (path == isop::K_P_CI_SYMP) {
-          return config_->get_epidemiological_parameters()
-              .get_allow_new_coinfection_to_cause_symptoms()
-              .get_probability();
-        }
-        if (path == isop::K_P_SEEK_BASE) {
-          return config_->get_epidemiological_parameters()
-              .get_age_based_probability_of_seeking_treatment()
-              .get_power()
-              .base;
-        }
-        if (path == isop::K_MUTATION_PROB) {
-          return config_->get_genotype_parameters().get_mutation_probability_per_locus();
-        }
-        if (path == isop::K_DEFAULT_CNV_REVERSION_MULTIPLIER) {
-          return config_->get_genotype_parameters().get_default_cnv_reversion_multiplier();
-        }
-        return std::numeric_limits<double>::quiet_NaN();
-      };
-
-      const auto &calibration_id = overrides.get_selected_calibration_id();
-      spdlog::info("  selected calibration_id[{}] has {} override(s):",
-                   overrides.get_chosen_calibration_id(), calibration_id.overrides.size());
-
-      for (const auto &[path, override_val] : calibration_id.overrides) {
-        const double effective = effective_value(path);
-
-        if (std::isnan(effective)) {
-          spdlog::warn("    [UNKNOWN PATH] {} = {} (no live config field to verify)", path,
-                       override_val);
-          continue;
-        }
-
-        // mutation_probability_per_locus and default_cnv_reversion_multiplier use
-        // a <0 sentinel meaning "keep the existing default" (see
-        // Config::apply_selected_immune_system_parameter_calibration_id), so a negative
-        // override is intentionally NOT applied.
-        const bool sentinel_keep_default =
-            ((path == isop::K_MUTATION_PROB) || (path == isop::K_DEFAULT_CNV_REVERSION_MULTIPLIER))
-            && (override_val < 0.0);
-
-        if (sentinel_keep_default) {
-          spdlog::info("    [KEPT DEFAULT] {}: override={} (<0 sentinel), effective={}", path,
-                       override_val, effective);
-          continue;
-        }
-
-        const bool applied =
-            std::fabs(effective - override_val) <= (1e-9 * std::max(1.0, std::fabs(override_val)));
-        spdlog::info("    [{}] {}: override={}, effective={}", applied ? "OK" : "MISMATCH", path,
-                     override_val, effective);
-        if (!applied) { spdlog::warn("    ^ override for '{}' was NOT applied correctly!", path); }
-      }
-    }
-    spdlog::info("======================================================================");
-  }
-
+  verify_immune_system_overrides(config_.get());
   for (auto &reporter : reporters_) { reporter->before_run(); }
 }
 
