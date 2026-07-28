@@ -538,8 +538,8 @@ PopulationEventBuilder::build_rotate_treatment_strategy_event(const YAML::Node &
             "RotateStrategyEvent");
         throw std::invalid_argument("Strategy id cannot be less than zero");
       }
-      if (first_strategy_id >= Model::get_genotype_db()->size()
-          || second_strategy_id >= Model::get_genotype_db()->size()) {
+      if (first_strategy_id >= Model::get_strategy_db().size()
+          || second_strategy_id >= Model::get_strategy_db().size()) {
         spdlog::error(
             "Strategy id should be less than the total number of "
             "strategies (zero-indexing) for RotateStrategyEvent");

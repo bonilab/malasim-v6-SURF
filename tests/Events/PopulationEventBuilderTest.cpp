@@ -163,6 +163,18 @@ TEST_F(PopulationEventBuilderTest, RejectsInvalidAnnualAndCirculationDefinitions
                std::invalid_argument);
 }
 
+TEST_F(PopulationEventBuilderTest, AcceptsValidStrategyIdsBeyondGenotypeDatabase) {
+  const auto strategy_id = static_cast<int>(Model::get_strategy_db().size()) - 1;
+  if (strategy_id < 0 || strategy_id < Model::get_genotype_db()->size()) { GTEST_SKIP(); }
+
+  const auto events = PopulationEventBuilder::build_rotate_treatment_strategy_event(
+      YAML::Load(std::string("- date: 2024/01/01\n  years: 1\n  first_strategy_id: ")
+                 + std::to_string(strategy_id)
+                 + "\n  second_strategy_id: " + std::to_string(strategy_id)),
+      config());
+  ASSERT_EQ(events.size(), 1u);
+}
+
 TEST_F(PopulationEventBuilderTest, BuildsAdditionalPopulationEventTypes) {
   const auto annual_beta = PopulationEventBuilder::build_annual_beta_update_event(
       YAML::Load("- date: 2024/01/01\n  rate: 0.1"), config());
