@@ -238,3 +238,35 @@ TEST_F(PopulationEventBuilderTest, BuildsThroughPublicDispatcher) {
              - date::sys_days{config()->get_simulation_timeframe().get_starting_date()})
                 .count());
 }
+
+TEST_F(PopulationEventBuilderTest, ExecutesSimpleMutationAndMosquitoConfigurationEvents) {
+  auto turn_on = std::make_unique<TurnOnMutationEvent>(0, 0.25);
+  turn_on->set_executable(true);
+  turn_on->execute();
+  EXPECT_DOUBLE_EQ(config()->get_genotype_parameters().get_mutation_probability_per_locus(), 0.25);
+
+  auto turn_off = std::make_unique<TurnOffMutationEvent>(0);
+  turn_off->set_executable(true);
+  turn_off->execute();
+  EXPECT_DOUBLE_EQ(config()->get_genotype_parameters().get_mutation_probability_per_locus(), 0.0);
+
+  auto recombination = std::make_unique<ChangeWithinHostInducedFreeRecombinationEvent>(false, 0);
+  recombination->set_executable(true);
+  recombination->execute();
+  EXPECT_FALSE(config()->get_mosquito_parameters().get_within_host_induced_free_recombination());
+
+  auto mask = std::make_unique<ChangeMutationMaskEvent>(std::vector<bool>{true, false}, 0);
+  mask->set_executable(true);
+  mask->execute();
+  EXPECT_EQ(config()->get_genotype_parameters().get_mutation_mask(), std::vector<bool>({true, false}));
+
+  auto ifr = std::make_unique<ChangeInterruptedFeedingRateEvent>(0, 0.42, 0);
+  ifr->set_executable(true);
+  ifr->execute();
+  EXPECT_DOUBLE_EQ(config()->location_db()[0].mosquito_ifr, 0.42);
+
+  auto probability = std::make_unique<ChangeMutationProbabilityPerLocusEvent>(0.33, 0);
+  probability->set_executable(true);
+  probability->execute();
+  EXPECT_DOUBLE_EQ(config()->get_genotype_parameters().get_mutation_probability_per_locus(), 0.33);
+}
