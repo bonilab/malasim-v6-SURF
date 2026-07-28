@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cstdio>
+#include <fstream>
+
 #include "Utils/Cli.h"
 
 namespace {
@@ -104,6 +107,79 @@ TEST_F(CliParseTest, MemoryStatsFlagDefaultFalse) {
   auto cli_input = utils::Cli::parse_args(argc, const_cast<char**>(argv));
 
   EXPECT_FALSE(cli_input.print_memory_stats);
+}
+
+// validate_config exercises the input-file existence check, the mutual-exclusion
+// rule for movement flags, the aggregate movement flag, and the verbosity
+// switch. None of these touch the Model singleton.
+class CliValidateTest : public ::testing::Test {
+protected:
+  static constexpr const char* kTempInput = "cli_validate_input.yml";
+
+  void create_temp_input() {
+    std::ofstream out(kTempInput);
+    out << "# temp\n";
+  }
+
+  void TearDown() override { std::remove(kTempInput); }
+};
+
+TEST_F(CliValidateTest, FailsWhenInputFileMissing) {
+  utils::Cli::MaSimAppInput input;
+  input.input_path = "definitely_missing_cli_input.yml";
+  EXPECT_FALSE(utils::Cli::validate_config(input));
+}
+
+TEST_F(CliValidateTest, RejectsCellAndDistrictMovementTogether) {
+  create_temp_input();
+  utils::Cli::MaSimAppInput input;
+  input.input_path = kTempInput;
+  input.record_cell_movement = true;
+  input.record_district_movement = true;
+  EXPECT_FALSE(utils::Cli::validate_config(input));
+}
+
+TEST_F(CliValidateTest, AggregatesMovementFlagFromIndividual) {
+  create_temp_input();
+  utils::Cli::MaSimAppInput input;
+  input.input_path = kTempInput;
+  input.record_individual_movement = true;
+  ASSERT_TRUE(utils::Cli::validate_config(input));
+  EXPECT_TRUE(input.record_movement);
+}
+
+TEST_F(CliValidateTest, NoMovementLeavesAggregateFalse) {
+  create_temp_input();
+  utils::Cli::MaSimAppInput input;
+  input.input_path = kTempInput;
+  ASSERT_TRUE(utils::Cli::validate_config(input));
+  EXPECT_FALSE(input.record_movement);
+}
+
+TEST_F(CliValidateTest, AcceptsEachVerbosityBranch) {
+  create_temp_input();
+  for (int verbosity : {0, 1, 2, 99}) {
+    utils::Cli::MaSimAppInput input;
+    input.input_path = kTempInput;
+    input.verbosity = verbosity;
+    EXPECT_TRUE(utils::Cli::validate_config(input)) << "verbosity=" << verbosity;
+  }
+}
+
+TEST_F(CliValidateTest, CreateCliOptionsParsesFullCommandLine) {
+  CLI::App app;
+  utils::Cli::MaSimAppInput input;
+  utils::Cli::create_cli_options(app, input);
+
+  ASSERT_NO_THROW(
+      app.parse(std::string{"-i in.yml -o /tmp/o -r MMC -v 1 -j 4 --replicate 2"}));
+
+  EXPECT_EQ(input.input_path, "in.yml");
+  EXPECT_EQ(input.output_path, "/tmp/o");
+  EXPECT_EQ(input.reporter, "MMC");
+  EXPECT_EQ(input.verbosity, 1);
+  EXPECT_EQ(input.job_number, 4);
+  EXPECT_EQ(input.replicate, 2);
 }
 
 }  // namespace

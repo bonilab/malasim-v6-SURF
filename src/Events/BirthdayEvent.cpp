@@ -18,9 +18,9 @@ void BirthdayEvent::do_execute() {
   }
   person->increase_age_by_1_year();
 
-  const auto days_to_next_birthday =
-      Model::get_scheduler()->get_days_to_next_year();
-  // spdlog::info("Time: {}, Schedule BirthdayEvent::do_execute, person age: {}, days_to_next_birthday: {}",
+  const auto days_to_next_birthday = Model::get_scheduler()->get_days_until_next_year_anniversary();
+  // spdlog::info("Time: {}, Schedule BirthdayEvent::do_execute, person age: {},
+  // days_to_next_birthday: {}",
   //              Model::get_scheduler()->current_time(), person->get_age(), days_to_next_birthday);
 
   person->schedule_birthday_event(days_to_next_birthday);

@@ -23,6 +23,7 @@ file(GLOB_RECURSE MALASIM_TEST_SOURCES
   "Treatment/Strategies/*.cpp"
   "Parasites/*.cpp"
   "Utils/*.cpp"
+  "Reporters/*.cpp"
   "main.cpp"
 )
 

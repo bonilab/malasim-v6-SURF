@@ -555,7 +555,8 @@ Person* Population::give_1_birth(const int &location) {
           Model::get_random()));
 
   person->set_birthday(Model::get_scheduler()->current_time());
-  const auto number_of_days_to_next_birthday = Model::get_scheduler()->get_days_to_next_year();
+  const auto number_of_days_to_next_birthday =
+      Model::get_scheduler()->get_days_until_next_year_anniversary();
   person->schedule_birthday_event(number_of_days_to_next_birthday);
 
   // schedule for switch

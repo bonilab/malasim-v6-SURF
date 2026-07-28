@@ -2,7 +2,6 @@
 
 #include <Configuration/Config.h>
 
-#include "Core/types.h"
 #include "Population/Population.h"
 #include "Simulation/Model.h"
 #include "Utils/Helpers/TimeHelpers.h"
@@ -88,11 +87,11 @@ bool Scheduler::is_today_last_day_of_month() {
   return ymd.day() == date::day{1};
 }
 
-int Scheduler::get_days_to_next_year() const {
+int Scheduler::get_days_until_next_year_anniversary() const {
   return TimeHelpers::number_of_days_to_next_year(calendar_date_);
 }
 
-int Scheduler::get_days_to_next_n_year(int n) const {
+int Scheduler::get_days_until_n_years_from_now(int n) const {
   auto from_ymd = date::year_month_day{calendar_date_};
   auto to_ymd = from_ymd + date::years{n};
   return TimeHelpers::days_between(from_ymd, to_ymd);

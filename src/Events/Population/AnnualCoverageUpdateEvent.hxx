@@ -42,7 +42,7 @@ private:
     }
 
     // Schedule for one year from now
-    auto time = Model::get_scheduler()->get_days_to_next_year();
+    auto time = Model::get_scheduler()->get_days_until_next_year_anniversary();
     auto event = std::make_unique<AnnualCoverageUpdateEvent>(rate_, time);
     Model::get_scheduler()->schedule_population_event(std::move(event));
 
