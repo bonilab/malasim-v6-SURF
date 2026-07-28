@@ -1,10 +1,17 @@
 #include <gtest/gtest.h>
 
+#include "Events/BirthdayEvent.h"
 #include "Population/Person/Person.h"
 #include "Treatment/Therapies/SCTherapy.h"
 #include "PersonTestBase.h"
 
-class PersonLifecycleEdgeTest : public PersonTestBase {};
+class PersonLifecycleEdgeTest : public PersonTestBase {
+protected:
+  void SetUp() override {
+    PersonTestBase::SetUp();
+    mock_scheduler_->set_current_time(5);
+  }
+};
 
 TEST_F(PersonLifecycleEdgeTest, ComputesPartialTherapyComplianceAcrossProbabilityBranches) {
   auto epidemiology = mock_config_->get_epidemiological_parameters();
@@ -62,4 +69,10 @@ TEST_F(PersonLifecycleEdgeTest, ComputesVariableSingleCompoundTherapyCompletionD
   EXPECT_EQ(Person::complied_dosing_days(&therapy), 1);
   EXPECT_CALL(*mock_random_, random_flat(_, _)).WillOnce(Return(0.5));
   EXPECT_EQ(Person::complied_dosing_days(&therapy), 2);
+}
+
+TEST_F(PersonLifecycleEdgeTest, RejectsPastEvents)
+  auto event = std::make_unique<BirthdayEvent>(person_.get());
+  event->set_time(0);
+  EXPECT_THROW(person_->schedule_basic_event(std::move(event)), std::invalid_argument);
 }
