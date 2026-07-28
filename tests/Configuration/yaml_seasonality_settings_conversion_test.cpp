@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <yaml-cpp/yaml.h>
+#include <filesystem>
 #include "Configuration/SeasonalitySettings.h"
 
 class SeasonalitySettingsTest : public ::testing::Test {
@@ -184,6 +185,10 @@ TEST(SeasonalitySettingsStandaloneTest, ReturnsDefaultFactorWhenDisabledOrModeIs
 
 TEST(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallModes) {
     const auto today = date::sys_days{date::year{2024} / 1 / 1};
+    const std::string rainfall_file =
+        std::filesystem::exists("sample_inputs/dev_seasonality.csv")
+            ? "sample_inputs/dev_seasonality.csv"
+            : "../../sample_inputs/dev_seasonality.csv";
 
     SeasonalitySettings equation_settings;
     auto equation = std::make_unique<SeasonalEquation>();
@@ -203,7 +208,7 @@ TEST(SeasonalitySettingsStandaloneTest, BuildsAndDelegatesEquationAndRainfallMod
 
     SeasonalitySettings rainfall_settings;
     auto rainfall = std::make_unique<SeasonalRainfall>();
-    rainfall->set_filename("sample_inputs/dev_seasonality.csv");
+    rainfall->set_filename(rainfall_file);
     rainfall->set_period(365);
     rainfall_settings.set_enable(true);
     rainfall_settings.set_mode("rainfall");
