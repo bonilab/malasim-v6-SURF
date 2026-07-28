@@ -75,8 +75,8 @@ TEST(MosquitoParametersProcessingTest, RejectsGridModeWithoutLoadedRaster) {
   auto* model = Model::get_instance();
   model->initialize();
   auto config = std::make_unique<Config>();
-  config->spatial_settings_.set_spatial_data(
-      std::make_unique<SpatialData>(&config->spatial_settings_));
+  config->get_spatial_settings().set_spatial_data(
+      std::make_unique<SpatialData>(&config->get_spatial_settings()));
   model->set_config(std::move(config));
 
   MosquitoParameters::MosquitoConfig mosquito_config;
