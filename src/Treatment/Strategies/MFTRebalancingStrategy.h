@@ -4,13 +4,13 @@
 #include "MFTStrategy.h"
 
 class MFTRebalancingStrategy : public MFTStrategy {
-  //disallow copy and assign and move
+public:
+  // disallow copy and assign and move
   MFTRebalancingStrategy(const MFTRebalancingStrategy &) = delete;
   void operator=(const MFTRebalancingStrategy &) = delete;
   MFTRebalancingStrategy(MFTRebalancingStrategy &&) = delete;
   MFTRebalancingStrategy &operator=(MFTRebalancingStrategy &&) = delete;
 
- public:
   int update_duration_after_rebalancing{365};
   int latest_adjust_distribution_time{0};
   int delay_until_actual_trigger{365};
@@ -20,9 +20,9 @@ class MFTRebalancingStrategy : public MFTStrategy {
   MFTRebalancingStrategy();
 
   //        SmartMFTStrategy(const SmartMFTStrategy & orig);
-  virtual ~MFTRebalancingStrategy();
+  ~MFTRebalancingStrategy() override;
 
-  std::string to_string() const override;
+  [[nodiscard]] std::string to_string() const override;
 
   void update_end_of_time_step() override;
 

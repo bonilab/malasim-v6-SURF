@@ -11,8 +11,16 @@ APP_EXECUTABLE ?= $(or $(word 2,$(MAKECMDGOALS)),$(DEFAULT_APP_EXECUTABLE))
 ENABLE_TRAVEL_TRACKING ?= OFF
 BUILD_TESTS ?= OFF
 DOCS_OUTPUT_DIR := docs/Doxygen
+CLANG_TIDY ?= clang-tidy
+LINT_SOURCES := $(shell find src tests -type f -name '*.cpp')
+CLANG_TIDY_HEADER_FILTER ?= .*
 
-.PHONY: all build b clean setup-vcpkg install-deps generate g generate-no-test help test t run r coverage coverage-baseline
+ifeq ($(shell uname -s),Darwin)
+MACOS_SDK ?= $(shell xcrun --show-sdk-path 2>/dev/null)
+CLANG_TIDY_PLATFORM_ARGS := $(if $(MACOS_SDK),--extra-arg=-isysroot --extra-arg=$(MACOS_SDK) --extra-arg=-stdlib=libc++,)
+endif
+
+.PHONY: all build b clean setup-vcpkg install-deps generate g generate-no-test help test t run r coverage coverage-baseline lint
 
 all: build
 
@@ -71,7 +79,8 @@ format:
 	find src tests -name '*.cpp' -o -name '*.h' | xargs clang-format -i --style=file
 
 lint: build
-	find src tests -name '*.cpp' -o -name '*.h' | xargs clang-tidy -p build
+	$(CLANG_TIDY) -p build --quiet $(CLANG_TIDY_PLATFORM_ARGS) \
+		--header-filter='$(CLANG_TIDY_HEADER_FILTER)' $(LINT_SOURCES)
 
 docs:
 	@echo "Generating documentation..."

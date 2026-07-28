@@ -8,7 +8,6 @@
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
 #include "fixtures/MockFactories.h"
-#include "fixtures/TestFileGenerators.h"
 
 using namespace testing;
 
@@ -16,15 +15,12 @@ class PersonTestBase : public ::testing::Test {
 protected:
 
   void SetUp() override {
-    // Create test configuration file
-    test_fixtures::create_complete_test_environment();
-
-    // Set CLI input for model
+    // Keep this unit-test fixture independent of generated files.
     utils::Cli::MaSimAppInput cli_input;
-    cli_input.input_path = "test_input.yml";
+    cli_input.input_path.clear();
     Model::set_cli_input(cli_input);
 
-    // Get the Model instance and set up with standard mocks
+    // Set up the singleton with standard mocks.
     original_model_ = Model::get_instance();
     auto mocks = test_fixtures::setup_model_with_mocks(original_model_);
     
@@ -45,7 +41,6 @@ protected:
   void TearDown() override {
     person_.reset();
     original_model_->release();
-    test_fixtures::cleanup_test_files();
   }
 
 protected:
@@ -59,4 +54,3 @@ protected:
 };
 
 #endif  // PERSON_TEST_BASE_H
-

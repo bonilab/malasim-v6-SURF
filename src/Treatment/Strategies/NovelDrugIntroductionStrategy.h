@@ -1,18 +1,16 @@
 #ifndef NOVELDRUGSWITCHINGSTRATEGY_H
 #define NOVELDRUGSWITCHINGSTRATEGY_H
 
-#include <vector>
-#include "IStrategy.h"
 #include "NestedMFTStrategy.h"
 
 class NovelDrugIntroductionStrategy : public NestedMFTStrategy {
-  //disallow copy and assign and move
-  NovelDrugIntroductionStrategy(const NovelDrugIntroductionStrategy&) = delete;
-  void operator=(const NovelDrugIntroductionStrategy&) = delete;
-  NovelDrugIntroductionStrategy(NovelDrugIntroductionStrategy&&) = delete;
-  NovelDrugIntroductionStrategy& operator=(NovelDrugIntroductionStrategy&&) = delete;
-
 public:
+  // disallow copy and assign and move
+  NovelDrugIntroductionStrategy(const NovelDrugIntroductionStrategy &) = delete;
+  void operator=(const NovelDrugIntroductionStrategy &) = delete;
+  NovelDrugIntroductionStrategy(NovelDrugIntroductionStrategy &&) = delete;
+  NovelDrugIntroductionStrategy &operator=(NovelDrugIntroductionStrategy &&) = delete;
+
   bool is_switched{false};
   int newly_introduced_strategy_id{0};
   double replacement_fraction{0.0};
@@ -21,11 +19,11 @@ public:
 
   NovelDrugIntroductionStrategy();
 
-  virtual ~NovelDrugIntroductionStrategy() = default;
+  ~NovelDrugIntroductionStrategy() override = default;
 
-  std::string to_string() const override;
+  [[nodiscard]] std::string to_string() const override;
 
   void monthly_update() override;
 };
 
-#endif // NOVELDRUGSWITCHINGSTRATEGY_H
+#endif  // NOVELDRUGSWITCHINGSTRATEGY_H

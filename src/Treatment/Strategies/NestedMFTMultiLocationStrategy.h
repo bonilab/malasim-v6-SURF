@@ -7,36 +7,29 @@
 class Config;
 
 class NestedMFTMultiLocationStrategy : public IStrategy {
-  //disallow copy and assign and move
+public:
+  // disallow copy and assign and move
   NestedMFTMultiLocationStrategy(const NestedMFTMultiLocationStrategy &) = delete;
   void operator=(const NestedMFTMultiLocationStrategy &) = delete;
   NestedMFTMultiLocationStrategy(NestedMFTMultiLocationStrategy &&) = delete;
   NestedMFTMultiLocationStrategy &operator=(NestedMFTMultiLocationStrategy &&) = delete;
 
- public:
-  std::vector<IStrategy *> strategy_list;
-  DoubleVector2 distribution;
-  DoubleVector2 start_distribution;
-  DoubleVector2 peak_distribution;
-  int starting_time{0};
-  int peak_after{0};
-
   NestedMFTMultiLocationStrategy();
 
   //    NestedSwitchingStrategy(const NestedSwitchingStrategy& orig);
-  virtual ~NestedMFTMultiLocationStrategy();
+  ~NestedMFTMultiLocationStrategy() override;
 
-  virtual void add_strategy(IStrategy *strategy);
+  virtual void add_strategy(IStrategy* strategy);
 
-  void add_therapy(Therapy *therapy) override;
+  void add_therapy(Therapy* therapy) override;
 
-  Therapy *get_therapy(Person *person) override;
+  Therapy* get_therapy(Person* person) override;
 
-  std::string to_string() const override;
+  [[nodiscard]] std::string to_string() const override;
 
   /**
-  * This function will be executed at end of time step, to check and switch therapy if needed
-  */
+   * This function will be executed at end of time step, to check and switch therapy if needed
+   */
   void update_end_of_time_step() override;
 
   void adjust_distribution(const int &time);
@@ -45,6 +38,12 @@ class NestedMFTMultiLocationStrategy : public IStrategy {
 
   void monthly_update() override;
 
+  std::vector<IStrategy*> strategy_list;
+  DoubleVector2 distribution;
+  DoubleVector2 start_distribution;
+  DoubleVector2 peak_distribution;
+  int starting_time{0};
+  int peak_after{0};
 };
 
-#endif //POMS_NESTEDSWITCHINGDIFFERENTDISTRIBUTIONBYLOCATION_H
+#endif  // POMS_NESTEDSWITCHINGDIFFERENTDISTRIBUTIONBYLOCATION_H

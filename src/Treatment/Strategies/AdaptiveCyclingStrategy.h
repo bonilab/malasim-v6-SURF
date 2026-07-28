@@ -2,17 +2,18 @@
 #define ADAPTIVECYCLINGSTRATEGY_H
 
 #include <vector>
+
 #include "IStrategy.h"
 
 class AdaptiveCyclingStrategy : public IStrategy {
-  //disallow copy and assign and move
-  AdaptiveCyclingStrategy(const AdaptiveCyclingStrategy&) = delete;
-  void operator=(const AdaptiveCyclingStrategy&) = delete;
-  AdaptiveCyclingStrategy(AdaptiveCyclingStrategy&&) = delete;
-  AdaptiveCyclingStrategy& operator=(AdaptiveCyclingStrategy&&) = delete;
+public:
+  // disallow copy and assign and move
+  AdaptiveCyclingStrategy(const AdaptiveCyclingStrategy &) = delete;
+  void operator=(const AdaptiveCyclingStrategy &) = delete;
+  AdaptiveCyclingStrategy(AdaptiveCyclingStrategy &&) = delete;
+  AdaptiveCyclingStrategy &operator=(AdaptiveCyclingStrategy &&) = delete;
 
- public:
-  std::vector<Therapy *> therapy_list;
+  std::vector<Therapy*> therapy_list;
   int index{0};
   double trigger_value{0.1};
   int delay_until_actual_trigger{365};
@@ -21,15 +22,15 @@ class AdaptiveCyclingStrategy : public IStrategy {
 
   AdaptiveCyclingStrategy();
 
-  virtual ~AdaptiveCyclingStrategy();
+  ~AdaptiveCyclingStrategy() override;
 
-  void add_therapy(Therapy *therapy) override;
+  void add_therapy(Therapy* therapy) override;
 
   virtual void switch_therapy();
 
-  Therapy *get_therapy(Person *person) override;
+  Therapy* get_therapy(Person* person) override;
 
-  std::string to_string() const override;
+  [[nodiscard]] std::string to_string() const override;
 
   void update_end_of_time_step() override;
 

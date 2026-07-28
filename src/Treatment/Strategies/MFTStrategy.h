@@ -1,38 +1,39 @@
 #ifndef MFTSTRATEGY_H
 #define MFTSTRATEGY_H
 
-#include "IStrategy.h"
 #include <vector>
+
+#include "IStrategy.h"
 
 class Random;
 
 class Therapy;
 
 class MFTStrategy : public IStrategy {
+public:
   // Disallow copy
-  MFTStrategy(const MFTStrategy&) = delete;
-  MFTStrategy& operator=(const MFTStrategy&) = delete;
+  MFTStrategy(const MFTStrategy &) = delete;
+  MFTStrategy &operator=(const MFTStrategy &) = delete;
 
   // Disallow move
-  MFTStrategy(MFTStrategy&&) = delete;
-  MFTStrategy& operator=(MFTStrategy&&) = delete;
+  MFTStrategy(MFTStrategy &&) = delete;
+  MFTStrategy &operator=(MFTStrategy &&) = delete;
 
- public:
-  std::vector<Therapy *> therapy_list;
+  std::vector<Therapy*> therapy_list;
   std::vector<double> distribution;
 
   MFTStrategy();
 
   //    MFTStrategy(const MFTStrategy& orig);
-  virtual ~MFTStrategy();
+  ~MFTStrategy() override;
 
-  void add_therapy(Therapy *therapy) override;
+  void add_therapy(Therapy* therapy) override;
 
-  Therapy *get_therapy(Person *person) override;
+  Therapy* get_therapy(Person* person) override;
 
   void update_end_of_time_step() override;
 
-  std::string to_string() const override;
+  [[nodiscard]] std::string to_string() const override;
 
   void adjust_started_time_point(const int &current_time) override;
 
