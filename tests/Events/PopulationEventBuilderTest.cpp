@@ -22,11 +22,15 @@
 #include "Events/Population/Introduce580YMutantEvent.h"
 #include "Events/Population/IntroduceTripleMutantToDPMEvent.h"
 #include "Events/Population/IntroducePlas2CopyParasiteEvent.h"
+#include "Events/Population/IntroduceMutantEvent.hxx"
+#include "Events/Population/IntroduceMutantRasterEvent.hxx"
 #include "Events/Population/ModifyNestedMFTEvent.h"
 #include "Events/Population/UpdateBetaRasterEvent.hxx"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
 #include "fixtures/TestFileGenerators.h"
+
+#include <fstream>
 
 class PopulationEventBuilderTest : public ::testing::Test {
 protected:
@@ -296,4 +300,42 @@ TEST_F(PopulationEventBuilderTest, ExecutesAnnualAndCirculationUpdates) {
   circulation->execute();
   EXPECT_NEAR(config()->get_movement_settings().get_circulation_info().get_circulation_percent(),
               0.8, 1e-6);
+}
+
+TEST_F(PopulationEventBuilderTest, BuildsMutantEventsFromUnitsAndRasters) {
+  const auto unit_events = PopulationEventBuilder::build_introduce_mutant_event(
+      YAML::Load(R"(
+        - day: 2024/01/10
+          unit_id: 0
+          fraction: 0.25
+          alleles:
+            - chromosome: 1
+              locus: 2
+              allele: A
+      )"), config(), "district");
+  ASSERT_EQ(unit_events.size(), 1);
+  EXPECT_EQ(unit_events[0]->name(), IntroduceMutantEvent::EVENT_NAME);
+
+  {
+    std::ofstream raster("mutant_event.asc");
+    raster << "ncols 8\n"
+           << "nrows 1\n"
+           << "xllcorner 0\n"
+           << "yllcorner 0\n"
+           << "cellsize 1\n"
+           << "NODATA_value -9999\n"
+           << "1 0 1 0 1 0 1 0\n";
+  }
+  const auto raster_events = PopulationEventBuilder::build_introduce_mutant_raster_event(
+      YAML::Load(R"(
+        - date: 2024/01/11
+          raster: mutant_event.asc
+          fraction: 0.5
+          alleles:
+            - chromosome: 1
+              locus: 3
+              allele: T
+      )"), config());
+  ASSERT_EQ(raster_events.size(), 1);
+  EXPECT_EQ(raster_events[0]->name(), IntroduceMutantRasterEvent::EVENT_NAME);
 }
