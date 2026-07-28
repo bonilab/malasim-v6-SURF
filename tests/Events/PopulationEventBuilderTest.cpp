@@ -339,3 +339,17 @@ TEST_F(PopulationEventBuilderTest, BuildsMutantEventsFromUnitsAndRasters) {
   ASSERT_EQ(raster_events.size(), 1);
   EXPECT_EQ(raster_events[0]->name(), IntroduceMutantRasterEvent::EVENT_NAME);
 }
+
+TEST_F(PopulationEventBuilderTest, ExecutesZeroCaseImportationEventsAndReschedules) {
+  auto importation = std::make_unique<ImportationEvent>(0, 0, 0, 0);
+  importation->set_executable(true);
+  EXPECT_NO_THROW(importation->execute());
+
+  auto periodic = std::make_unique<ImportationPeriodicallyEvent>(0, 1, 0, 0, 0);
+  periodic->set_executable(true);
+  EXPECT_NO_THROW(periodic->execute());
+
+  auto random_periodic = std::make_unique<ImportationPeriodicallyRandomEvent>(0, 0, 0, 1.0);
+  random_periodic->set_executable(true);
+  EXPECT_NO_THROW(random_periodic->execute());
+}
