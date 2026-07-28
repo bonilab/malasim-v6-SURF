@@ -75,68 +75,72 @@ public:
   [[nodiscard]] double get_midpoint() const { return midpoint_; }
   void set_midpoint(const double value) { midpoint_ = value; }
 
+  [[nodiscard]] const std::vector<double> &get_acquire_rate_by_age() const {
+    return acquire_rate_by_age_;
+  }
+
+  [[nodiscard]] const std::vector<double> &get_acquire_rate_by_age_one_day_factor() const {
+    return acquire_rate_by_age_one_day_factor_;
+  }
+
+  [[nodiscard]] double get_decay_rate() const { return decay_rate_; }
+  [[nodiscard]] double get_decay_rate_one_day_factor() const { return decay_rate_one_day_factor_; }
+
+  [[nodiscard]] double get_c_min() const { return c_min_; }
+  [[nodiscard]] double get_c_max() const { return c_max_; }
+
+  [[nodiscard]] double get_alpha_immune() const { return alpha_immune_; }
+  [[nodiscard]] double get_beta_immune() const { return beta_immune_; }
+
   void process_config() override {}
 
   void process_config_with_parasite_density(const double log_parasite_density_asymptomatic,
                                             const double log_parasite_density_cured) {
     spdlog::info("Processing ImmuneSystemParameters");
-    acquire_rate = b1_;
-    decay_rate = b2_;
-    duration_for_fully_immune = duration_for_fully_immune_;
-    duration_for_naive = duration_for_naive_;
+    auto acquire_rate = b1_;
+    decay_rate_ = b2_;
     if (NumberHelpers::is_zero(sd_initial_condition_)) {
-      alpha_immune = mean_initial_condition_;
-      beta_immune = 0.0;
+      alpha_immune_ = mean_initial_condition_;
+      beta_immune_ = 0.0;
     } else {
-      alpha_immune =
+      alpha_immune_ =
           (mean_initial_condition_ * mean_initial_condition_ * (1 - mean_initial_condition_)
            / (sd_initial_condition_ * sd_initial_condition_))
           - mean_initial_condition_;
-      beta_immune = (alpha_immune / mean_initial_condition_) - alpha_immune;
+      beta_immune_ = (alpha_immune_ / mean_initial_condition_) - alpha_immune_;
     }
-
-    immune_inflation_rate = immune_inflation_rate_;
-
-    max_clinical_probability = max_clinical_probability_;
-
-    immune_effect_on_progression_to_clinical = immune_effect_on_progression_to_clinical_;
-
-    age_mature_immunity = age_mature_immunity_;
-    factor_effect_age_mature_immunity = factor_effect_age_mature_immunity_;
-
-    midpoint = midpoint_;
 
     // implement inflation rate
     double ac_r = acquire_rate;
-    acquire_rate_by_age.clear();
-    acquire_rate_by_age_one_day_factor.clear();
+    acquire_rate_by_age_.clear();
+    acquire_rate_by_age_one_day_factor_.clear();
     for (int age = 0; age <= 80; age++) {
       double factor = 1;
-      if (age < age_mature_immunity) {
+      if (age < age_mature_immunity_) {
         factor = age == 0 ? 0.5 : age;
 
-        factor = factor / age_mature_immunity;
-        factor = pow(factor, factor_effect_age_mature_immunity);
+        factor = factor / age_mature_immunity_;
+        factor = pow(factor, factor_effect_age_mature_immunity_);
       }
 
       const auto age_acquire_rate = factor * ac_r;
-      acquire_rate_by_age.push_back(age_acquire_rate);
-      acquire_rate_by_age_one_day_factor.push_back(std::exp(-age_acquire_rate));
+      acquire_rate_by_age_.push_back(age_acquire_rate);
+      acquire_rate_by_age_one_day_factor_.push_back(std::exp(-age_acquire_rate));
 
-      ac_r *= 1 + immune_inflation_rate;
+      ac_r *= 1 + immune_inflation_rate_;
     }
     assert(acquire_rate_by_age.size() == 81);
     assert(acquire_rate_by_age_one_day_factor.size() == 81);
 
-    decay_rate_one_day_factor = std::exp(-decay_rate);
+    decay_rate_one_day_factor_ = std::exp(-decay_rate_);
 
-    c_min = pow(10, -(log_parasite_density_asymptomatic - log_parasite_density_cured)
-                        / duration_for_fully_immune);
-    c_max = pow(
-        10, -(log_parasite_density_asymptomatic - log_parasite_density_cured) / duration_for_naive);
+    c_min_ = pow(10, -(log_parasite_density_asymptomatic - log_parasite_density_cured)
+                         / duration_for_fully_immune_);
+    c_max_ = pow(10, -(log_parasite_density_asymptomatic - log_parasite_density_cured)
+                         / duration_for_naive_);
 
-    spdlog::info("alpha_immune {} beta_immune {}", alpha_immune, beta_immune);
-    spdlog::info("c_min {} c_max {}", c_min, c_max);
+    spdlog::info("alpha_immune {} beta_immune {}", alpha_immune_, beta_immune_);
+    spdlog::info("c_min {} c_max {}", c_min_, c_max_);
   }
 
 private:
@@ -154,37 +158,14 @@ private:
   double factor_effect_age_mature_immunity_ = 0.3;
   double midpoint_ = 0.4;
 
-public:
-  double acquire_rate{-1};
-  std::vector<double> acquire_rate_by_age;
-  std::vector<double> acquire_rate_by_age_one_day_factor;
-  double decay_rate{-1};
-  double decay_rate_one_day_factor{-1};
-
-  double duration_for_fully_immune{-1};
-  double duration_for_naive{-1};
-
-  double immune_inflation_rate{-1};
-
-  double max_clinical_probability{-1};
-
-  // Slope of the sigmoidal prob-v-immunity function, z-value
-  double immune_effect_on_progression_to_clinical{-1};
-
-  // The midpoint of the sigmoidal prob-v-immunity function, recommended default
-  // 0.4
-  double midpoint{-1};
-
-  double c_min{-1};
-  double c_max{-1};
-
-  double alpha_immune{-1};
-  double beta_immune{-1};
-
-  double age_mature_immunity{-1};
-
-  // Parameter kappa in supplement of 2015 LGH paper
-  double factor_effect_age_mature_immunity{-1};
+  std::vector<double> acquire_rate_by_age_;
+  std::vector<double> acquire_rate_by_age_one_day_factor_;
+  double decay_rate_{-1};
+  double decay_rate_one_day_factor_{-1};
+  double c_min_{-1};
+  double c_max_{-1};
+  double alpha_immune_{-1};
+  double beta_immune_{-1};
 };
 
 // ImmuneSystemParameters YAML conversion

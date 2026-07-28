@@ -26,7 +26,8 @@ ImmuneSystem::~ImmuneSystem() = default;
 
 void ImmuneSystem::draw_random_immune() {
   const auto &parameters = Model::get_config()->get_immune_system_parameters();
-  latest_value_ = Model::get_random()->random_beta(parameters.alpha_immune, parameters.beta_immune);
+  latest_value_ =
+      Model::get_random()->random_beta(parameters.get_alpha_immune(), parameters.get_beta_immune());
 }
 
 double ImmuneSystem::get_latest_immune_value() const { return latest_value_; }
@@ -70,8 +71,8 @@ double ImmuneSystem::get_parasite_size_after_t_days(const int &duration,
                                                     const double &fitness) const {
   const auto last_immune_level = get_latest_immune_value();
   const auto temp =
-      (Model::get_config()->get_immune_system_parameters().c_max * (1 - last_immune_level))
-      + (Model::get_config()->get_immune_system_parameters().c_min * last_immune_level);
+      (Model::get_config()->get_immune_system_parameters().get_c_max() * (1 - last_immune_level))
+      + (Model::get_config()->get_immune_system_parameters().get_c_min() * last_immune_level);
   // std::cout << "day: " << Model::get_scheduler()->current_time() << "\tc_max: " <<
   // Model::CONFIG->immune_system_information().c_max << "\tc_min: " <<
   // Model::CONFIG->immune_system_information().c_min << "\tlast_immune_level: " <<
@@ -95,8 +96,9 @@ double ImmuneSystem::get_clinical_progression_probability() const {
   //    const double p_m = 0.99;
 
   const auto p_clinical =
-      isf.max_clinical_probability
-      / (1 + pow((immune / isf.midpoint), isf.immune_effect_on_progression_to_clinical));
+      isf.get_max_clinical_probability()
+      / (1
+         + pow((immune / isf.get_midpoint()), isf.get_immune_effect_on_progression_to_clinical()));
 
   // spdlog::info(
   //     "ImmuneSystem::get_clinical_progression_probability: immune: {}, PClinical: {}, max
@@ -110,22 +112,22 @@ void ImmuneSystem::update() { latest_value_ = get_current_value(); }
 
 double ImmuneSystem::get_one_day_decay_factor() const {
   if (mode_ == ImmuneSystemMode::INFANT) { return immune::K_ONE_DAY_INFANT_DECAY_FACTOR; }
-  return Model::get_config()->get_immune_system_parameters().decay_rate_one_day_factor;
+  return Model::get_config()->get_immune_system_parameters().get_decay_rate_one_day_factor();
 }
 
 double ImmuneSystem::get_one_day_acquire_factor(core::Age age) const {
   if (mode_ == ImmuneSystemMode::INFANT) { return 1.0; }
   const auto &parameters = Model::get_config()->get_immune_system_parameters();
-  return parameters.acquire_rate_by_age_one_day_factor[age_index(age)];
+  return parameters.get_acquire_rate_by_age_one_day_factor()[age_index(age)];
 }
 
 double ImmuneSystem::get_decay_rate(core::Age) const {
   if (mode_ == ImmuneSystemMode::INFANT) { return immune::K_INFANT_IMMUNE_DECAY_RATE; }
-  return Model::get_config()->get_immune_system_parameters().decay_rate;
+  return Model::get_config()->get_immune_system_parameters().get_decay_rate();
 }
 
 double ImmuneSystem::get_acquire_rate(core::Age age) const {
   if (mode_ == ImmuneSystemMode::INFANT) { return 0.0; }
   const auto &parameters = Model::get_config()->get_immune_system_parameters();
-  return parameters.acquire_rate_by_age[age_index(age)];
+  return parameters.get_acquire_rate_by_age()[age_index(age)];
 }

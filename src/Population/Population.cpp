@@ -403,8 +403,8 @@ void Population::generate_individual(int location, int age_class) {
   }
 
   const auto &immune_system_parameters = Model::get_config()->get_immune_system_parameters();
-  auto immune_value = random->random_beta(immune_system_parameters.alpha_immune,
-                                          immune_system_parameters.beta_immune);
+  auto immune_value = random->random_beta(immune_system_parameters.get_alpha_immune(),
+                                          immune_system_parameters.get_beta_immune());
   person->get_immune_system()->set_latest_immune_value(immune_value);
   person->get_immune_system()->set_increase(false);
 
@@ -628,13 +628,13 @@ void Population::perform_circulation_from_location(const int from_location,
   // Location-based providers expose their existing dense row. Raster LUT
   // providers return no dense row because movement models use their prepared
   // compact kernels instead.
-  static const DoubleVector empty_relative_distance_vector;
+  static const DoubleVector EMPTY_RELATIVE_DISTANCE_VECTOR;
   const auto* distance_provider =
       Model::get_config()->get_spatial_settings().get_distance_provider();
   const auto* dense_row =
       distance_provider == nullptr ? nullptr : distance_provider->dense_row(from_location);
   const DoubleVector &relative_distance_vector =
-      dense_row == nullptr ? empty_relative_distance_vector : *dense_row;
+      dense_row == nullptr ? EMPTY_RELATIVE_DISTANCE_VECTOR : *dense_row;
 
   auto v_relative_outmovement_to_destination =
       Model::get_config()
