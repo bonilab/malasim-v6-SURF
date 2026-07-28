@@ -1,5 +1,10 @@
 # Test Writing Guide
 
+> The canonical rules for new tests now live in
+> [`docs/testing_guide.md`](../docs/testing_guide.md). This file remains the detailed
+> fixture-infrastructure and migration reference; fixed test counts and migration
+> status below are historical snapshots.
+
 This guide explains how to write tests in the MalaSim project using the new infrastructure that eliminates external file dependencies.
 
 ## ✅ Migration Status

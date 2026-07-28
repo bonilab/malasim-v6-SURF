@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "description": "MalaSim full unit-test coverage baseline",
+  "generated_at": "2026-07-28T05:25:35Z",
+  "source_commit": "deed7ec",
+  "source_branch": "main",
+  "working_tree_dirty": true,
+  "build_type": "Debug",
+  "coverage": {
+    "regions": {"covered": 5186, "total": 9591, "percent": 54.07},
+    "functions": {"covered": 1629, "total": 2512, "percent": 64.85},
+    "lines": {"covered": 8918, "total": 17650, "percent": 50.53},
+    "branches": {"covered": 2403, "total": 5567, "percent": 43.17}
+  }
+}

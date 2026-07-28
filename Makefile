@@ -12,7 +12,7 @@ ENABLE_TRAVEL_TRACKING ?= OFF
 BUILD_TESTS ?= OFF
 DOCS_OUTPUT_DIR := docs/Doxygen
 
-.PHONY: all build b clean setup-vcpkg install-deps generate g generate-no-test help test t run r
+.PHONY: all build b clean setup-vcpkg install-deps generate g generate-no-test help test t run r coverage coverage-baseline
 
 all: build
 
@@ -61,11 +61,10 @@ generate-gcc-12-owlsnest gog12:
 	cp $(PWD)build/compile_commands.json $(PWD)
 
 coverage:
-	rm -rf coverage-html
-	$(MAKE) test
-	xcrun llvm-profdata merge -sparse build/bin/default.profraw -o coverage.profdata
-	xcrun llvm-cov show ./build/bin/malasim_test -instr-profile=coverage.profdata -format=html -output-dir=coverage-html --path-equivalence=/Users/neo/Projects/temple/malasim,.
-	xcrun llvm-cov report  ./build/bin/malasim_test -instr-profile=coverage.profdata
+	./scripts/run_coverage.sh $(COVERAGE_ARGS)
+
+coverage-baseline:
+	./scripts/run_coverage.sh --update-baseline $(COVERAGE_ARGS)
 
 
 format:
@@ -96,6 +95,7 @@ help h:
 	@echo "  generate (g)         : Generate the build system. Can specify BUILD_CLUSTER, ENABLE_TRAVEL_TRACKING, BUILD_TEST (e.g., make generate BUILD_CLUSTER=ON ENABLE_TRAVEL_TRACKING=ON)."
 	@echo "  generate-ninja (gn)  : Generate the build system using Ninja."
 	@echo "  generate-test (gt)   : Generate the build system with tests."
+	@echo "  coverage             : Run instrumented tests and save text, JSON, HTML, and history reports."
+	@echo "  coverage-baseline    : Run full coverage and refresh the tracked baseline."
 	@echo "  docs                 : Generate Doxygen documentation into $(DOCS_OUTPUT_DIR)."
 	@echo "  help                 : Show this help message."
-

@@ -1,5 +1,9 @@
 # TEST FOLDER CODE REVIEW - PLAN & SUGGESTIONS
 
+> Historical review and backlog: counts, pass times, and migration status in this file
+> are point-in-time observations. Use [`testing_guide.md`](testing_guide.md) for the
+> current rules for adding tests.
+
 ## 📊 CURRENT STATE SUMMARY
 
 **Test Infrastructure:**
@@ -233,8 +237,8 @@ tests/
 - [ ] Add assertion helpers: `EXPECT_NEAR_RELATIVE`, `EXPECT_VECTOR_EQ`
 
 **3.4 Coverage Analysis Automation**
-- [ ] Add CMake target: `make coverage-report`
-- [ ] Generate HTML coverage reports automatically
+- [x] Add repeatable `scripts/run_coverage.sh` workflow and `make coverage` target
+- [x] Generate text, JSON, HTML, test-log, metadata, and history artifacts automatically
 - [ ] Set minimum coverage thresholds (e.g., 80%)
 - [ ] Add CI/CD coverage gates
 

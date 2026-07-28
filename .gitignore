@@ -43,6 +43,7 @@ reporter\.txt
 coverage.profdata
 default.profraw
 coverage-html/
+coverage-results/
 docs/Doxygen/
 vcpkg_installed
 

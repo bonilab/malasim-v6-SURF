@@ -1,93 +1,171 @@
-# Generating Test Coverage Reports (macOS with Xcode Tools)
+# Automated Test Coverage
 
-This guide explains how to generate code coverage reports for the `malasim_test` executable on macOS using the LLVM tools included with Xcode.
+MalaSim uses Clang/LLVM source-based coverage. The repository script
+`scripts/run_coverage.sh` configures an isolated instrumented build, runs the tests,
+and saves the results so coverage work can be repeated and compared.
 
-## 1. Configure CMake for Coverage
+## Quick start
 
-You need to enable coverage instrumentation during the build. Configure your CMake project by adding the `ENABLE_COVERAGE` option:
+Run the complete suite and generate all reports:
 
-```bash
-# Navigate to your build directory (create one if it doesn't exist)
-# E.g., mkdir build && cd build
-
-# Configure CMake with coverage enabled
-cmake .. -DENABLE_COVERAGE=ON
+```sh
+make coverage
 ```
 
-This assumes your `CMakeLists.txt` files have been updated to include the necessary LLVM coverage flags when `ENABLE_COVERAGE` is ON:
+This is equivalent to:
 
-*   **Flags added:**
-    *   `-fprofile-instr-generate`
-    *   `-fcoverage-mapping`
-*   **Targets:** These flags should be added to both the `MalaSimCore` library and the `malasim_test` executable targets during compilation and linking. (See relevant `CMakeLists.txt` files for the `if(ENABLE_COVERAGE)` blocks).
-
-## 2. Build the Project
-
-Compile your project as usual. A clean build is recommended after enabling coverage flags for the first time.
-
-```bash
-# From your build directory
-make # or ninja, or your chosen build tool
+```sh
+./scripts/run_coverage.sh
 ```
 
-## 3. Run the Test Executable
+The normal development build is not modified. Coverage compilation uses
+`build/coverage/`, while reports are stored under `coverage-results/`.
 
-Execute your test suite. Running the instrumented executable will generate raw profile data.
+## Saved results
 
-```bash
-# From your build directory
-./bin/malasim_test
+Each run creates `coverage-results/runs/<timestamp>/` containing:
+
+- `coverage-summary.txt` — human-readable totals and per-file results;
+- `coverage-summary.json` — machine-readable LLVM summary data;
+- `test-output.log` — complete GoogleTest output;
+- `coverage-warnings.log` — diagnostics emitted while generating LLVM reports;
+- `metadata.txt` — commit, branch, dirty state, filter, tools, and build type;
+- `coverage.profdata` and `raw/` — merged and raw LLVM profile data;
+- `html/index.html` — browsable line and branch coverage.
+
+Two files at the output root make repeated runs easier:
+
+- `coverage-results/latest-run.txt` contains the path of the newest full-suite run.
+- `coverage-results/latest-summary.txt` and `latest-summary.json` are stable copies of
+  the newest full-suite main results.
+- `coverage-results/history.csv` appends the region, function, line, and branch totals
+  from every full-suite run.
+
+The output directory is ignored by Git. Copy a result elsewhere if it must be retained
+outside the local workspace or attached to a review.
+
+## Tracked baseline
+
+The repository keeps one compact baseline in `tests/coverage-baseline.json`. It records
+the covered and total region, function, line, and branch counts, plus the source commit
+and build metadata. Detailed per-file reports remain local because they are large and
+produce noisy diffs.
+
+Refresh the tracked baseline only after a successful full-suite run:
+
+```sh
+make coverage-baseline
 ```
 
-After execution, look for a file named `default.profraw` (or potentially multiple `.profraw` files) in the directory where you ran the executable (likely your build directory).
+You can still name the saved detailed run:
 
-## 4. Process Coverage Data
-
-Use the tools provided by `xcrun` (Xcode's command-line tool runner) to process the raw data and generate reports.
-
-### a. Merge Raw Profiles
-
-Combine the `.profraw` files into a single indexed `.profdata` file using `llvm-profdata`.
-
-```bash
-xcrun llvm-profdata merge -sparse default.profraw -o coverage.profdata
-# If you have multiple *.profraw files:
-# xcrun llvm-profdata merge -sparse *.profraw -o coverage.profdata
+```sh
+make coverage-baseline COVERAGE_ARGS='--run-name coverage-after-mosquito-tests'
 ```
 
-This creates the `coverage.profdata` file.
+Review the baseline diff before committing it. Coverage percentages should normally
+stay level or increase; if one decreases, document why the new behavior or generated
+code makes the decrease intentional. A filtered run cannot update the tracked
+baseline.
 
-### b. Generate Coverage Report
+## Common runs
 
-Use `llvm-cov` to create reports from the indexed profile data and the instrumented executable.
+Name a run for the feature or coverage iteration:
 
-**i. Summary Report (Terminal)**
-
-To get a quick overview of coverage per file:
-
-```bash
-xcrun llvm-cov report ./bin/malasim_test -instr-profile=coverage.profdata
+```sh
+make coverage COVERAGE_ARGS='--run-name mosquito-baseline'
 ```
 
-**ii. Detailed HTML Report**
+Run only one GoogleTest suite while developing:
 
-To generate a browsable HTML report showing line-by-line coverage:
-
-```bash
-# Create a directory for the report
-mkdir coverage_html
-
-# Generate the report
-xcrun llvm-cov show ./bin/malasim_test -instr-profile=coverage.profdata -format=html -o coverage_html
-
-# Optional: Specify specific source files or directories to include
-# xcrun llvm-cov show ./bin/malasim_test -instr-profile=coverage.profdata path/to/source/file.cpp path/to/dir/ -format=html -o coverage_html
+```sh
+make coverage COVERAGE_ARGS="--run-name mosquito-unit --filter 'MosquitoTest.*'"
 ```
 
-Now you can open the `index.html` file inside the `coverage_html` directory in your web browser.
+Skip HTML generation for a faster feedback run:
+
+```sh
+make coverage COVERAGE_ARGS='--run-name quick-check --no-html'
+```
+
+Choose different build or result directories:
+
+```sh
+./scripts/run_coverage.sh \
+  --build-dir /tmp/malasim-coverage-build \
+  --output-dir /tmp/malasim-coverage-results
+```
+
+See every option:
+
+```sh
+./scripts/run_coverage.sh --help
+```
+
+Filtered runs are useful during development, but their totals are not comparable with
+full-suite totals. They are saved in their named run directory but do not update
+`history.csv` or the stable `latest-*` files. Use a complete `make coverage` run for
+baselines and final results.
+
+## Prerequisites
+
+The script requires:
+
+- CMake;
+- a Clang or AppleClang coverage build;
+- `llvm-cov` and `llvm-profdata`;
+- the project dependencies available through the normal CMake/vcpkg setup.
+
+On macOS, the script locates LLVM tools through `xcrun` when they are not directly on
+`PATH`. On other platforms, install LLVM and ensure `llvm-cov` and `llvm-profdata` are
+on `PATH`. If Clang is not the default compiler, configure it explicitly:
+
+```sh
+CC=clang CXX=clang++ make coverage
+```
+
+Set `VCPKG_ROOT` as for a normal MalaSim build.
+
+## Interpreting results
+
+The primary improvement metric is line coverage, supported by branch coverage for
+decision-heavy code. Function and region coverage help identify large untouched
+areas, but a higher percentage alone does not demonstrate meaningful behavior.
+
+When adding coverage:
+
+- start from a named full-suite baseline;
+- prioritize important untested behavior and error paths;
+- keep deterministic unit tests separate from generated-file integration tests;
+- rerun the relevant filtered suite during development;
+- finish with a named full-suite run and compare its `coverage-summary.txt` or the
+  corresponding rows in `history.csv`;
+- update `tests/coverage-baseline.json` when the improved full-suite result is ready to
+  become the new repository reference.
+
+Do not weaken assertions or add implementation-only calls merely to execute lines.
 
 ## Troubleshooting
 
-*   **No `.profraw` file:** Ensure CMake configuration (`-DENABLE_COVERAGE=ON`) and a clean build were successful. Check that the compilation commands included the `-fprofile-instr-generate` and `-fcoverage-mapping` flags.
-*   **Incorrect Paths / Missing Files in Report:** Ensure you are running the `llvm-profdata` and `llvm-cov` commands from the correct directory (usually the build directory root) so that the paths to the executable and source files can be resolved correctly.
-*   **Only Headers in Report:** Verify that your tests actually execute code within the `.cpp` implementation files, not just code defined entirely in headers.
+### No raw profile was generated
+
+Confirm the test binary was built with `ENABLE_COVERAGE=ON` and that the selected
+compiler supports `-fprofile-instr-generate` and `-fcoverage-mapping`. The script exits
+instead of recording an empty result.
+
+### LLVM reports a profile-version mismatch
+
+`llvm-cov`, `llvm-profdata`, and the compiler should come from the same LLVM toolchain.
+Remove `build/coverage/` after changing compilers, then rerun the script.
+
+### A newly added test is missing
+
+The script reconfigures CMake on every run, so new `*.cpp` test files are normally
+discovered automatically. Check that the source is under `tests/` and matches the
+current test-source glob.
+
+### Third-party or test files appear in totals
+
+The runner excludes `tests/`, build directories, vcpkg sources, and system/Xcode
+sources. Update `IGNORE_REGEX` in `scripts/run_coverage.sh` if a new dependency path
+must be excluded.
