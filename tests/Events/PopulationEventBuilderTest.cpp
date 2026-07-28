@@ -5,6 +5,7 @@
 #include "Events/Population/AnnualCoverageUpdateEvent.hxx"
 #include "Events/Population/ChangeCirculationPercentEvent.hxx"
 #include "Events/Population/ChangeInterruptedFeedingRateEvent.h"
+#include "Events/Population/ChangeTreatmentStrategyEvent.h"
 #include "Events/Population/ChangeMutationMaskEvent.h"
 #include "Events/Population/ChangeMutationProbabilityPerLocusEvent.h"
 #include "Events/Population/ChangeWithinHostInducedFreeRecombinationEvent.h"
@@ -315,6 +316,8 @@ TEST_F(PopulationEventBuilderTest, BuildsMutantEventsFromUnitsAndRasters) {
       )"), config(), "district");
   ASSERT_EQ(unit_events.size(), 1);
   EXPECT_EQ(unit_events[0]->name(), IntroduceMutantEvent::EVENT_NAME);
+  unit_events[0]->set_executable(true);
+  EXPECT_NO_THROW(unit_events[0]->execute());
 
   {
     std::ofstream raster("mutant_event.asc");
@@ -338,6 +341,8 @@ TEST_F(PopulationEventBuilderTest, BuildsMutantEventsFromUnitsAndRasters) {
       )"), config());
   ASSERT_EQ(raster_events.size(), 1);
   EXPECT_EQ(raster_events[0]->name(), IntroduceMutantRasterEvent::EVENT_NAME);
+  raster_events[0]->set_executable(true);
+  EXPECT_NO_THROW(raster_events[0]->execute());
 }
 
 TEST_F(PopulationEventBuilderTest, ExecutesZeroCaseImportationEventsAndReschedules) {
@@ -352,4 +357,17 @@ TEST_F(PopulationEventBuilderTest, ExecutesZeroCaseImportationEventsAndReschedul
   auto random_periodic = std::make_unique<ImportationPeriodicallyRandomEvent>(0, 0, 0, 1.0);
   random_periodic->set_executable(true);
   EXPECT_NO_THROW(random_periodic->execute());
+}
+
+TEST_F(PopulationEventBuilderTest, ExecutesStrategyAndDistrictEventsWithNoCases) {
+  auto strategy_change = std::make_unique<ChangeTreatmentStrategyEvent>(0, 0);
+  strategy_change->set_executable(true);
+  EXPECT_NO_THROW(strategy_change->execute());
+  ASSERT_NE(Model::get_treatment_strategy(), nullptr);
+  EXPECT_EQ(Model::get_treatment_strategy()->id, 0);
+
+  auto district = std::make_unique<DistrictImportationDailyEvent>(0, 0.0, 0,
+                                                                   std::vector<std::tuple<int, int, char>>{});
+  district->set_executable(true);
+  EXPECT_NO_THROW(district->execute());
 }
