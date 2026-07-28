@@ -55,6 +55,9 @@ TEST_P(ReporterRunIntegrationTest, RunsShortSimulationWithReporter) {
     cfg["simulation_timeframe"]["starting_date"] = "2000/1/1";
     cfg["simulation_timeframe"]["ending_date"] = "2000/3/1";
     cfg["model_settings"]["initial_seed_number"] = 42;
+    if (GetParam() == "NovelDrug") {
+      cfg["strategy_parameters"]["initial_strategy_id"] = 16;
+    }
   });
 
   utils::Cli::MaSimAppInput cli_input;
@@ -74,7 +77,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values("Console", "MonthlyReporter", "MMC", "TACT", "ValidationReporter",
                       "SQLiteMonthlyReporter",
                       "SQLiteValidationReporter", "PopulationReporter", "AgeBand",
-                      "SeasonalImmunity"),
+                      "SeasonalImmunity", "NovelDrug"),
     [](const ::testing::TestParamInfo<std::string>& info) { return info.param; });
 
 // Stacks several reporters in a single run via add_reporter() so that multiple
