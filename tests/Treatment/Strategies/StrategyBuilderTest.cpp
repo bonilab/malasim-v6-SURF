@@ -8,6 +8,13 @@
 #include "Treatment/Strategies/MFTStrategy.h"
 #include "Treatment/Strategies/CyclingStrategy.h"
 #include "Treatment/Strategies/AdaptiveCyclingStrategy.h"
+#include "Treatment/Strategies/MFTRebalancingStrategy.h"
+#include "Treatment/Strategies/MFTMultiLocationStrategy.h"
+#include "Treatment/Strategies/NestedMFTStrategy.h"
+#include "Treatment/Strategies/NestedMFTMultiLocationStrategy.h"
+#include "Treatment/Strategies/NovelDrugIntroductionStrategy.h"
+#include "Treatment/Strategies/MFTAgeBasedStrategy.h"
+#include "Treatment/Strategies/PublicPrivateStrategy.h"
 #include "Treatment/Therapies/Therapy.h"
 #include "Treatment/Therapies/TherapyBuilder.h"
 #include "Simulation/Model.h"
@@ -260,4 +267,76 @@ TEST_F(StrategyBuilderTest, MissingTherapies) {
   
   // No therapy_ids specified
   EXPECT_THROW(StrategyBuilder::build(node, 6), std::runtime_error);
+}
+
+TEST_F(StrategyBuilderTest, BuildsAdditionalStrategyVariants) {
+  auto rebalancing = create_mft_strategy_node();
+  rebalancing["type"] = "MFTRebalancing";
+  rebalancing["distribution"] = rebalancing["distributions"];
+  rebalancing["update_duration_after_rebalancing"] = 30;
+  rebalancing["delay_until_actual_trigger"] = 7;
+  ASSERT_NE(StrategyBuilder::build(rebalancing, 5), nullptr);
+
+  auto age_based = create_mft_strategy_node();
+  age_based["type"] = "MFTAgeBased";
+  age_based["age_boundaries"] = YAML::Load("[18]");
+  ASSERT_NE(StrategyBuilder::build(age_based, 6), nullptr);
+
+  auto nested = create_mft_strategy_node();
+  nested["type"] = "NestedMFT";
+  nested["start_distribution"] = YAML::Load("[0.5, 0.5]");
+  nested["peak_distribution"] = YAML::Load("[0.2, 0.8]");
+  nested["peak_after"] = 30;
+  nested["strategy_ids"] = YAML::Load("[]");
+  ASSERT_NE(StrategyBuilder::build(nested, 7), nullptr);
+
+  auto multi_location = create_mft_strategy_node();
+  multi_location["type"] = "MFTMultiLocation";
+  multi_location["start_distribution_by_location"] = YAML::Load("[[0.5, 0.5]]");
+  multi_location["peak_distribution_by_location"] = YAML::Load("[[0.2, 0.8]]");
+  multi_location["peak_after"] = 30;
+  ASSERT_NE(StrategyBuilder::build(multi_location, 8), nullptr);
+
+  auto nested_multi_location = multi_location;
+  nested_multi_location["type"] = "NestedMFTMultiLocation";
+  nested_multi_location["strategy_ids"] = YAML::Load("[]");
+  ASSERT_NE(StrategyBuilder::build(nested_multi_location, 9), nullptr);
+
+  auto novel = YAML::Load(R"(
+    name: novel
+    type: NovelDrugIntroduction
+    start_distribution: [0.5, 0.5]
+    peak_distribution: [0.2, 0.8]
+    peak_after: 30
+    strategy_ids: []
+    newly_introduced_strategy_id: 1
+    tf_threshold: 0.2
+    replacement_fraction: 0.5
+    replacement_duration: 10
+  )");
+  ASSERT_NE(StrategyBuilder::build(novel, 10), nullptr);
+}
+
+TEST_F(StrategyBuilderTest, ValidatesPublicPrivateStrategyFields) {
+  auto public_private = YAML::Load(R"(
+    name: public-private
+    type: PublicPrivate
+    public_strategy_id: 0
+    private_strategy_id: 1
+    start_public_share: 0.3
+    peak_public_share: 0.7
+    peak_after: 30
+  )");
+
+  if (Model::get_strategy_db().size() > 1) {
+    auto strategy = StrategyBuilder::build(public_private, 2);
+    ASSERT_NE(strategy, nullptr);
+    auto* result = dynamic_cast<PublicPrivateStrategy*>(strategy.get());
+    ASSERT_NE(result, nullptr);
+    EXPECT_DOUBLE_EQ(result->start_public_share, 0.3);
+    EXPECT_DOUBLE_EQ(result->peak_public_share, 0.7);
+  }
+
+  public_private["start_public_share"] = 1.1;
+  EXPECT_THROW(StrategyBuilder::build(public_private, 2), std::invalid_argument);
 }
