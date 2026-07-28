@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <sstream>
 
 #include "Parasites/Genotype.h"
 #include "Population/DrugsInBlood.h"
@@ -122,6 +123,20 @@ TEST_F(GenotypeTest, SetAndGetGenotypeId) {
   Genotype g(aa_seq);
   g.set_genotype_id(123);
   EXPECT_EQ(g.genotype_id(), 123);
+}
+
+TEST_F(GenotypeTest, CoversResistanceMutationPlaceholderAndStreamFormatting) {
+  const auto aa_seq = read_first_genotype_from_yaml("test_input.yml");
+  Genotype genotype(aa_seq);
+  genotype.set_genotype_id(17);
+  auto *drug = Model::get_drug_db()->at(0).get();
+  genotype.EC50_power_n.assign(Model::get_drug_db()->size(), 1.0e6);
+  EXPECT_TRUE(genotype.resist_to(drug));
+  EXPECT_EQ(genotype.combine_mutation_to(2, 1), &genotype);
+
+  std::ostringstream output;
+  output << genotype;
+  EXPECT_EQ(output.str(), "17\t" + aa_seq);
 }
 
 TEST_F(GenotypeTest, MatchPattern) {

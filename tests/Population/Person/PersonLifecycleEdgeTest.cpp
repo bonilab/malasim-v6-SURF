@@ -71,7 +71,7 @@ TEST_F(PersonLifecycleEdgeTest, ComputesVariableSingleCompoundTherapyCompletionD
   EXPECT_EQ(Person::complied_dosing_days(&therapy), 2);
 }
 
-TEST_F(PersonLifecycleEdgeTest, RejectsPastEvents)
+TEST_F(PersonLifecycleEdgeTest, RejectsPastEvents) {
   auto event = std::make_unique<BirthdayEvent>(person_.get());
   event->set_time(0);
   EXPECT_THROW(person_->schedule_basic_event(std::move(event)), std::invalid_argument);

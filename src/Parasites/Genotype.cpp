@@ -102,7 +102,7 @@ Genotype* Genotype::modify_genotype_allele(const std::vector<std::tuple<int, int
 
 double Genotype::get_EC50_power_n(DrugType* dt) const { return EC50_power_n[dt->id()]; }
 
-std::ostream &operator<<(std::ostream &os, Genotype &genotype) {
+std::ostream &operator<<(std::ostream &os, const Genotype &genotype) {
   os << genotype.genotype_id_ << "\t";
   os << genotype.get_aa_sequence();
   return os;
