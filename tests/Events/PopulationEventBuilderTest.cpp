@@ -15,10 +15,14 @@
 #include "Events/Population/ChangeCirculationPercentEvent.hxx"
 #include "Events/Population/DistrictImportationDailyEvent.h"
 #include "Events/Population/ImportationPeriodicallyRandomEvent.h"
+#include "Events/Population/ImportationEvent.h"
+#include "Events/Population/ImportationPeriodicallyEvent.h"
 #include "Events/Population/IntroduceAmodiaquineMutantEvent.h"
 #include "Events/Population/IntroduceLumefantrineMutantEvent.h"
 #include "Events/Population/Introduce580YMutantEvent.h"
 #include "Events/Population/IntroduceTripleMutantToDPMEvent.h"
+#include "Events/Population/IntroducePlas2CopyParasiteEvent.h"
+#include "Events/Population/ModifyNestedMFTEvent.h"
 #include "Events/Population/UpdateBetaRasterEvent.hxx"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
@@ -184,6 +188,40 @@ TEST_F(PopulationEventBuilderTest, BuildsMutantEventDefinitionsAndSkipsInvalidLo
   const auto skipped = PopulationEventBuilder::build_introduce_580Y_mutant_events(
       YAML::Load("- location: 999\n  date: 2024/01/01\n  fraction: 0.2\n  alleles: []"), config());
   EXPECT_TRUE(skipped.empty());
+}
+
+TEST_F(PopulationEventBuilderTest, BuildsImportationAndPeriodicDefinitions) {
+  const std::string genotype = "||||YF1||TTHFIMG,x||||||FNCMYRIPRPCRA|1";
+  const auto importation = PopulationEventBuilder::build_introduce_parasite_events(
+      YAML::Load("- location: 0\n  parasite_info:\n    - genotype_aa_sequence: \"" + genotype + "\""
+                   + "\n      number_of_cases: 3\n      date: 2024/01/01"),
+      config());
+  ASSERT_EQ(importation.size(), 1);
+  auto* importation_event = dynamic_cast<ImportationEvent*>(importation[0].get());
+  ASSERT_NE(importation_event, nullptr);
+  EXPECT_EQ(importation_event->get_location(), 0);
+  EXPECT_EQ(importation_event->get_number_of_cases(), 3);
+
+  const auto periodic = PopulationEventBuilder::build_introduce_parasites_periodically_events(
+      YAML::Load("- location: 0\n  parasite_info:\n    - genotype_aa_sequence: \"" + genotype + "\""
+                   + "\n      number_of_cases: 2\n      duration: 30\n      start_date: 2024/01/01"),
+      config());
+  ASSERT_EQ(periodic.size(), 1);
+  auto* periodic_event = dynamic_cast<ImportationPeriodicallyEvent*>(periodic[0].get());
+  ASSERT_NE(periodic_event, nullptr);
+  EXPECT_EQ(periodic_event->get_location(), 0);
+  EXPECT_EQ(periodic_event->get_duration(), 30);
+  EXPECT_EQ(periodic_event->get_number_of_cases(), 2);
+
+  const auto plas2 = PopulationEventBuilder::build_introduce_plas2_parasite_events(
+      YAML::Load("- location: 0\n  date: 2024/01/01\n  fraction: 0.4"), config());
+  ASSERT_EQ(plas2.size(), 1);
+  EXPECT_EQ(plas2[0]->name(), IntroducePlas2CopyParasiteEvent::EVENT_NAME);
+
+  const auto nested = PopulationEventBuilder::build_modify_nested_mft_strategy_event(
+      YAML::Load("- date: 2024/01/01\n  strategy_id: 0"), config());
+  ASSERT_EQ(nested.size(), 1);
+  EXPECT_EQ(nested[0]->name(), ModifyNestedMFTEvent::EVENT_NAME);
 }
 
 TEST_F(PopulationEventBuilderTest, BuildsThroughPublicDispatcher) {
