@@ -775,8 +775,8 @@ double Person::p_infection_from_an_infectious_bite() const {
 }
 
 double Person::draw_random_relative_biting_rate(utils::Random* p_random, Config* p_config) {
-  auto result = p_random->random_gamma(p_config->get_epidemiological_parameters().gamma_a,
-                                       p_config->get_epidemiological_parameters().gamma_b);
+  auto &epi_params = p_config->get_epidemiological_parameters();
+  auto result = p_random->random_gamma(epi_params.get_gamma_a(), epi_params.get_gamma_b());
 
   while (result > (p_config->get_epidemiological_parameters()
                        .get_relative_biting_info()
@@ -785,14 +785,10 @@ double Person::draw_random_relative_biting_rate(utils::Random* p_random, Config*
                          .get_relative_biting_info()
                          .get_min_relative_biting_value())) {
     // re-draw
-    result = p_random->random_gamma(p_config->get_epidemiological_parameters().gamma_a,
-                                    p_config->get_epidemiological_parameters().gamma_b);
+    result = p_random->random_gamma(epi_params.get_gamma_a(), epi_params.get_gamma_b());
   }
 
-  return result
-         + p_config->get_epidemiological_parameters()
-               .get_relative_biting_info()
-               .get_min_relative_biting_value();
+  return result + epi_params.get_relative_biting_info().get_min_relative_biting_value();
 }
 
 double Person::age_in_floating(int simulation_time) const {

@@ -121,114 +121,115 @@ public:
 
   // New: Age-based probability of seeking treatment
   class AgeBasedProbabilityOfSeekingTreatment {
-    public:
-        struct PowerConfig {
-            double base = 1.0;                      // multiplicative base
-            std::string exponent_source = "index"; // how to derive exponent
-        };
-
-        [[nodiscard]] const std::string& get_type() const { return type_; }
-        void set_type(const std::string& value) { type_ = value; }
-
-        [[nodiscard]] const PowerConfig& get_power() const { return power_; }
-        void set_power(const PowerConfig& value) { power_ = value; }
-
-        [[nodiscard]] const std::vector<int>& get_ages() const { return ages_; }
-        void set_ages(const std::vector<int>& value) { ages_ = value; }
-
-        [[nodiscard]] bool is_enabled() const { return enabled_; }
-        void set_enabled(bool v) { enabled_ = v; }
-
-        void validate() const {
-            if (!enabled_) return;
-
-            if (type_.empty()) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.type must not be empty when enabled");
-            }
-
-            if (type_ != "power") {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.type must be 'power', got '" + type_ + "'");
-            }
-
-            if (power_.exponent_source != "index") {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.power.exponent_source must be 'index', got '" +
-                    power_.exponent_source + "'");
-            }
-
-            if (ages_.empty()) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.ages must not be empty when enabled");
-            }
-
-            if (!std::is_sorted(ages_.begin(), ages_.end())) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.ages must be sorted ascending");
-            }
-
-            auto dup_it = std::adjacent_find(ages_.begin(), ages_.end());
-            if (dup_it != ages_.end()) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.ages must be strictly increasing");
-            }
-
-            if (ages_.front() < 0) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.ages must contain non-negative values");
-            }
-
-            if (ages_.front() != 0) {
-                spdlog::warn(
-                    "age_based_probability_of_seeking_treatment.ages starts at {}, not 0",
-                    ages_.front());
-            }
-
-            if (power_.base < 0.0) {
-                throw std::runtime_error(
-                    "age_based_probability_of_seeking_treatment.power.base must be >= 0");
-            }
-        }
-
-        double evaluate_for_age(const int age_in) const {
-            if (!enabled_) return 1.0;
-
-            const int age = std::max(0, age_in);
-
-            if (type_ == "power") {
-                if (ages_.empty()) return 1.0;
-
-                if (power_.exponent_source == "index") {
-                    int idx = 0;
-                    for (size_t i = 0; i < ages_.size(); ++i) {
-                        if (age >= ages_[i]) idx = static_cast<int>(i);
-                        else break;
-                    }
-
-                    return std::pow(power_.base, static_cast<double>(idx));
-                }
-
-                spdlog::warn(
-                    "Unknown exponent_source '{}' for AgeBasedProbabilityOfSeekingTreatment, returning 1.0",
-                    power_.exponent_source
-                );
-                return 1.0;
-            }
-
-            spdlog::warn(
-                "Unknown AgeBasedProbabilityOfSeekingTreatment type '{}', returning 1.0 with no modification",
-                type_
-            );
-            return 1.0;
-        }
-
-    private:
-        std::string type_;
-        PowerConfig power_;
-        std::vector<int> ages_;
-        bool enabled_ = false;
+  public:
+    struct PowerConfig {
+      double base = 1.0;                      // multiplicative base
+      std::string exponent_source = "index";  // how to derive exponent
     };
+
+    [[nodiscard]] const std::string &get_type() const { return type_; }
+    void set_type(const std::string &value) { type_ = value; }
+
+    [[nodiscard]] const PowerConfig &get_power() const { return power_; }
+    void set_power(const PowerConfig &value) { power_ = value; }
+
+    [[nodiscard]] const std::vector<int> &get_ages() const { return ages_; }
+    void set_ages(const std::vector<int> &value) { ages_ = value; }
+
+    [[nodiscard]] bool is_enabled() const { return enabled_; }
+    void set_enabled(bool value) { enabled_ = value; }
+
+    void validate() const {
+      if (!enabled_) return;
+
+      if (type_.empty()) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.type must not be empty when enabled");
+      }
+
+      if (type_ != "power") {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.type must be 'power', got '" + type_ + "'");
+      }
+
+      if (power_.exponent_source != "index") {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.power.exponent_source must be 'index', got "
+            "'"
+            + power_.exponent_source + "'");
+      }
+
+      if (ages_.empty()) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.ages must not be empty when enabled");
+      }
+
+      if (!std::ranges::is_sorted(ages_)) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.ages must be sorted ascending");
+      }
+
+      auto dup_it = std::ranges::adjacent_find(ages_);
+      if (dup_it != ages_.end()) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.ages must be strictly increasing");
+      }
+
+      if (ages_.front() < 0) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.ages must contain non-negative values");
+      }
+
+      if (ages_.front() != 0) {
+        spdlog::warn("age_based_probability_of_seeking_treatment.ages starts at {}, not 0",
+                     ages_.front());
+      }
+
+      if (power_.base < 0.0) {
+        throw std::runtime_error(
+            "age_based_probability_of_seeking_treatment.power.base must be >= 0");
+      }
+    }
+
+    [[nodiscard]] double evaluate_for_age(const int age_in) const {
+      if (!enabled_) return 1.0;
+
+      const int age = std::max(0, age_in);
+
+      if (type_ == "power") {
+        if (ages_.empty()) return 1.0;
+
+        if (power_.exponent_source == "index") {
+          int idx = 0;
+          for (size_t i = 0; i < ages_.size(); ++i) {
+            if (age >= ages_[i])
+              idx = static_cast<int>(i);
+            else
+              break;
+          }
+
+          return std::pow(power_.base, static_cast<double>(idx));
+        }
+
+        spdlog::warn(
+            "Unknown exponent_source '{}' for AgeBasedProbabilityOfSeekingTreatment, returning 1.0",
+            power_.exponent_source);
+        return 1.0;
+      }
+
+      spdlog::warn(
+          "Unknown AgeBasedProbabilityOfSeekingTreatment type '{}', returning 1.0 with no "
+          "modification",
+          type_);
+      return 1.0;
+    }
+
+  private:
+    std::string type_;
+    PowerConfig power_;
+    std::vector<int> ages_;
+    bool enabled_ = false;
+  };
 
   class AllowNewCoinfectionToCauseSymptoms {
   public:
@@ -305,10 +306,12 @@ public:
   [[nodiscard]] int get_update_frequency() const { return update_frequency_; }
   void set_update_frequency(const int value) { update_frequency_ = value; }
 
-  [[nodiscard]] const AllowNewCoinfectionToCauseSymptoms &get_allow_new_coinfection_to_cause_symptoms() const {
+  [[nodiscard]] const AllowNewCoinfectionToCauseSymptoms &
+  get_allow_new_coinfection_to_cause_symptoms() const {
     return allow_new_coinfection_to_cause_symptoms_;
   }
-  void set_allow_new_coinfection_to_cause_symptoms(const AllowNewCoinfectionToCauseSymptoms &value) {
+  void set_allow_new_coinfection_to_cause_symptoms(
+      const AllowNewCoinfectionToCauseSymptoms &value) {
     allow_new_coinfection_to_cause_symptoms_ = value;
   }
 
@@ -345,25 +348,28 @@ public:
     return age_based_probability_of_seeking_treatment_;
   }
   void set_age_based_probability_of_seeking_treatment(
-      const AgeBasedProbabilityOfSeekingTreatment &v) {
-    age_based_probability_of_seeking_treatment_ = v;
+      const AgeBasedProbabilityOfSeekingTreatment &value) {
+    age_based_probability_of_seeking_treatment_ = value;
   }
+
+  [[nodiscard]] double get_gamma_a() const { return gamma_a_; }
+  [[nodiscard]] double get_gamma_b() const { return gamma_b_; }
 
   // process config data
   void process_config() override {
     spdlog::info("Processing EpidemiologicalParameters");
     const auto var = relative_biting_info_.get_biting_level_distribution().get_gamma().get_sd()
                      * relative_biting_info_.get_biting_level_distribution().get_gamma().get_sd();
-    gamma_b = var / relative_biting_info_.get_biting_level_distribution().get_gamma().get_mean();
-    gamma_a =
-        relative_biting_info_.get_biting_level_distribution().get_gamma().get_mean() / gamma_b;
+    gamma_b_ = var / relative_biting_info_.get_biting_level_distribution().get_gamma().get_mean();
+    gamma_a_ =
+        relative_biting_info_.get_biting_level_distribution().get_gamma().get_mean() / gamma_b_;
 
-    spdlog::info("relative_biting_info gamma_a: {}, gamma_b: {}", gamma_a, gamma_b);
+    spdlog::info("relative_biting_info gamma_a: {}, gamma_b: {}", gamma_a_, gamma_b_);
 
     const auto d_star = 1.0 / get_relative_infectivity().get_blood_meal_volume();
     relative_infectivity_.set_ro_star((log(relative_infectivity_.get_ro_star()) - log(d_star))
                                       / relative_infectivity_.get_sigma());
-    relative_infectivity_.set_sigma(log(10) / relative_infectivity_.get_sigma());
+    relative_infectivity_.set_sigma(std::numbers::ln10 / relative_infectivity_.get_sigma());
   }
 
 private:
@@ -390,10 +396,8 @@ private:
   bool using_variable_probability_infectious_bites_cause_infection_ = false;
   // new member
   AgeBasedProbabilityOfSeekingTreatment age_based_probability_of_seeking_treatment_{};
-
-public:
-  double gamma_a = 0.0;
-  double gamma_b = 0.0;
+  double gamma_a_ = 0.0;
+  double gamma_b_ = 0.0;
 };
 
 namespace YAML {
@@ -531,7 +535,8 @@ struct convert<EpidemiologicalParameters> {
     {
       Node coinfection_node;
       coinfection_node["enable"] = rhs.get_allow_new_coinfection_to_cause_symptoms().get_enable();
-      coinfection_node["probability"] = rhs.get_allow_new_coinfection_to_cause_symptoms().get_probability();
+      coinfection_node["probability"] =
+          rhs.get_allow_new_coinfection_to_cause_symptoms().get_probability();
       node["allow_new_coinfection_to_cause_symptoms"] = coinfection_node;
     }
     node["tf_window_size"] = rhs.get_tf_window_size();
@@ -543,15 +548,15 @@ struct convert<EpidemiologicalParameters> {
         rhs.get_using_variable_probability_infectious_bites_cause_infection();
     // optional: age_based_probability_of_seeking_treatment
     if (rhs.get_age_based_probability_of_seeking_treatment().is_enabled()) {
-      Node n;
-      n["type"] = rhs.get_age_based_probability_of_seeking_treatment().get_type();
-      const auto &p = rhs.get_age_based_probability_of_seeking_treatment().get_power();
-      Node pnode;
-      pnode["base"] = p.base;
-      pnode["exponent_source"] = p.exponent_source;
-      n["power"] = pnode;
-      n["ages"] = rhs.get_age_based_probability_of_seeking_treatment().get_ages();
-      node["age_based_probability_of_seeking_treatment"] = n;
+      Node age_based_node;
+      age_based_node["type"] = rhs.get_age_based_probability_of_seeking_treatment().get_type();
+      const auto &prob = rhs.get_age_based_probability_of_seeking_treatment().get_power();
+      Node power_node;
+      power_node["base"] = prob.base;
+      power_node["exponent_source"] = prob.exponent_source;
+      age_based_node["power"] = power_node;
+      age_based_node["ages"] = rhs.get_age_based_probability_of_seeking_treatment().get_ages();
+      node["age_based_probability_of_seeking_treatment"] = age_based_node;
     }
     return node;
   }
@@ -590,13 +595,13 @@ struct convert<EpidemiologicalParameters> {
     rhs.set_update_frequency(node["update_frequency"].as<int>());
     {
       EpidemiologicalParameters::AllowNewCoinfectionToCauseSymptoms cfg;
-      const auto &n = node["allow_new_coinfection_to_cause_symptoms"];
-      if (n.IsMap()) {
-        if (n["enable"]) cfg.set_enable(n["enable"].as<bool>());
-        if (n["probability"]) cfg.set_probability(n["probability"].as<double>());
+      const auto &nd = node["allow_new_coinfection_to_cause_symptoms"];
+      if (nd.IsMap()) {
+        if (nd["enable"]) cfg.set_enable(nd["enable"].as<bool>());
+        if (nd["probability"]) cfg.set_probability(nd["probability"].as<double>());
       } else {
         // backward-compatible: plain bool
-        cfg.set_enable(n.as<bool>());
+        cfg.set_enable(nd.as<bool>());
         cfg.set_probability(1.0);
       }
       rhs.set_allow_new_coinfection_to_cause_symptoms(cfg);
@@ -610,20 +615,20 @@ struct convert<EpidemiologicalParameters> {
         node["using_variable_probability_infectious_bites_cause_infection"].as<bool>());
     // optional age_based_probability_of_seeking_treatment
     if (node["age_based_probability_of_seeking_treatment"]) {
-      const auto n = node["age_based_probability_of_seeking_treatment"];
+      const auto nd = node["age_based_probability_of_seeking_treatment"];
       EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment cfg;
-      if (n["type"]) cfg.set_type(n["type"].as<std::string>());
-      if (n["power"]) {
-        const auto p = n["power"];
+      if (nd["type"]) cfg.set_type(nd["type"].as<std::string>());
+      if (nd["power"]) {
+        const auto pr = nd["power"];
         EpidemiologicalParameters::AgeBasedProbabilityOfSeekingTreatment::PowerConfig pc;
-        if (p["base"]) pc.base = p["base"].as<double>();
-        if (p["exponent_source"]) pc.exponent_source = p["exponent_source"].as<std::string>();
+        if (pr["base"]) pc.base = pr["base"].as<double>();
+        if (pr["exponent_source"]) pc.exponent_source = pr["exponent_source"].as<std::string>();
         cfg.set_power(pc);
       }
-      if (n["ages"]) cfg.set_ages(n["ages"].as<std::vector<int>>());
+      if (nd["ages"]) cfg.set_ages(nd["ages"].as<std::vector<int>>());
       // If the node exists but the 'enable' key is missing, default to enabled=true
-      if (n["enable"])
-        cfg.set_enabled(n["enable"].as<bool>());
+      if (nd["enable"])
+        cfg.set_enabled(nd["enable"].as<bool>());
       else
         cfg.set_enabled(true);
       rhs.set_age_based_probability_of_seeking_treatment(cfg);
