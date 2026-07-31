@@ -87,3 +87,31 @@ TEST_F(DrugParametersTest, DecodeDrugParametersMissingField) {
   // Expect an exception due to missing required fields
   EXPECT_THROW(YAML::convert<DrugParameters>::decode(node, decoded_parameters), std::runtime_error);
 }
+
+TEST_F(DrugParametersTest, EncodeDrugDbAsMapNotSequence) {
+  // Same encode defect as StrategyParameters: an integer key through
+  // operator[] on an empty node makes yaml-cpp build a sequence and drop the
+  // keys, which decode() then cannot iterate as a map.
+  const YAML::Node node = YAML::convert<DrugParameters>::encode(drug_parameters);
+
+  ASSERT_TRUE(node["drug_db"].IsMap()) << "drug_db must encode as a map, not a sequence";
+  ASSERT_FALSE(node["drug_db"].IsSequence());
+
+  for (const auto &element : node["drug_db"]) {
+    EXPECT_NO_THROW(static_cast<void>(element.first.as<int>()));
+  }
+}
+
+TEST_F(DrugParametersTest, EncodedDrugParametersAreDecodable) {
+  const YAML::Node node = YAML::convert<DrugParameters>::encode(drug_parameters);
+
+  DrugParameters round_tripped;
+  ASSERT_NO_THROW(YAML::convert<DrugParameters>::decode(node, round_tripped));
+  ASSERT_EQ(round_tripped.get_drug_db_raw().size(), drug_parameters.get_drug_db_raw().size());
+  for (const auto &[key, drug] : drug_parameters.get_drug_db_raw()) {
+    ASSERT_TRUE(round_tripped.get_drug_db_raw().contains(key))
+        << "drug id " << key << " lost in round trip";
+    EXPECT_EQ(round_tripped.get_drug_db_raw().at(key).get_name(), drug.get_name());
+    EXPECT_EQ(round_tripped.get_drug_db_raw().at(key).get_base_ec50(), drug.get_base_ec50());
+  }
+}
