@@ -179,3 +179,149 @@ TEST_F(StrategyParametersTest, DecodeStrategyParametersMissingField) {
   EXPECT_THROW(YAML::convert<StrategyParameters>::decode(node, decoded_parameters),
                std::runtime_error);
 }
+
+// ---------------------------------------------------------------------------
+// DistrictMFT definitions round-trip
+//
+// StrategyInfo previously had no field for `definitions`, so a DistrictMFT
+// strategy encoded to name + type only. It went unnoticed because
+// StrategyParameters::process_config builds strategies from the raw YAML node
+// kept by set_node(), not from strategy_db_raw_, so the simulation itself never
+// read the decoded struct.
+// ---------------------------------------------------------------------------
+
+namespace {
+YAML::Node make_district_mft_node() {
+  YAML::Node node;
+  node["initial_strategy_id"] = 0;
+  node["strategy_db"]["0"]["name"] = "AngolaDistrictMFT-2021";
+  node["strategy_db"]["0"]["type"] = "DistrictMFT";
+  node["strategy_db"]["0"]["definitions"]["0"]["district_ids"] = std::vector<int>{4, 12, 13};
+  node["strategy_db"]["0"]["definitions"]["0"]["therapy_ids"] =
+      std::vector<int>{6, 8, 2, 0, 12, 14, 5};
+  node["strategy_db"]["0"]["definitions"]["0"]["distribution"] =
+      std::vector<double>{0.765, 0.085, 0.00225, 0.06, 0.00075, 0.027, 0.06};
+  node["strategy_db"]["0"]["definitions"]["1"]["district_ids"] = std::vector<int>{2, 7};
+  node["strategy_db"]["0"]["definitions"]["1"]["therapy_ids"] = std::vector<int>{6, 8};
+  node["strategy_db"]["0"]["definitions"]["1"]["distribution"] = std::vector<double>{0.5, 0.5};
+
+  node["mass_drug_administration"]["enable"] = false;
+  node["mass_drug_administration"]["mda_therapy_id"] = 8;
+  node["mass_drug_administration"]["age_bracket_prob_individual_present_at_mda"] =
+      std::vector<int>{10, 40};
+  node["mass_drug_administration"]["mean_prob_individual_present_at_mda"] =
+      std::vector<double>{0.85, 0.75, 0.85};
+  node["mass_drug_administration"]["sd_prob_individual_present_at_mda"] =
+      std::vector<double>{0.3, 0.3, 0.3};
+  return node;
+}
+}  // namespace
+
+TEST_F(StrategyParametersTest, DecodeDistrictMftDefinitions) {
+  StrategyParameters decoded;
+  ASSERT_TRUE(YAML::convert<StrategyParameters>::decode(make_district_mft_node(), decoded));
+
+  const auto &definitions = decoded.get_strategy_db_raw().at(0).get_definitions();
+  ASSERT_EQ(definitions.size(), 2);
+
+  EXPECT_EQ(definitions.at(0).district_ids, (std::vector<int>{4, 12, 13}));
+  EXPECT_EQ(definitions.at(0).therapy_ids, (std::vector<int>{6, 8, 2, 0, 12, 14, 5}));
+  ASSERT_EQ(definitions.at(0).distribution.size(), 7);
+  EXPECT_DOUBLE_EQ(definitions.at(0).distribution[0], 0.765);
+  EXPECT_DOUBLE_EQ(definitions.at(0).distribution[6], 0.06);
+
+  EXPECT_EQ(definitions.at(1).district_ids, (std::vector<int>{2, 7}));
+  EXPECT_EQ(definitions.at(1).therapy_ids, (std::vector<int>{6, 8}));
+  EXPECT_EQ(definitions.at(1).distribution, (std::vector<double>{0.5, 0.5}));
+}
+
+TEST_F(StrategyParametersTest, EncodeDistrictMftDefinitions) {
+  StrategyParameters decoded;
+  ASSERT_TRUE(YAML::convert<StrategyParameters>::decode(make_district_mft_node(), decoded));
+
+  const YAML::Node encoded = YAML::convert<StrategyParameters>::encode(decoded);
+
+  // Both containers must be maps keyed by id. Checking only node[0] would pass
+  // for a sequence too, which is exactly how the encode defect went unnoticed:
+  // an integer key through operator[] on an empty node appends to a sequence
+  // and throws the keys away.
+  ASSERT_TRUE(encoded["strategy_db"].IsMap()) << "strategy_db must encode as a map, not a sequence";
+
+  const auto definitions = encoded["strategy_db"][0]["definitions"];
+  ASSERT_TRUE(definitions);
+  ASSERT_TRUE(definitions.IsMap()) << "definitions must encode as a map, not a sequence";
+  ASSERT_EQ(definitions.size(), 2);
+
+  // Look the entries up by key rather than by position.
+  EXPECT_EQ(definitions[0]["district_ids"].as<std::vector<int>>(), (std::vector<int>{4, 12, 13}));
+  EXPECT_EQ(definitions[0]["therapy_ids"].as<std::vector<int>>(),
+            (std::vector<int>{6, 8, 2, 0, 12, 14, 5}));
+  EXPECT_EQ(definitions[1]["distribution"].as<std::vector<double>>(),
+            (std::vector<double>{0.5, 0.5}));
+
+  // The keys themselves must survive, which is the part a sequence loses.
+  std::vector<int> keys;
+  for (const auto &element : definitions) { keys.push_back(element.first.as<int>()); }
+  EXPECT_EQ(keys, (std::vector<int>{0, 1}));
+}
+
+TEST_F(StrategyParametersTest, DistrictMftDefinitionsSurviveRoundTrip) {
+  // decode -> encode -> decode must preserve every district assignment. This is
+  // the property that was broken: the first encode dropped `definitions`
+  // entirely and the second decode produced an empty map.
+  StrategyParameters first;
+  ASSERT_TRUE(YAML::convert<StrategyParameters>::decode(make_district_mft_node(), first));
+
+  const YAML::Node encoded = YAML::convert<StrategyParameters>::encode(first);
+
+  StrategyParameters second;
+  ASSERT_TRUE(YAML::convert<StrategyParameters>::decode(encoded, second));
+
+  const auto &before = first.get_strategy_db_raw().at(0).get_definitions();
+  const auto &after = second.get_strategy_db_raw().at(0).get_definitions();
+  ASSERT_EQ(after.size(), before.size());
+  for (const auto &[key, definition] : before) {
+    ASSERT_TRUE(after.contains(key)) << "definition " << key << " lost in round trip";
+    EXPECT_EQ(after.at(key).district_ids, definition.district_ids);
+    EXPECT_EQ(after.at(key).therapy_ids, definition.therapy_ids);
+    EXPECT_EQ(after.at(key).distribution, definition.distribution);
+  }
+}
+
+TEST_F(StrategyParametersTest, NonDistrictStrategiesOmitDefinitionsKey) {
+  // The fixture strategy is an MFT with no definitions, so the key must not
+  // appear at all rather than encoding as an empty map.
+  const YAML::Node encoded = YAML::convert<StrategyParameters>::encode(strategy_parameters);
+  EXPECT_FALSE(encoded["strategy_db"][0]["definitions"]);
+  EXPECT_TRUE(strategy_parameters.get_strategy_db_raw().at(0).get_definitions().empty());
+}
+
+TEST_F(StrategyParametersTest, EncodeStrategyDbAsMapNotSequence) {
+  // Regression guard for the encode defect that DistrictMftDefinitionsSurviveRoundTrip
+  // exposed. This applies to every strategy, not just DistrictMFT: the fixture
+  // strategy is a plain MFT and its key must survive encoding too.
+  const YAML::Node encoded = YAML::convert<StrategyParameters>::encode(strategy_parameters);
+
+  ASSERT_TRUE(encoded["strategy_db"].IsMap());
+  ASSERT_FALSE(encoded["strategy_db"].IsSequence());
+
+  std::vector<int> keys;
+  for (const auto &element : encoded["strategy_db"]) { keys.push_back(element.first.as<int>()); }
+  EXPECT_EQ(keys, (std::vector<int>{0}));
+}
+
+TEST_F(StrategyParametersTest, EncodedStrategyParametersAreDecodable) {
+  // The narrowest statement of the bug: encode() produced something decode()
+  // could not read back, so the two halves of the conversion disagreed.
+  const YAML::Node encoded = YAML::convert<StrategyParameters>::encode(strategy_parameters);
+
+  StrategyParameters round_tripped;
+  ASSERT_NO_THROW(YAML::convert<StrategyParameters>::decode(encoded, round_tripped));
+  EXPECT_EQ(round_tripped.get_initial_strategy_id(),
+            strategy_parameters.get_initial_strategy_id());
+  ASSERT_TRUE(round_tripped.get_strategy_db_raw().contains(0));
+  EXPECT_EQ(round_tripped.get_strategy_db_raw().at(0).get_name(),
+            strategy_parameters.get_strategy_db_raw().at(0).get_name());
+  EXPECT_EQ(round_tripped.get_strategy_db_raw().at(0).get_therapy_ids(),
+            strategy_parameters.get_strategy_db_raw().at(0).get_therapy_ids());
+}

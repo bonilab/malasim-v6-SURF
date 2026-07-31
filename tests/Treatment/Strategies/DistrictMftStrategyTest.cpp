@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "Treatment/Strategies/DistrictMftStrategy.h"
 #include "Treatment/Therapies/Therapy.h"
@@ -56,7 +58,7 @@ protected:
   // Helper to create MFT strategy for a district
   std::unique_ptr<DistrictMftStrategy::MftStrategy> create_district_strategy(
       const std::vector<int>& therapy_ids, 
-      const std::vector<float>& percentages) {
+      const std::vector<double>& percentages) {
     
     auto dist_strategy = std::make_unique<DistrictMftStrategy::MftStrategy>();
     dist_strategy->therapies = therapy_ids;
@@ -86,7 +88,7 @@ TEST_F(DistrictMftStrategyTest, AddTherapyThrowsException) {
 TEST_F(DistrictMftStrategyTest, SetDistrictStrategy) {
   // Create district strategy 1
   std::vector<int> therapy_ids1 = {therapy1->get_id(), therapy2->get_id()};
-  std::vector<float> percentages1 = {0.7f, 0.3f};
+  std::vector<double> percentages1 = {0.7, 0.3};
   auto district_strategy1 = create_district_strategy(therapy_ids1, percentages1);
   
   // Set district strategy for district 0
@@ -96,7 +98,7 @@ TEST_F(DistrictMftStrategyTest, SetDistrictStrategy) {
   
   // Create district strategy 2
   std::vector<int> therapy_ids2 = {therapy2->get_id(), therapy3->get_id()};
-  std::vector<float> percentages2 = {0.4f, 0.6f};
+  std::vector<double> percentages2 = {0.4, 0.6};
   auto district_strategy2 = create_district_strategy(therapy_ids2, percentages2);
   
   // Set district strategy for district 1
@@ -106,7 +108,7 @@ TEST_F(DistrictMftStrategyTest, SetDistrictStrategy) {
 TEST_F(DistrictMftStrategyTest, SetDistrictStrategyTwiceThrowsException) {
   // Create district strategy
   std::vector<int> therapy_ids = {therapy1->get_id(), therapy2->get_id()};
-  std::vector<float> percentages = {0.7f, 0.3f};
+  std::vector<double> percentages = {0.7, 0.3};
   auto district_strategy1 = create_district_strategy(therapy_ids, percentages);
   
   // Set district strategy for district 0
@@ -120,7 +122,7 @@ TEST_F(DistrictMftStrategyTest, SetDistrictStrategyTwiceThrowsException) {
 TEST_F(DistrictMftStrategyTest, SetInvalidDistrictThrowsException) {
   // Create district strategy
   std::vector<int> therapy_ids = {therapy1->get_id(), therapy2->get_id()};
-  std::vector<float> percentages = {0.7f, 0.3f};
+  std::vector<double> percentages = {0.7, 0.3};
   auto district_strategy = create_district_strategy(therapy_ids, percentages);
   
   // Try to set for an invalid district (negative ID)
@@ -139,13 +141,13 @@ TEST_F(DistrictMftStrategyTest, GetTherapyForPerson) {
   // Set up district strategies first
   // District 0 strategy
   std::vector<int> therapy_ids0 = {therapy1->get_id(), therapy2->get_id()};
-  std::vector<float> percentages0 = {1.0f, 0.0f}; // Always select therapy1 for determinism
+  std::vector<double> percentages0 = {1.0, 0.0}; // Always select therapy1 for determinism
   auto district_strategy0 = create_district_strategy(therapy_ids0, percentages0);
   strategy->set_district_strategy(1, std::move(district_strategy0));
 
   // District 1 strategy
   std::vector<int> therapy_ids1 = {therapy2->get_id(), therapy3->get_id()};
-  std::vector<float> percentages1 = {1.0f, 0.0f}; // Always select therapy2 for determinism
+  std::vector<double> percentages1 = {1.0, 0.0}; // Always select therapy2 for determinism
   auto district_strategy1 = create_district_strategy(therapy_ids1, percentages1);
   strategy->set_district_strategy(2, std::move(district_strategy1));
 
@@ -166,4 +168,99 @@ TEST_F(DistrictMftStrategyTest, LifecycleMethods) {
   EXPECT_NO_THROW(strategy->update_end_of_time_step());
   EXPECT_NO_THROW(strategy->adjust_started_time_point(100));
   EXPECT_NO_THROW(strategy->monthly_update());
+}
+
+TEST_F(DistrictMftStrategyTest, GetTherapyThrowsForUnassignedDistrict) {
+  // No district has been given an MFT in this test, so the lookup must report
+  // the problem rather than dereferencing a null entry. The previous
+  // implementation indexed the map with operator[], which inserts a null entry
+  // for an unexpected id and then dereferences it.
+  const auto district =
+      Model::get_spatial_data()->get_admin_unit("district", person1->get_location());
+
+  try {
+    strategy->get_therapy(person1.get());
+    FAIL() << "Expected std::runtime_error for a district with no MFT assigned";
+  } catch (const std::runtime_error &ex) {
+    EXPECT_NE(std::string(ex.what()).find(std::to_string(district)), std::string::npos)
+        << "message should name the offending district: " << ex.what();
+  }
+}
+
+TEST_F(DistrictMftStrategyTest, GetTherapyDoesNotThrowWhenDistributionUnderflows) {
+  // The cumulative scan can run past the end of the distribution when the
+  // shares accumulate to slightly less than 1.0. That used to throw and abort
+  // the whole simulation. With float shares the residual was around 1.5e-8, so
+  // over the hundreds of millions of treatments in a national-scale run this
+  // was a live crash risk rather than a theoretical one.
+  //
+  // A distribution summing to 0.5 exaggerates the same condition so it fires on
+  // roughly half of the draws instead of one in 10^8.
+  const auto district =
+      Model::get_spatial_data()->get_admin_unit("district", person1->get_location());
+
+  std::vector<int> therapy_ids = {therapy1->get_id(), therapy2->get_id()};
+  std::vector<double> percentages = {0.25, 0.25};
+  strategy->set_district_strategy(district, create_district_strategy(therapy_ids, percentages));
+
+  for (int i = 0; i < 1000; i++) {
+    Therapy* selected = nullptr;
+    ASSERT_NO_THROW(selected = strategy->get_therapy(person1.get()));
+    ASSERT_NE(selected, nullptr);
+    EXPECT_TRUE(selected->get_id() == therapy1->get_id()
+                || selected->get_id() == therapy2->get_id())
+        << "selection fell outside the configured therapy list";
+  }
+}
+
+TEST_F(DistrictMftStrategyTest, GetTherapyRespectsDistrictSpecificDistribution) {
+  // A deterministic distribution proves the per-district lookup actually
+  // resolves through SpatialData rather than returning an arbitrary therapy.
+  const auto district =
+      Model::get_spatial_data()->get_admin_unit("district", person1->get_location());
+
+  std::vector<int> therapy_ids = {therapy1->get_id(), therapy2->get_id()};
+  std::vector<double> percentages = {1.0, 0.0};
+  strategy->set_district_strategy(district, create_district_strategy(therapy_ids, percentages));
+
+  for (int i = 0; i < 100; i++) {
+    EXPECT_EQ(strategy->get_therapy(person1.get())->get_id(), therapy1->get_id());
+  }
+}
+
+TEST_F(DistrictMftStrategyTest, GetTherapyToleratesRepeatedLookups) {
+  // The lookup path was changed from a std::map keyed by district id plus a
+  // string-keyed admin level lookup to two direct vector indexes. Hammer it to
+  // confirm the cached level id resolves the same district every time.
+  const auto district =
+      Model::get_spatial_data()->get_admin_unit("district", person1->get_location());
+
+  std::vector<int> therapy_ids = {therapy1->get_id(), therapy2->get_id()};
+  std::vector<double> percentages = {1.0, 0.0};
+  strategy->set_district_strategy(district, create_district_strategy(therapy_ids, percentages));
+
+  for (int i = 0; i < 10000; i++) {
+    ASSERT_EQ(strategy->get_therapy(person1.get())->get_id(), therapy1->get_id());
+  }
+}
+
+TEST_F(DistrictMftStrategyTest, DistinctDistrictsKeepDistinctStrategies) {
+  // Guards against the vector being sized or indexed incorrectly after the
+  // switch away from std::map.
+  const auto district1 =
+      Model::get_spatial_data()->get_admin_unit("district", person1->get_location());
+  const auto district2 =
+      Model::get_spatial_data()->get_admin_unit("district", person2->get_location());
+
+  if (district1 == district2) {
+    GTEST_SKIP() << "test persons resolve to the same district in this fixture";
+  }
+
+  strategy->set_district_strategy(
+      district1, create_district_strategy({therapy1->get_id(), therapy2->get_id()}, {1.0, 0.0}));
+  strategy->set_district_strategy(
+      district2, create_district_strategy({therapy2->get_id(), therapy3->get_id()}, {1.0, 0.0}));
+
+  EXPECT_EQ(strategy->get_therapy(person1.get())->get_id(), therapy1->get_id());
+  EXPECT_EQ(strategy->get_therapy(person2.get())->get_id(), therapy2->get_id());
 }

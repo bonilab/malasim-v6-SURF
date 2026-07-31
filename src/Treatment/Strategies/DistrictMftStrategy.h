@@ -24,7 +24,7 @@ public:
   // The basic structure of an MFT
   struct MftStrategy {
     std::vector<int> therapies;
-    std::vector<float> percentages;
+    std::vector<double> percentages;
   };
 
   // Override the method for IStrategy and throw an error if called.
@@ -58,7 +58,15 @@ public:
   void update_end_of_time_step() override {}
 
 private:
-  std::map<int, std::unique_ptr<MftStrategy>> district_strategies_;
+  // District ids are dense over [0, max_unit_id], so a vector indexed directly
+  // by district id replaces the std::map that used to back this. get_therapy is
+  // on the per-treatment hot path and a tree lookup there is not worth the
+  // handful of bytes a dense vector wastes on unused low ids.
+  std::vector<std::unique_ptr<MftStrategy>> district_strategies_;
+
+  // Resolved once in the constructor. Looking the level up by name on every
+  // call costs a std::string comparison against the admin level map.
+  int district_level_id_{-1};
 };
 
 #endif

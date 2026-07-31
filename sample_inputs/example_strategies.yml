@@ -101,3 +101,19 @@ strategy_parameters:
       tf_threshold: 0.1
       replacement_fraction: 0.1
       replacement_duration: 0
+    17:
+      name: AngolaDistrictMFT-2021
+      type: DistrictMFT
+      definitions:
+        0:
+          district_ids: [ 4, 12, 13, 15, 16, 18 ]
+          therapy_ids: [ 6, 8, 2, 0, 12, 14, 5 ]
+          distribution: [ 0.765, 0.085, 0.00225, 0.06, 0.00075, 0.027, 0.06 ]
+        1:
+          district_ids: [ 2, 7, 17 ]
+          therapy_ids: [ 6, 8, 2, 0, 12, 14, 5 ]
+          distribution: [ 0.765, 0.085, 0.0045, 0.063, 0.015, 0.006, 0.0615 ]
+        2:
+          district_ids: [ 1, 3, 5, 6, 8, 9, 10, 11, 14 ]
+          therapy_ids: [ 6, 8, 2, 0, 12, 14, 5 ]
+          distribution: [ 0.765, 0.085, 0.0135, 0.0585, 0.0045, 0.024, 0.0495 ]

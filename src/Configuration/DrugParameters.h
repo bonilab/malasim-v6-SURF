@@ -116,7 +116,14 @@ template <>
 struct convert<DrugParameters> {
   static Node encode(const DrugParameters &rhs) {
     Node node;
-    for (const auto &[key, value] : rhs.get_drug_db_raw()) { node["drug_db"][key] = value; }
+    // NOTE: force_insert, not node["drug_db"][key]. An integer key through
+    // operator[] on an empty node builds a sequence rather than a map, and
+    // decode() below iterates this as a map and reads element.first.
+    Node drug_db_node;
+    for (const auto &[key, value] : rhs.get_drug_db_raw()) {
+      drug_db_node.force_insert(key, value);
+    }
+    node["drug_db"] = drug_db_node;
     return node;
   }
 

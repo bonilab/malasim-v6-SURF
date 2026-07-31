@@ -21,6 +21,14 @@ public:
   // Inner class: StrategyInfo
   class StrategyInfo {
   public:
+    // One entry of a DistrictMFT strategy's `definitions` map: a group of
+    // districts that share a therapy mix.
+    struct DistrictMftDefinition {
+      std::vector<int> district_ids;
+      std::vector<int> therapy_ids;
+      std::vector<double> distribution;
+    };
+
     // Getters and Setters
     [[nodiscard]] const std::string &get_name() const { return name_; }
     void set_name(const std::string &value) { name_ = value; }
@@ -111,6 +119,13 @@ public:
       peak_public_share_by_location_ = value;
     }
 
+    [[nodiscard]] const std::map<int, DistrictMftDefinition> &get_definitions() const {
+      return definitions_;
+    }
+    void set_definitions(const std::map<int, DistrictMftDefinition> &value) {
+      definitions_ = value;
+    }
+
   private:
     std::string name_;
     std::string type_;
@@ -133,6 +148,8 @@ public:
     double peak_public_share_ = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> start_public_share_by_location_;
     std::vector<double> peak_public_share_by_location_;
+    // Only populated for DistrictMFT strategies.
+    std::map<int, DistrictMftDefinition> definitions_;
   };
 
   // Inner class: MassDrugAdministration
@@ -266,6 +283,24 @@ struct convert<StrategyParameters::StrategyInfo> {
       node["start_public_share_by_location"] = rhs.get_start_public_share_by_location();
     if (!rhs.get_peak_public_share_by_location().empty())
       node["peak_public_share_by_location"] = rhs.get_peak_public_share_by_location();
+    // DistrictMFT definitions. Without this the strategy round-trips as name
+    // and type only, silently losing every district-to-therapy assignment.
+    if (!rhs.get_definitions().empty()) {
+      Node definitions_node;
+      for (const auto &[key, definition] : rhs.get_definitions()) {
+        Node definition_node;
+        definition_node["district_ids"] = definition.district_ids;
+        definition_node["therapy_ids"] = definition.therapy_ids;
+        definition_node["distribution"] = definition.distribution;
+        // NOTE: force_insert, not operator[]. Assigning through operator[] with
+        // an integer key on an empty node makes yaml-cpp build a *sequence* and
+        // append, discarding the keys. The decode side iterates this as a map
+        // and reads element.first, so a sequence throws "invalid node; this may
+        // result from using a map iterator as a sequence iterator".
+        definitions_node.force_insert(key, definition_node);
+      }
+      node["definitions"] = definitions_node;
+    }
     return node;
   }
 
@@ -311,6 +346,25 @@ struct convert<StrategyParameters::StrategyInfo> {
     if (node["peak_public_share_by_location"])
       rhs.set_peak_public_share_by_location(
           node["peak_public_share_by_location"].as<std::vector<double>>());
+    if (node["definitions"]) {
+      std::map<int, StrategyParameters::StrategyInfo::DistrictMftDefinition> definitions;
+      for (const auto &element : node["definitions"]) {
+        const auto key = element.first.as<int>();
+        const auto &definition_node = element.second;
+        StrategyParameters::StrategyInfo::DistrictMftDefinition definition;
+        if (definition_node["district_ids"]) {
+          definition.district_ids = definition_node["district_ids"].as<std::vector<int>>();
+        }
+        if (definition_node["therapy_ids"]) {
+          definition.therapy_ids = definition_node["therapy_ids"].as<std::vector<int>>();
+        }
+        if (definition_node["distribution"]) {
+          definition.distribution = definition_node["distribution"].as<std::vector<double>>();
+        }
+        definitions[key] = definition;
+      }
+      rhs.set_definitions(definitions);
+    }
     return true;
   }
 };
@@ -355,8 +409,15 @@ struct convert<StrategyParameters> {
     Node node;
 
     // Encode strategy_db as a map
+    //
+    // NOTE: force_insert rather than strategy_db_node[key]. With integer keys,
+    // operator[] on an empty node produces a sequence, so this encoded to a
+    // bare list and decode() then threw on element.first. That predates the
+    // DistrictMFT work; nothing exercised encode -> decode until now.
     Node strategy_db_node;
-    for (const auto &[key, value] : rhs.get_strategy_db_raw()) { strategy_db_node[key] = value; }
+    for (const auto &[key, value] : rhs.get_strategy_db_raw()) {
+      strategy_db_node.force_insert(key, value);
+    }
     node["strategy_db"] = strategy_db_node;
 
     node["initial_strategy_id"] = rhs.get_initial_strategy_id();

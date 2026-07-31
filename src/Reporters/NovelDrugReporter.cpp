@@ -17,6 +17,24 @@
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
 
+namespace {
+// Emitted in place of strategy-specific columns when the active treatment
+// strategy is not a NovelDrugIntroduction strategy. Numeric so that downstream
+// parsers reading these columns as floats keep working.
+constexpr int K_NOT_APPLICABLE = -1;
+
+// Log the mismatch once per run rather than every reporting interval.
+void warn_once_if_incompatible(bool compatible) {
+  static bool warned = false;
+  if (compatible || warned) { return; }
+  warned = true;
+  spdlog::warn(
+      "NovelDrugReporter is active but the treatment strategy is '{}', which is not a "
+      "NovelDrugIntroduction strategy. Strategy-specific columns will be reported as {}.",
+      Model::get_treatment_strategy()->name, K_NOT_APPLICABLE);
+}
+}  // namespace
+
 void NovelDrugReporter::initialize(int job_number, const std::string &path) {
   spdlog::info("NovelDrugReporter initialized with job number {}", job_number);
 
@@ -88,19 +106,30 @@ void NovelDrugReporter::monthly_report() {
       static_cast<int>(Model::get_genotype_db()->size()),
       Model::get_population()->get_person_index<PersonIndexByLocationStateAgeClass>());
 
-  ss << (dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())->is_switched
-             ? 1
-             : 0)
-     << tsv::SEP;
+  // The reporter is only meaningful when a NovelDrugIntroduction strategy is
+  // active, but nothing prevents it from being paired with another strategy
+  // (DistrictMFT, MFT, ...). Emit placeholders rather than dereferencing a null
+  // dynamic_cast result, so the column count stays stable for downstream
+  // parsers instead of the run crashing.
+  const auto* novel_strategy =
+      dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy());
+  warn_once_if_incompatible(novel_strategy != nullptr);
+
+  ss << (novel_strategy != nullptr && novel_strategy->is_switched ? 1 : 0) << tsv::SEP;
   for (const auto &tf_by_therapy : Model::get_mdc()->current_tf_by_therapy()) {
     ss << tf_by_therapy << tsv::SEP;
   }
 
   ss << Model::get_mdc()->current_tf_by_location()[0] << tsv::SEP;
 
-  ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[0]
-     << tsv::SEP;
-  ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[1];
+  const auto* nested_strategy =
+      dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy());
+  if (nested_strategy != nullptr && nested_strategy->distribution.size() >= 2) {
+    ss << nested_strategy->distribution[0] << tsv::SEP;
+    ss << nested_strategy->distribution[1];
+  } else {
+    ss << K_NOT_APPLICABLE << tsv::SEP << K_NOT_APPLICABLE;
+  }
 
   // CLOG(INFO, "monthly_reporter") << ss.str();
   spdlog::get("monthly_reporter")->info("{}", ss.str());
@@ -109,6 +138,11 @@ void NovelDrugReporter::monthly_report() {
 
 void NovelDrugReporter::after_run() {
   ss.str("");
+  // Resolved once instead of four times per location.
+  const auto* novel_strategy =
+      dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy());
+  warn_once_if_incompatible(novel_strategy != nullptr);
+
   for (auto loc = 0; loc < Model::get_config()->number_of_locations(); ++loc) {
     ss << Model::get_config()->location_db()[loc].beta << tsv::SEP;
     if (Model::get_mdc()->eir_by_location_year()[loc].empty()) {
@@ -120,21 +154,15 @@ void NovelDrugReporter::after_run() {
     ss << Model::get_mdc()->cumulative_number_treatments_by_location()[loc] << tsv::SEP;
     ss << Model::get_mdc()->cumulative_tf_by_location()[loc] << tsv::SEP;
     ss << Model::get_mdc()->cumulative_clinical_episodes_by_location()[loc] << tsv::SEP;
-    ss << std::to_string(
-        dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())
-            ->newly_introduced_strategy_id)
-       << tsv::SEP;
-    ss << std::to_string(
-        dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())->tf_threshold)
-       << tsv::SEP;
-    ss << std::to_string(
-        dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())
-            ->replacement_fraction)
-       << tsv::SEP;
-    ss << std::to_string(
-        dynamic_cast<NovelDrugIntroductionStrategy*>(Model::get_treatment_strategy())
-            ->replacement_duration)
-       << tsv::SEP;
+    if (novel_strategy != nullptr) {
+      ss << std::to_string(novel_strategy->newly_introduced_strategy_id) << tsv::SEP;
+      ss << std::to_string(novel_strategy->tf_threshold) << tsv::SEP;
+      ss << std::to_string(novel_strategy->replacement_fraction) << tsv::SEP;
+      ss << std::to_string(novel_strategy->replacement_duration) << tsv::SEP;
+    } else {
+      ss << K_NOT_APPLICABLE << tsv::SEP << K_NOT_APPLICABLE << tsv::SEP << K_NOT_APPLICABLE
+         << tsv::SEP << K_NOT_APPLICABLE << tsv::SEP;
+    }
     ss << "FLT" << tsv::SEP;
     ss << "importation" << tsv::SEP;
   }

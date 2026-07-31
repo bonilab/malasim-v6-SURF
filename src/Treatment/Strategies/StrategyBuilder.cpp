@@ -24,7 +24,15 @@ StrategyBuilder::StrategyBuilder() = default;
 StrategyBuilder::~StrategyBuilder() = default;
 
 std::unique_ptr<IStrategy> StrategyBuilder::build(const YAML::Node &ns, const int &strategy_id) {
-  const auto type = IStrategy::strategy_type_map[ns["type"].as<std::string>()];
+  const auto type_name = ns["type"].as<std::string>();
+  // NOTE: do not use operator[] here. std::map::operator[] default-inserts a
+  // zero-valued entry for an unrecognised name, which silently routes the
+  // strategy to StrategyType::SFT (0) instead of reporting the bad config.
+  const auto entry = IStrategy::strategy_type_map.find(type_name);
+  if (entry == IStrategy::strategy_type_map.end()) {
+    throw std::invalid_argument("Unknown strategy type in configuration: " + type_name);
+  }
+  const auto type = entry->second;
   switch (type) {
     case IStrategy::SFT:
       return build_sft_strategy(ns, strategy_id);
@@ -53,7 +61,7 @@ std::unique_ptr<IStrategy> StrategyBuilder::build(const YAML::Node &ns, const in
     case IStrategy::PublicPrivateMultiLocation:
       return build_public_private_multi_location_strategy(ns, strategy_id);
     default:
-      return nullptr;
+      throw std::invalid_argument("Strategy type has no builder registered: " + type_name);
   }
 }
 
@@ -414,8 +422,9 @@ std::unique_ptr<IStrategy> StrategyBuilder::build_district_mft_strategy(const YA
         spdlog::error("Drug id should not be less than zero, reading {}", ndx);
         throw std::invalid_argument("Drug id should not be less than zero.");
       }
-      if (id > Model::get_therapy_db().size()) {
-        spdlog::error("Drug id exceeds count of known drugs, reading {}", ndx);
+      if (static_cast<std::size_t>(id) >= Model::get_therapy_db().size()) {
+        spdlog::error("Drug id {} exceeds count of known drugs ({}), reading {}", id,
+                      Model::get_therapy_db().size(), ndx);
         throw std::invalid_argument("Drug id exceeds count of known drugs.");
       }
       template_mft->therapies.push_back(id);
@@ -425,14 +434,10 @@ std::unique_ptr<IStrategy> StrategyBuilder::build_district_mft_strategy(const YA
     // sense
     auto sum = 0.0;
     for (auto ndy = 0; ndy < child["distribution"].size(); ndy++) {
-      auto percent = child["distribution"][ndy].as<float>();
-      if (percent <= 0.0) {
-        spdlog::error(
-            "Distribution percentage cannot be less than or equal to "
-            "zero, reading {}",
-            ndx);
-        throw std::invalid_argument(
-            "Distribution percentage cannot be less than or equal to zero.");
+      auto percent = child["distribution"][ndy].as<double>();
+      if (!std::isfinite(percent) || percent < 0.0) {
+        spdlog::error("Distribution percentage must be finite and non-negative, reading {}", ndx);
+        throw std::invalid_argument("Distribution percentage must be finite and non-negative.");
       }
       if (percent > 1.0) {
         spdlog::error("Distribution percentage cannot be greater than 100%, reading {}", ndx);
@@ -441,8 +446,13 @@ std::unique_ptr<IStrategy> StrategyBuilder::build_district_mft_strategy(const YA
       sum += percent;
       template_mft->percentages.push_back(percent);
     }
-    if (static_cast<int>(sum) != 1) {
-      spdlog::error("Distribution percentage sum does not equal 100%, reading  {}", ndx);
+    // NOTE: the sum is compared against 1.0 with a tolerance. Truncating with
+    // static_cast<int> rejected every valid distribution, since an accumulation
+    // of decimal fractions in binary floating point essentially never lands
+    // exactly on 1.0 (e.g. 0.765 + 0.085 + ... accumulates to 0.99999999...).
+    constexpr double distribution_tolerance = 1e-6;
+    if (std::fabs(sum - 1.0) > distribution_tolerance) {
+      spdlog::error("Distribution percentage sum is {}, expected 1.0, reading {}", sum, ndx);
       throw std::invalid_argument("Distribution percentage sum must equal 100%.");
     }
 

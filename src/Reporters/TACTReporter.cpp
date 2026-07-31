@@ -17,6 +17,12 @@
 #include "Treatment/ITreatmentCoverageModel.h"
 #include "Utility/ReporterUtils.h"
 
+namespace {
+// Emitted in place of the nested-MFT distribution columns when the active
+// treatment strategy does not carry one.
+constexpr int K_NOT_APPLICABLE = -1;
+}  // namespace
+
 void TACTReporter::initialize(int job_number, const std::string &path) {
   spdlog::info("TACTReporter initialized with job number {}", job_number);
 
@@ -95,10 +101,19 @@ void TACTReporter::monthly_report() {
 
   ss << Model::get_mdc()->current_tf_by_location()[0] << tsv::SEP;
 
-  if (Model::get_treatment_strategy()->get_type() == IStrategy::NestedMFT) {
-    ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[0]
-       << tsv::SEP;
-    ss << dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy())->distribution[1];
+  // The type guard here already prevented a null dereference, but skipping the
+  // columns entirely made the row width depend on the active strategy, which
+  // breaks fixed-column parsing of the TSV. Emit placeholders instead.
+  //
+  // NovelDrugIntroductionStrategy derives from NestedMFTStrategy but reports a
+  // different type, so the dynamic_cast rather than the type tag decides here.
+  const auto* nested_strategy =
+      dynamic_cast<NestedMFTStrategy*>(Model::get_treatment_strategy());
+  if (nested_strategy != nullptr && nested_strategy->distribution.size() >= 2) {
+    ss << nested_strategy->distribution[0] << tsv::SEP;
+    ss << nested_strategy->distribution[1];
+  } else {
+    ss << K_NOT_APPLICABLE << tsv::SEP << K_NOT_APPLICABLE;
   }
 
   spdlog::get("monthly_reporter")->info("{}", ss.str());
