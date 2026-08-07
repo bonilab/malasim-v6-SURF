@@ -15,7 +15,7 @@ public:
     int verbosity{0};
     int job_number{0};
     int replicate{1};
-    std::string list_reporters{"lr"};
+    bool list_reporters{false};
     std::string help{"h"};
     bool dump_movement_matrix{false};
     bool record_individual_movement{false};
@@ -102,9 +102,12 @@ public:
       } else {
         create_cli_options(app, cli_input_);
         app.parse(argc, argv);
-        validate_config(cli_input_);
+        // `-l` only lists reporters, so skip the input-file validation.
+        if (!cli_input_.list_reporters) { validate_config(cli_input_); }
       }
-      app.parse(argc, argv);
+      // NOTE: do NOT parse a second time here. CLI11 appends to vector-bound
+      // options on each parse, which duplicated every DxG list argument
+      // (e.g. `-t 0 1 2` became `0 1 2 0 1 2`).
     } catch (const CLI::CallForHelp &e) {
       std::cout << app.help();
       exit(0);
@@ -133,6 +136,7 @@ public:
   }
   [[nodiscard]] bool get_record_movement() const { return cli_input_.record_movement; }
   [[nodiscard]] bool get_print_memory_stats() const { return cli_input_.print_memory_stats; }
+  [[nodiscard]] bool get_list_reporters() const { return cli_input_.list_reporters; }
   [[nodiscard]] DxGAppInput get_dxg_app_input() { return dxg_input_; }
 
   static void create_cli_options(CLI::App &app, MaSimAppInput &input) {
@@ -140,7 +144,10 @@ public:
 
     app.add_option("-o,--output", input.output_path, "Output path. Default: `./`.");
 
-    app.add_option("-r,--reporter", input.reporter, "Reporter type. Default: `MonthlyReporter`.");
+    app.add_option("-r,--reporter", input.reporter,
+                   "Reporter type(s), comma separated, e.g. "
+                   "`-r SQLiteMonthlyReporter,SQLiteValidationReporter`. "
+                   "Default: `SQLiteMonthlyReporter`.");
 
     app.add_option("-v,--verbosity", input.verbosity,
                    "Sets the verbosity of the logging. Default: 0");
@@ -152,7 +159,7 @@ public:
     app.add_flag("-d,--dump", input.dump_movement_matrix,
                  "Dump the movement matrix as calculated.");
 
-    app.add_option("-l,--list", input.list_reporters, "List the possible reporters.");
+    app.add_flag("-l,--list", input.list_reporters, "List the possible reporters and exit.");
 
     app.add_flag("--im", input.record_individual_movement, "Record individual movement data.");
 

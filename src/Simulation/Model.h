@@ -46,6 +46,10 @@ private:
   Model() = default;
   ~Model() = default;
 
+  // Parses cli_input_.reporter (a comma separated list) and registers each
+  // reporter. Returns false if the option was given but nothing valid resolved.
+  bool setup_reporters();
+
   bool is_initialized_{false};
 
   utils::Cli::MaSimAppInput cli_input_;
