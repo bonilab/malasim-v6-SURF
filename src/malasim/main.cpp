@@ -7,6 +7,7 @@
 #include "Population/ClonalParasitePopulation.h"
 #include "Population/Person/Person.h"
 #include "Population/Population.h"
+#include "Reporters/Reporter.h"
 
 #include <sys/resource.h>
 
@@ -30,6 +31,15 @@ int main(int argc, char** argv) {
   } catch (...) {
     spdlog::error("Argument parsing failed. Exiting.");
     return 1;
+  }
+
+  if (Model::get_cli_input().list_reporters) {
+    std::cout << "Available reporters (-r, comma separated for more than one):\n";
+    for (const auto &name : Reporter::available_reporters()) {
+      std::cout << "  " << name << '\n';
+    }
+    spdlog::drop_all();
+    return 0;
   }
 
   if (Model::get_cli_input().print_memory_stats) {

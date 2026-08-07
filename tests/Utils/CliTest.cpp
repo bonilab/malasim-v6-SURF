@@ -186,15 +186,44 @@ TEST_F(CliValidateTest, CreateCliOptionsParsesAllMovementAndOutputFlags) {
   CLI::App app;
   utils::Cli::MaSimAppInput input;
   utils::Cli::create_cli_options(app, input);
-  ASSERT_NO_THROW(app.parse(std::string{
-      "--dump --list reporters --im --mc --md --memory-stats --replicate 3"}));
+  ASSERT_NO_THROW(app.parse(
+      std::string{"--dump --list --im --mc --md --memory-stats --replicate 3"}));
   EXPECT_TRUE(input.dump_movement_matrix);
-  EXPECT_EQ(input.list_reporters, "reporters");
+  // `--list` is a flag (print the reporter names and exit); it takes no value.
+  EXPECT_TRUE(input.list_reporters);
   EXPECT_TRUE(input.record_individual_movement);
   EXPECT_TRUE(input.record_cell_movement);
   EXPECT_TRUE(input.record_district_movement);
   EXPECT_TRUE(input.print_memory_stats);
   EXPECT_EQ(input.replicate, 3);
+}
+
+TEST_F(CliValidateTest, ListReportersDefaultsToFalse) {
+  CLI::App app;
+  utils::Cli::MaSimAppInput input;
+  utils::Cli::create_cli_options(app, input);
+  ASSERT_NO_THROW(app.parse(std::string{"-i in.yml"}));
+  EXPECT_FALSE(input.list_reporters);
+}
+
+// `-r` takes a comma separated list; the CLI layer keeps it as the raw string
+// and Model::setup_reporters() is responsible for splitting it.
+TEST_F(CliValidateTest, ReporterOptionKeepsCommaSeparatedListVerbatim) {
+  CLI::App app;
+  utils::Cli::MaSimAppInput input;
+  utils::Cli::create_cli_options(app, input);
+  ASSERT_NO_THROW(
+      app.parse(std::string{"-r SQLiteMonthlyReporter,SQLiteValidationReporter"}));
+  EXPECT_EQ(input.reporter, "SQLiteMonthlyReporter,SQLiteValidationReporter");
+}
+
+TEST_F(CliParseTest, ParseCommaSeparatedReporters) {
+  const char* argv[] = {"malasim", "-r", "SQLiteMonthlyReporter,SQLiteValidationReporter"};
+  int argc = 3;
+
+  auto cli_input = utils::Cli::parse_args(argc, const_cast<char**>(argv));
+
+  EXPECT_EQ(cli_input.reporter, "SQLiteMonthlyReporter,SQLiteValidationReporter");
 }
 
 TEST_F(CliValidateTest, CreateDxgOptionsParsesCalibrationAndPopulationFlags) {
