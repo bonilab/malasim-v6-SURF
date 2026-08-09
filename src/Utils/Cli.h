@@ -93,8 +93,22 @@ public:
 
     try {
       if (isDxG) {
+        // The mode selector is detected before constructing the mode-specific
+        // app; register it as well so the original marker is accepted by
+        // CLI11 instead of being reported as an unknown argument.
+        app.add_flag("--DxG", isDxG, "Run the DxG application mode");
         create_dxg_cli_options(app, dxg_input_);
-        app.parse(argc, argv);
+        // Historical launchers also pass the mode as a bare `DxG=1` or
+        // `DxG=true` token. Those tokens are mode selectors, not CLI11
+        // options, so remove them before parsing the remaining arguments.
+        std::vector<char*> dxg_argv;
+        dxg_argv.reserve(static_cast<size_t>(argc));
+        for (int i = 0; i < argc; ++i) {
+          const std::string arg = argv[i];
+          if (arg == "DxG=1" || arg == "DxG=true") { continue; }
+          dxg_argv.push_back(argv[i]);
+        }
+        app.parse(static_cast<int>(dxg_argv.size()), dxg_argv.data());
 
         // Sync so Model::initialize() finds the right file
         cli_input_.input_path = dxg_input_.input_file;

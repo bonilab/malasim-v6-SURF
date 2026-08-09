@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Reporters/ValidationReporter.h"
+#include "Population/Person/Person.h"
 #include "Simulation/Model.h"
 #include "Utils/Cli.h"
 #include "Utils/Logger.h"
@@ -51,4 +52,19 @@ TEST_F(ValidationReporterTest, RunsRecombinationReporterLifecycle) {
   EXPECT_NO_THROW(reporter.begin_time_step());
   EXPECT_NO_THROW(reporter.monthly_report());
   EXPECT_NO_THROW(reporter.after_run());
+}
+
+TEST_F(ValidationReporterTest, ReportsNonZeroPopulationAndTreatmentBranches) {
+  auto* mdc = Model::get_mdc();
+  mdc->popsize_by_location_hoststate()[0][Person::ASYMPTOMATIC] = 2;
+  mdc->popsize_by_location_hoststate_age_class()[0][Person::ASYMPTOMATIC][0] = 1;
+  mdc->number_of_clinical_by_location_age_group()[0][0] = 1;
+  mdc->monthly_number_of_clinical_episode_by_location()[0] = 1;
+  mdc->number_of_treatments_with_therapy_id()[0] = 2;
+  mdc->number_of_treatments_success_with_therapy_id()[0] = 1;
+  mdc->number_of_treatments_fail_with_therapy_id()[0] = 1;
+
+  ValidationReporter reporter;
+  ASSERT_NO_THROW(reporter.initialize(0, "."));
+  ASSERT_NO_THROW(reporter.monthly_report());
 }

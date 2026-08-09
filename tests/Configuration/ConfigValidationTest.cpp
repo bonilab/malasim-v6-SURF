@@ -133,6 +133,20 @@ TEST_F(ConfigValidationTest, RejectsInvalidEpidemiologicalParameters) {
   EXPECT_THROW(config()->validate_epidemiological_transmission_parameters(), std::invalid_argument);
 }
 
+TEST_F(ConfigValidationTest, RejectsInvalidMinimumDosingDaysAndEc50Patterns) {
+  auto& epidemiology = config()->epidemiological_parameters_;
+  epidemiology.min_dosing_days_ = -1;
+  EXPECT_THROW(config()->validate_epidemiological_treatment_parameters(10), std::invalid_argument);
+
+  epidemiology.min_dosing_days_ = 10;
+  EXPECT_THROW(config()->validate_epidemiological_treatment_parameters(10), std::invalid_argument);
+
+  auto pattern = GenotypeParameters::OverrideEC50Pattern{};
+  pattern.set_pattern(std::string(config()->genotype_parameters_.get_mutation_mask().size(), 'A'));
+  config()->genotype_parameters_.set_override_ec50_patterns({pattern});
+  EXPECT_THROW(config()->validate_genotype_parameters(), std::invalid_argument);
+}
+
 TEST_F(ConfigValidationTest, RejectsInvalidMosquitoAndPopulationEvents) {
   auto mosquito_config = config()->mosquito_parameters_.mosquito_config_;
   mosquito_config.mode_ = "unknown";

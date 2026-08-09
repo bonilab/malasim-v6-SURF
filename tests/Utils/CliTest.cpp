@@ -246,4 +246,72 @@ TEST_F(CliValidateTest, CreateDxgOptionsParsesCalibrationAndPopulationFlags) {
   EXPECT_EQ(input.dosing_days.size(), 2u);
 }
 
+TEST_F(CliValidateTest, ExplicitInputExposesAllAccessorsAndMutators) {
+  utils::Cli::MaSimAppInput values;
+  values.input_path = "in.yml";
+  values.output_path = "out";
+  values.reporter = "rep";
+  values.verbosity = 2;
+  values.job_number = 7;
+  values.replicate = 3;
+  values.dump_movement_matrix = true;
+  values.record_individual_movement = true;
+  values.record_cell_movement = true;
+  values.record_district_movement = true;
+  values.record_movement = true;
+  values.print_memory_stats = true;
+  values.list_reporters = true;
+  // The production type intentionally has a private destructor for singleton
+  // lifetime management; keep this explicit-constructor probe heap allocated.
+  auto* cli = new utils::Cli(values);
+
+  EXPECT_EQ(cli->get_input_path(), "in.yml");
+  EXPECT_EQ(cli->get_output_path(), "out");
+  EXPECT_EQ(cli->get_reporter(), "rep");
+  EXPECT_EQ(cli->get_verbosity(), 2);
+  EXPECT_EQ(cli->get_job_number(), 7);
+  EXPECT_EQ(cli->get_replicate(), 3);
+  EXPECT_TRUE(cli->get_dump_movement_matrix());
+  EXPECT_TRUE(cli->get_record_individual_movement());
+  EXPECT_TRUE(cli->get_record_cell_movement());
+  EXPECT_TRUE(cli->get_record_district_movement());
+  EXPECT_TRUE(cli->get_record_movement());
+  EXPECT_TRUE(cli->get_print_memory_stats());
+  EXPECT_TRUE(cli->get_list_reporters());
+
+  cli->set_input_path("changed.yml");
+  cli->set_output_path("changed-out");
+  EXPECT_EQ(cli->get_input_path(), "changed.yml");
+  EXPECT_EQ(cli->get_output_path(), "changed-out");
+  EXPECT_EQ(cli->get_dxg_app_input().population_size, 10000);
+}
+
+TEST_F(CliParseTest, ParseDxgModeSynchronizesInputAndStoresOptions) {
+  std::ofstream out("cli_dxg_input.yml");
+  out << "# temp\n";
+  out.close();
+  const char* argv[] = {"malasim", "--DxG", "-i", "cli_dxg_input.yml", "--cc",
+                        "--therapies", "1", "2"};
+  auto cli_input =
+      utils::Cli::parse_args(static_cast<int>(std::size(argv)), const_cast<char**>(argv));
+  std::remove("cli_dxg_input.yml");
+
+  EXPECT_EQ(cli_input.input_path, "cli_dxg_input.yml");
+  const auto dxg = utils::Cli::get_instance().get_dxg_app_input();
+  EXPECT_TRUE(dxg.is_crt_calibration);
+  ASSERT_EQ(dxg.therapies.size(), 2u);
+  EXPECT_EQ(dxg.therapies[0], 1);
+  EXPECT_EQ(dxg.therapies[1], 2);
+}
+
+TEST_F(CliParseTest, ParseDxgEqualsMarkerIsAccepted) {
+  std::ofstream out("cli_dxg_marker_input.yml");
+  out << "# temp\n";
+  out.close();
+  const char* argv[] = {"malasim", "DxG=true", "-i", "cli_dxg_marker_input.yml"};
+  EXPECT_NO_THROW(utils::Cli::parse_args(static_cast<int>(std::size(argv)),
+                                         const_cast<char**>(argv)));
+  std::remove("cli_dxg_marker_input.yml");
+}
+
 }  // namespace

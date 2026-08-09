@@ -236,6 +236,11 @@ bool Model::initialize() {
 void Model::release() {
   // Clean up the memory used by the model
 
+  // A released singleton must be safe to initialize again. Reset this guard
+  // before destroying the owned subsystems so run() cannot dereference stale
+  // state after release().
+  is_initialized_ = false;
+
   treatment_strategy_ = nullptr;
   second_line_strategy_ = nullptr;
   treatment_coverage_.reset();
