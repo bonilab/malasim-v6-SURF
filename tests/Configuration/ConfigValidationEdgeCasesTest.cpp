@@ -8,7 +8,7 @@
 #undef private
 
 #include "Simulation/Model.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "Environment/SeasonalEquation.h"
 #include "Environment/SeasonalRainfall.h"
 #include "Spatial/GIS/SpatialData.h"
@@ -18,7 +18,7 @@ class ConfigValidationEdgeCasesTest : public ::testing::Test {
  protected:
   void SetUp() override {
     test_fixtures::setup_test_environment();
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());

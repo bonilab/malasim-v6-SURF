@@ -4,7 +4,7 @@
 #include "Simulation/Model.h"
 #include "Treatment/Strategies/NestedMFTMultiLocationStrategy.h"
 #include "Treatment/Strategies/PublicPrivateStrategy.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "fixtures/TestFileGenerators.h"
 
 class ModifyNestedMFTEventExecutionTest : public ::testing::Test {
@@ -13,7 +13,7 @@ protected:
     test_fixtures::setup_test_environment("test_input.yml", [](YAML::Node& config) {
       config["strategy_parameters"]["initial_strategy_id"] = 13;
     });
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());
@@ -45,7 +45,7 @@ protected:
       const int id = 11;
       config["strategy_parameters"]["initial_strategy_id"] = id;
     });
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());

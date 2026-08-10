@@ -9,7 +9,7 @@
 #include "Treatment/Strategies/SFTStrategy.h"
 #include "Treatment/Strategies/StrategyBuilder.h"
 #include "Treatment/Therapies/Therapy.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "Utils/Random.h"
 #include "fixtures/TestFileGenerators.h"
 
@@ -67,7 +67,7 @@ protected:
     test_fixtures::create_test_raster_2_locations("test_travel.asc", 0.1);
 
     Model::get_instance()->release();
-    utils::Cli::MaSimAppInput input;
+    utils::MaSimAppInput input;
     input.input_path = "test_input.yml";
     Model::set_cli_input(input);
     ASSERT_TRUE(Model::get_instance()->initialize());

@@ -3,7 +3,7 @@
 #include "Events/Population/IntroduceParasitesPeriodicallyEventV2.h"
 #include "Population/Person/Person.h"
 #include "Simulation/Model.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "Utils/Index/PersonIndexByLocationStateAgeClass.h"
 #include "fixtures/TestFileGenerators.h"
 
@@ -11,7 +11,7 @@ class PopulationEventV2ExecutionTest : public ::testing::Test {
 protected:
   void SetUp() override {
     test_fixtures::setup_test_environment();
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     ASSERT_TRUE(Model::get_instance()->initialize());

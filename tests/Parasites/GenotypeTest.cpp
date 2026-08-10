@@ -44,7 +44,7 @@ protected:
           1.0;
     });
     Model::get_instance()->release();
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
     Model::get_instance()->initialize();
@@ -258,7 +258,7 @@ TEST_F(GenotypeTest, PerformCnvReversionUsesGlobalFallbackWhenGeneMultiplierMiss
         "cnv_reversion_multiplier");
   });
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();
@@ -286,7 +286,7 @@ TEST_F(GenotypeTest, PerformCnvReversionReducesThreeCopiesToTwo) {
         1.0;
   });
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();
@@ -308,7 +308,7 @@ TEST_F(GenotypeTest, PerformMutationByDrugCanIncreaseIntermediateCopyNumber) {
     config["genotype_parameters"]["pf_genotype_info"][0]["genes"][0]["max_copies"] = 3;
   });
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();
@@ -329,7 +329,7 @@ TEST_F(GenotypeTest, PerformMutationByDrugCanDecreaseIntermediateCopyNumber) {
     config["genotype_parameters"]["pf_genotype_info"][0]["genes"][0]["max_copies"] = 3;
   });
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();
@@ -350,7 +350,7 @@ TEST_F(GenotypeTest, PerformMutationByDrugAtMaximumCopyNumberStepsDown) {
     config["genotype_parameters"]["pf_genotype_info"][0]["genes"][0]["max_copies"] = 3;
   });
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();

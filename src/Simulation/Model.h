@@ -1,7 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <Utils/Cli.h>
+#include <apps/malasim/MaSimAppInput.h>
 #include <Utils/Random.h>
 
 #include <cstddef>
@@ -52,7 +52,7 @@ private:
 
   bool is_initialized_{false};
 
-  utils::Cli::MaSimAppInput cli_input_;
+  utils::MaSimAppInput cli_input_;
 
   std::unique_ptr<Config> config_{nullptr};
   std::unique_ptr<Scheduler> scheduler_{nullptr};
@@ -87,11 +87,11 @@ public:
   void yearly_update();
   void release();
 
-  static void set_cli_input(utils::Cli::MaSimAppInput cli_input) {
+  static void set_cli_input(utils::MaSimAppInput cli_input) {
     get_instance()->cli_input_ = std::move(cli_input);
   }
 
-  static const utils::Cli::MaSimAppInput& get_cli_input() {
+  static const utils::MaSimAppInput& get_cli_input() {
     return get_instance()->cli_input_;
   }
 

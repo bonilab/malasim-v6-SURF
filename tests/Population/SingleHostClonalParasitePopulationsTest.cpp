@@ -11,7 +11,7 @@
 #include "Population/Person/Person.h"
 #include "Population/SingleHostClonalParasitePopulations.h"
 #include "Simulation/Model.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "Utils/Constants.h"
 #include "fixtures/TestFileGenerators.h"
 
@@ -234,7 +234,7 @@ TEST_F(SingleHostClonalParasitePopulationsTest,
        UpdateWithDrugEffectsAndClearCuredMatchesSeparatePassesWithoutDrugs) {
   test_fixtures::setup_test_environment("test_input.yml");
   Model::get_instance()->release();
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   Model::set_cli_input(cli_input);
   Model::get_instance()->initialize();

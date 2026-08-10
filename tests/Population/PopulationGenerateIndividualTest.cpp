@@ -10,7 +10,7 @@
 #include "Treatment/Therapies/DrugType.h"
 #include "Treatment/Therapies/MACTherapy.h"
 #include "Treatment/Therapies/SCTherapy.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "Utils/Constants.h"
 #include "fixtures/TestFileGenerators.h"
 
@@ -21,7 +21,7 @@ protected:
     test_fixtures::create_complete_test_environment();
 
     // Set the input path to the generated test config file
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     Model::set_cli_input(cli_input);
 

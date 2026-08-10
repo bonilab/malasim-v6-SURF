@@ -1,34 +1,19 @@
 # Find Google Test
 find_package(GTest REQUIRED)
 
+include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/tests)
 
 file(GLOB_RECURSE MALASIM_TEST_SOURCES
-  "*.cpp"
-  "helpers/*.cpp"
-  "Core/Random/*.cpp"
-  "Core/Scheduler/*.cpp"
-  "Core/Scheduler/EventManager/*.cpp"
-  "Configuration/*.cpp"
-  "Environment/*.cpp"
-  "GIS/SpatialDataTest/*.cpp"
-  "GIS/AdminLevelManagerTest/*.cpp"
-  "GIS/SpatialDataTest/*.cpp"
-  "Population/*.cpp"
-  "Population/Person/*.cpp"
-  "Spatial/Movement/*.cpp"
-  "Treatment/*.cpp"
-  "Treatment/Therapies/*.cpp"
-  "Treatment/Strategies/*.cpp"
-  "Parasites/*.cpp"
-  "Utils/*.cpp"
-  "Reporters/*.cpp"
-  "main.cpp"
+  CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 
 # Add test executable
 add_executable(malasim_test
+  ${PROJECT_SOURCE_DIR}/src/apps/efficacy_estimator/DxGCli.cpp
+  ${PROJECT_SOURCE_DIR}/src/apps/malasim/MaSimCli.cpp
   ${MALASIM_TEST_SOURCES}
 )
 

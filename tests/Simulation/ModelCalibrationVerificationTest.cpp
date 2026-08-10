@@ -2,7 +2,7 @@
 
 #include "Simulation/Model.h"
 #include "Treatment/LinearTCM.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "fixtures/TestFileGenerators.h"
 
 class ModelCalibrationVerificationTest : public ::testing::Test {
@@ -31,7 +31,7 @@ TEST_F(ModelCalibrationVerificationTest, BeforeRunVerifiesAllCalibrationOverride
     )");
   });
 
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "Console";
   Model::set_cli_input(cli_input);
@@ -41,7 +41,7 @@ TEST_F(ModelCalibrationVerificationTest, BeforeRunVerifiesAllCalibrationOverride
 
 TEST_F(ModelCalibrationVerificationTest, ReleaseResetsInitializationGuard) {
   test_fixtures::setup_test_environment("test_input.yml");
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "Console";
   Model::set_cli_input(cli_input);
@@ -53,7 +53,7 @@ TEST_F(ModelCalibrationVerificationTest, ReleaseResetsInitializationGuard) {
 
 TEST_F(ModelCalibrationVerificationTest, RejectsUnknownAndDuplicateReporters) {
   test_fixtures::setup_test_environment("test_input.yml");
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "NoSuchReporter";
   Model::set_cli_input(cli_input);
@@ -78,7 +78,7 @@ TEST_F(ModelCalibrationVerificationTest, SQLiteReporterPersistsSelectedCalibrati
           "immune_system_parameters:midpoint": 0.8
     )");
   });
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "SQLiteMonthlyReporter";
   cli_input.output_path = ".";
@@ -97,7 +97,7 @@ TEST_F(ModelCalibrationVerificationTest, BeforeRunWarnsWhenChosenCalibrationIsMi
           "immune_system_parameters:midpoint": 0.8
     )");
   });
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "Console";
   Model::set_cli_input(cli_input);
@@ -115,7 +115,7 @@ TEST_F(ModelCalibrationVerificationTest, BeforeRunReportsNegativeOverridesAsKept
           "genotype_parameters:mutation_probability_per_locus": -1.0
     )");
   });
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "Console";
   Model::set_cli_input(cli_input);
@@ -125,7 +125,7 @@ TEST_F(ModelCalibrationVerificationTest, BeforeRunReportsNegativeOverridesAsKept
 
 TEST_F(ModelCalibrationVerificationTest, UpdatesLinearCoverageRateWhenReplacingCoverageModel) {
   test_fixtures::setup_test_environment("test_input.yml");
-  utils::Cli::MaSimAppInput cli_input;
+  utils::MaSimAppInput cli_input;
   cli_input.input_path = "test_input.yml";
   cli_input.reporter = "Console";
   Model::set_cli_input(cli_input);

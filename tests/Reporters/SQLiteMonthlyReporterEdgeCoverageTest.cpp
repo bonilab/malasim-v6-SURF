@@ -7,14 +7,14 @@
 #include "Reporters/SQLiteMonthlyReporter.h"
 #include "Reporters/Reporter.h"
 #include "Simulation/Model.h"
-#include "Utils/Cli.h"
+#include "apps/malasim/MaSimAppInput.h"
 #include "fixtures/TestFileGenerators.h"
 
 class SQLiteMonthlyReporterEdgeCoverageTest : public ::testing::Test {
  protected:
   void SetUp() override {
     test_fixtures::setup_test_environment("test_input.yml");
-    utils::Cli::MaSimAppInput cli_input;
+    utils::MaSimAppInput cli_input;
     cli_input.input_path = "test_input.yml";
     cli_input.output_path = ".";
     cli_input.reporter = "SQLiteMonthlyReporter";
