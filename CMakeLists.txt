@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 # Include vcpkg
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -10,6 +10,7 @@ endif()
 project(malasim)
 
 option(ENABLE_COVERAGE "Enable code coverage support" OFF)
+option(ENABLE_PCH "Enable precompiled headers" ON)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)

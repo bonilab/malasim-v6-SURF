@@ -34,6 +34,14 @@ target_link_libraries(malasim_test PRIVATE
   MalaSimCore
 )
 
+if(ENABLE_PCH)
+  target_precompile_headers(malasim_test PRIVATE <gtest/gtest.h>)
+
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(malasim_test PRIVATE SHELL:-Xclang -fno-pch-timestamp)
+  endif()
+endif()
+
 set_property(TARGET malasim_test PROPERTY CXX_STANDARD 20)
 
 # Copy test_input_template.yml to binary dir for programmatic test generation

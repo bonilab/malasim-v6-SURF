@@ -11,8 +11,6 @@ option(ENABLE_TRAVEL_TRACKING "Enable tracking of individual travel data and gen
 file(GLOB_RECURSE MALASIM_CORE_SOURCES
   CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/src/*.cpp"
-  "${PROJECT_SOURCE_DIR}/src/*.hxx"
-  "${PROJECT_SOURCE_DIR}/src/*.h"
 )
 
 list(FILTER MALASIM_CORE_SOURCES EXCLUDE REGEX "${PROJECT_SOURCE_DIR}/src/apps/")
@@ -32,6 +30,14 @@ if(ENABLE_TRAVEL_TRACKING)
 endif()
 
 target_include_directories(MalaSimCore PUBLIC "${PROJECT_SOURCE_DIR}/src")
+
+if(ENABLE_PCH)
+  target_precompile_headers(MalaSimCore PRIVATE <Simulation/Model.h>)
+
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(MalaSimCore PRIVATE SHELL:-Xclang -fno-pch-timestamp)
+  endif()
+endif()
 
 # Add coverage flags to MalaSimCore if enabled
 if(ENABLE_COVERAGE)
@@ -58,5 +64,3 @@ if(NOT ENABLE_COVERAGE)
   add_subdirectory(apps/malasim)
   add_subdirectory(apps/efficacy_estimator)
 endif()
-
-
