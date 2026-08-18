@@ -406,13 +406,20 @@ void SQLiteDbReporter::initialize_database(int jobNumber,
                                               filesystem_error);
     }
     if (!std::filesystem::exists(output_path, filesystem_error)) {
-      std::filesystem::create_directories(output_path, filesystem_error);
-      if (filesystem_error) {
-        throw std::filesystem::filesystem_error("Unable to create SQLite output directory",
-                                                output_path, filesystem_error);
+      const auto last_character = path.empty() ? '\0' : path.back();
+      if (last_character == '/' || last_character == '\\') {
+        std::filesystem::create_directories(output_path, filesystem_error);
+        if (filesystem_error) {
+          throw std::filesystem::filesystem_error("Unable to create SQLite output directory",
+                                                  output_path, filesystem_error);
+        }
+        db_path = output_path / default_filename;
+      } else {
+        db_path = output_path;
       }
+    } else {
+      db_path = output_path / default_filename;
     }
-    db_path = output_path / default_filename;
   }
 
   // Define the database file path

@@ -116,16 +116,28 @@ protected:
 };
 
 TEST_F(MaSimCliValidationTest, CreatesMissingOutputDirectory) {
-  const std::filesystem::path output_path = "masim_cli_output_directory";
+  const std::string output_path = "masim_cli_output_directory/";
   std::filesystem::remove_all(output_path);
+
+  utils::MaSimAppInput input;
+  input.input_path = kTempInput;
+  input.output_path = output_path;
+
+  ASSERT_TRUE(utils::cli::validate<utils::MaSimCli>(input));
+  EXPECT_TRUE(std::filesystem::is_directory(output_path));
+  std::filesystem::remove_all(output_path);
+}
+
+TEST_F(MaSimCliValidationTest, TreatsMissingOutputFileAsFilenameOverride) {
+  const std::filesystem::path output_path = "masim_cli_output.db";
+  std::filesystem::remove(output_path);
 
   utils::MaSimAppInput input;
   input.input_path = kTempInput;
   input.output_path = output_path.string();
 
   ASSERT_TRUE(utils::cli::validate<utils::MaSimCli>(input));
-  EXPECT_TRUE(std::filesystem::is_directory(output_path));
-  std::filesystem::remove_all(output_path);
+  EXPECT_FALSE(std::filesystem::exists(output_path));
 }
 
 TEST_F(MaSimCliValidationTest, PreservesExistingOutputFile) {

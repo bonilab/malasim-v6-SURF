@@ -37,9 +37,9 @@ bool MaSimCli::validate(Input &input) {
     return false;
   }
 
-  // The output option is normally a directory. Create it when it does not
-  // exist, but preserve an existing regular file so SQLite reporters can use
-  // it directly as their database file.
+  // Existing directories and files are unambiguous. For a missing path, a
+  // trailing separator explicitly selects directory mode; otherwise the path
+  // is an output filename override for SQLite reporters.
   if (input.output_path.empty()) { input.output_path = "./"; }
   const std::filesystem::path output_path(input.output_path);
   std::error_code output_error;
@@ -50,11 +50,14 @@ bool MaSimCli::validate(Input &input) {
     return false;
   }
   if (!output_exists) {
-    std::filesystem::create_directories(output_path, output_error);
-    if (output_error) {
-      spdlog::error("Unable to create output directory '{}': {}", input.output_path,
-                    output_error.message());
-      return false;
+    const auto last_character = input.output_path.back();
+    if (last_character == '/' || last_character == '\\') {
+      std::filesystem::create_directories(output_path, output_error);
+      if (output_error) {
+        spdlog::error("Unable to create output directory '{}': {}", input.output_path,
+                      output_error.message());
+        return false;
+      }
     }
   } else if (!std::filesystem::is_directory(output_path)
              && !std::filesystem::is_regular_file(output_path)) {
