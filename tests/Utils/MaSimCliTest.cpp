@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -113,6 +114,35 @@ protected:
 
   void TearDown() override { std::remove(kTempInput); }
 };
+
+TEST_F(MaSimCliValidationTest, CreatesMissingOutputDirectory) {
+  const std::filesystem::path output_path = "masim_cli_output_directory";
+  std::filesystem::remove_all(output_path);
+
+  utils::MaSimAppInput input;
+  input.input_path = kTempInput;
+  input.output_path = output_path.string();
+
+  ASSERT_TRUE(utils::cli::validate<utils::MaSimCli>(input));
+  EXPECT_TRUE(std::filesystem::is_directory(output_path));
+  std::filesystem::remove_all(output_path);
+}
+
+TEST_F(MaSimCliValidationTest, PreservesExistingOutputFile) {
+  const std::filesystem::path output_path = "masim_cli_output.db";
+  {
+    std::ofstream output(output_path);
+    output << "existing database";
+  }
+
+  utils::MaSimAppInput input;
+  input.input_path = kTempInput;
+  input.output_path = output_path.string();
+
+  ASSERT_TRUE(utils::cli::validate<utils::MaSimCli>(input));
+  EXPECT_TRUE(std::filesystem::is_regular_file(output_path));
+  std::filesystem::remove(output_path);
+}
 
 TEST_F(MaSimCliValidationTest, RejectsMissingInputFile) {
   utils::MaSimAppInput input;
